@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 export default function Header() {
@@ -7,15 +8,30 @@ export default function Header() {
   ];
 
   return (
-    <header>
-      <img src="./assets/image/header.png" alt="Logo" className="w-auto h-50" />
-      <nav className="flex flex-row gap-4">
-        {navItems.map((item, index) => (
-          <Link href={item.href} key={index} className="hover:underline">
-            {item.label}
-          </Link>
-        ))}
-      </nav>
+    <header className="flex items-center justify-between flex-col gap-4 bg-[#94D4EE] border-b-2 border-zinc-400/10">
+      <div className="relative w-full h-32">
+        <Image
+          src="/assets/image/header.png"
+          alt="Logo"
+          fill
+          className="object-cover"
+          priority
+        />
+      </div>
+
+      <div className="flex flex-row gap-4 justify-between w-full px-32 py-2">
+        <nav className="flex flex-row gap-4">
+          {navItems.map((item, index) => (
+            <Link
+              href={item.href}
+              key={index}
+              className="hover:underline text-zinc-800 font-medium"
+            >
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+      </div>
     </header>
   );
 }
