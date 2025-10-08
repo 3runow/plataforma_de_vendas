@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import ContactDialog from "./contact-dialog";
 
 export default function Header() {
   const navItems = [
@@ -8,7 +9,7 @@ export default function Header() {
   ];
 
   return (
-    <header className="flex items-center justify-between flex-col gap-4 bg-[#94D4EE] border-b-2 border-zinc-400/10">
+    <header className="flex items-center justify-between flex-col bg-[#022044] border-b-2 border-zinc-400/10">
       <div className="relative w-full h-32">
         <Image
           src="/assets/image/header.png"
@@ -25,12 +26,13 @@ export default function Header() {
             <Link
               href={item.href}
               key={index}
-              className="hover:underline text-zinc-800 font-medium"
+              className="hover:underline text-zinc-50 font-medium"
             >
               {item.label}
             </Link>
           ))}
         </nav>
+        <ContactDialog />
       </div>
     </header>
   );
