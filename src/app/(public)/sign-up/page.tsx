@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,30 +14,41 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import Link from "next/link";
+import { useState } from "react";
+
+const registerSchema = z.object({
+  name: z.string().min(2, "Nome deve ter no mínimo 2 caracteres"),
+  email: z.string().email("Email inválido"),
+  password: z.string().min(6, "Senha deve ter no mínimo 6 caracteres"),
+});
+
+type RegisterForm = z.infer<typeof registerSchema>;
 
 export default function SignUp() {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    reset,
+  } = useForm<RegisterForm>({
+    resolver: zodResolver(registerSchema),
+  });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
+  const onSubmit = async (data: RegisterForm) => {
     setMessage("");
 
     try {
       const res = await fetch("/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify(data),
       });
 
-      let data: any = null;
+      let responseData: any = null;
       const contentType = res.headers.get("content-type") || "";
       if (contentType.includes("application/json")) {
-        data = await res.json();
+        responseData = await res.json();
       } else {
         const text = await res.text();
         throw new Error(
@@ -46,23 +59,19 @@ export default function SignUp() {
       }
 
       if (!res.ok) {
-        setMessage(data?.error || "Erro ao criar conta.");
+        setMessage(responseData?.error || "Erro ao criar conta.");
         return;
       }
 
-      if (data?.error) {
-        setMessage(data.error);
+      if (responseData?.error) {
+        setMessage(responseData.error);
       } else {
         setMessage("Conta criada com sucesso! Faça login agora.");
-        setName("");
-        setEmail("");
-        setPassword("");
+        reset();
       }
     } catch (err) {
       console.error(err);
       setMessage("Ocorreu um erro. Tente novamente.");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -76,15 +85,17 @@ export default function SignUp() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form className="space-y-4" onSubmit={handleSubmit}>
+          <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
             <div className="space-y-2">
               <Label htmlFor="name">Nome</Label>
               <Input
                 id="name"
                 placeholder="Seu nome completo"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
+                {...register("name")}
               />
+              {errors.name && (
+                <p className="text-sm text-red-500">{errors.name.message}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
@@ -92,9 +103,11 @@ export default function SignUp() {
                 id="email"
                 type="email"
                 placeholder="seu@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                {...register("email")}
               />
+              {errors.email && (
+                <p className="text-sm text-red-500">{errors.email.message}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Senha</Label>
@@ -102,12 +115,16 @@ export default function SignUp() {
                 id="password"
                 type="password"
                 placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                {...register("password")}
               />
+              {errors.password && (
+                <p className="text-sm text-red-500">
+                  {errors.password.message}
+                </p>
+              )}
             </div>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Criando..." : "Criar Conta"}
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
+              {isSubmitting ? "Criando..." : "Criar Conta"}
             </Button>
             {message && (
               <p className="text-center text-sm text-red-500">{message}</p>
