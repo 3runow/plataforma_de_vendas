@@ -1,6 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
-import ContactDialog from "./contact-dialog";
+import ContactModal from "./contact-modal";
+import { Button } from "./ui/button";
+import { ShoppingCart, User } from "lucide-react";
 
 export default function Header() {
   const navItems = [
@@ -21,7 +23,7 @@ export default function Header() {
       </div>
 
       <div className="flex flex-row gap-4 justify-between w-full px-32 py-2">
-        <nav className="flex flex-row gap-4">
+        <nav className="flex flex-row gap-4 items-center">
           {navItems.map((item, index) => (
             <Link
               href={item.href}
@@ -31,8 +33,24 @@ export default function Header() {
               {item.label}
             </Link>
           ))}
+          <ContactModal />
         </nav>
-        <ContactDialog />
+        <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="relative text-[#f7f7f7]"
+          >
+            <ShoppingCart className="h-5 w-5" />
+          </Button>
+          <Button
+            variant={"outline"}
+            size="icon"
+            className="text-[#f7f7f7] hover:text-[#f7f7f7] bg-[#022044] hover:bg-[#01152d]"
+          >
+            <User className="h-5 w-5" />
+          </Button>
+        </div>
       </div>
     </header>
   );

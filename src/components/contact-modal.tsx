@@ -11,10 +11,11 @@ import {
   DialogTrigger,
 } from "@radix-ui/react-dialog";
 import { Button } from "./ui/button";
-import { Mail, Phone } from "lucide-react";
+import { Mail } from "lucide-react";
 import { Label } from "./ui/label";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
+import WhatsAppLogo from "./icons/whats-app";
 
 const contactSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório."),
@@ -24,10 +25,11 @@ const contactSchema = z.object({
 
 type FormData = z.infer<typeof contactSchema>;
 
-export default function ContactDialog() {
+export default function ContactModal() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  const [open, setOpen] = useState(false);
 
   const {
     register,
@@ -37,6 +39,15 @@ export default function ContactDialog() {
   } = useForm<FormData>({
     resolver: zodResolver(contactSchema),
   });
+
+  const handleOpenChange = (isOpen: boolean) => {
+    setOpen(isOpen);
+    if (!isOpen) {
+      reset();
+      setSuccessMsg("");
+      setErrorMsg("");
+    }
+  };
 
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
@@ -71,21 +82,20 @@ export default function ContactDialog() {
   };
   return (
     <div>
-      <Dialog>
-        <DialogTrigger>
-          <Button
-            variant={"ghost"}
-            className="text-gray-700 hover:text-red 600 font-medium"
-          >
+      <Dialog open={open} onOpenChange={handleOpenChange}>
+        <DialogTrigger asChild>
+          <p className="text-zinc-50 font-medium hover:underline cursor-pointer">
             Contato
-          </Button>
+          </p>
         </DialogTrigger>
 
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Entre em Contato</DialogTitle>
+            <DialogTitle className="font-bold text-lg">
+              Entre em Contato
+            </DialogTitle>
             <DialogDescription>
-              Preencha o formulário abaixo e entraremos em contato em breve
+              Preencha o formulário abaixo e entraremos em contato em breve.
             </DialogDescription>
           </DialogHeader>
 
@@ -95,7 +105,7 @@ export default function ContactDialog() {
               <span>devlucasbarros@gmail.com</span>
             </div>
             <div className="flex items-center gap-3 text-sm">
-              <Phone className="h-4 w-4 text-[#022044]" />
+              <WhatsAppLogo className="h-4 w-4" />
               <span>(13) 99622-2102</span>
             </div>
           </div>
