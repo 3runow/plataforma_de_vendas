@@ -1,12 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import ContactModal from "./contact-modal";
-import { Button } from "./ui/button";
-import { ShoppingCart } from "lucide-react";
 import { isAuthenticated } from "@/lib/auth";
 import UserDropdown from "./user-dropdown";
 import LoginButton from "./login-button";
 import MobileMenu from "./mobile-menu";
+import CartSidebar from "./cart-sidebar";
 
 export default async function Header() {
   const userIsAuthenticated = await isAuthenticated();
@@ -27,7 +26,7 @@ export default async function Header() {
         />
       </div>
 
-      <div className="flex flex-row gap-4 justify-between w-full px-4 md:px-32 py-2">
+      <div className="flex flex-row gap-4 w-full px-4 md:px-32 py-2">
         <MobileMenu navItems={navItems} />
 
         <nav className="hidden md:flex flex-row gap-4 items-center">
@@ -43,14 +42,9 @@ export default async function Header() {
           <ContactModal />
         </nav>
 
-        <div className="flex items-center gap-2 md:gap-4 ml-auto md:ml-0">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="relative text-[#f7f7f7]"
-          >
-            <ShoppingCart className="h-5 w-5" />
-          </Button>
+        {/* Ações do usuário - alinhadas à direita */}
+        <div className="flex items-center gap-2 md:gap-4 ml-auto">
+          <CartSidebar />
           {userIsAuthenticated ? <UserDropdown /> : <LoginButton />}
         </div>
       </div>
