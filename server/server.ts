@@ -79,7 +79,7 @@ const app = new Elysia()
       }
 
       const token = jwt.sign(
-        { id: user.id, email: user.email, role: user.role },
+        { id: user.id, email: user.email, name: user.name, role: user.role },
         JWT_SECRET,
         {
           expiresIn: "7d",
@@ -104,6 +104,19 @@ const app = new Elysia()
     }
   })
 
+  // logout
+  .post("/api/logout", async ({ set }: { set: any }) => {
+    set.headers["Set-Cookie"] = cookie.serialize("token", "", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 0, // Expira imediatamente
+    });
+
+    return { message: "Logout realizado com sucesso." };
+  })
+
   // rota protegida
   .get("/api/me", async ({ request }: { request: Request }) => {
     const cookies = cookie.parse(request.headers.get("cookie") || "");
@@ -115,6 +128,7 @@ const app = new Elysia()
       const decoded = jwt.verify(token, JWT_SECRET) as {
         id: number;
         email: string;
+        name: string;
       };
       const user = await prisma.user.findUnique({ where: { id: decoded.id } });
       return { user };

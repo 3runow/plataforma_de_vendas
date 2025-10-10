@@ -2,9 +2,14 @@ import Image from "next/image";
 import Link from "next/link";
 import ContactModal from "./contact-modal";
 import { Button } from "./ui/button";
-import { ShoppingCart, User } from "lucide-react";
+import { ShoppingCart } from "lucide-react";
+import { isAuthenticated } from "@/lib/auth";
+import UserDropdown from "./user-dropdown";
+import LoginButton from "./login-button";
+import MobileMenu from "./mobile-menu";
 
-export default function Header() {
+export default async function Header() {
+  const userIsAuthenticated = await isAuthenticated();
   const navItems = [
     { label: "Início", href: "/" },
     { label: "Sobre", href: "/sobre" },
@@ -12,7 +17,7 @@ export default function Header() {
 
   return (
     <header className="flex items-center justify-between flex-col bg-[#022044] border-b-2 border-zinc-400/10">
-      <div className="relative w-full h-32">
+      <div className="relative w-full h-24 md:h-32">
         <Image
           src="/assets/image/header.png"
           alt="Logo"
@@ -22,8 +27,10 @@ export default function Header() {
         />
       </div>
 
-      <div className="flex flex-row gap-4 justify-between w-full px-32 py-2">
-        <nav className="flex flex-row gap-4 items-center">
+      <div className="flex flex-row gap-4 justify-between w-full px-4 md:px-32 py-2">
+        <MobileMenu navItems={navItems} />
+
+        <nav className="hidden md:flex flex-row gap-4 items-center">
           {navItems.map((item, index) => (
             <Link
               href={item.href}
@@ -35,7 +42,8 @@ export default function Header() {
           ))}
           <ContactModal />
         </nav>
-        <div className="flex items-center gap-4">
+
+        <div className="flex items-center gap-2 md:gap-4 ml-auto md:ml-0">
           <Button
             variant="ghost"
             size="icon"
@@ -43,13 +51,7 @@ export default function Header() {
           >
             <ShoppingCart className="h-5 w-5" />
           </Button>
-          <Button
-            variant={"outline"}
-            size="icon"
-            className="text-[#f7f7f7] hover:text-[#f7f7f7] bg-[#022044] hover:bg-[#01152d]"
-          >
-            <User className="h-5 w-5" />
-          </Button>
+          {userIsAuthenticated ? <UserDropdown /> : <LoginButton />}
         </div>
       </div>
     </header>
