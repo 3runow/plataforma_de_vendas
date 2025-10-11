@@ -8,6 +8,9 @@ export function useProductForm() {
     price: "",
     stock: "",
     imageUrl: "",
+    discount: "0",
+    isNew: false,
+    isFeatured: false,
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -89,6 +92,9 @@ export function useProductForm() {
       price: "",
       stock: "",
       imageUrl: "",
+      discount: "0",
+      isNew: false,
+      isFeatured: false,
     });
     setImageFile(null);
     setImagePreview(null);
@@ -104,12 +110,15 @@ export function useProductForm() {
       }),
       stock: product.stock.toString(),
       imageUrl: product.imageUrl || "",
+      discount: product.discount?.toString() || "0",
+      isNew: product.isNew || false,
+      isFeatured: product.isFeatured || false,
     });
     setImagePreview(product.imageUrl || null);
     setImageFile(null);
   };
 
-  const handleFormChange = (field: string, value: string) => {
+  const handleFormChange = (field: string, value: string | boolean) => {
     setFormData({ ...formData, [field]: value });
   };
 

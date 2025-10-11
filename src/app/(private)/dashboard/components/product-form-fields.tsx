@@ -1,13 +1,14 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ImageUpload } from "./image-upload";
 import { ProductFormData } from "../../../../../types/types";
 
 interface ProductFormFieldsProps {
   formData: ProductFormData;
   imagePreview: string | null;
-  onFormChange: (field: string, value: string) => void;
+  onFormChange: (field: string, value: string | boolean) => void;
   onPriceChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onClearImage: () => void;
@@ -71,6 +72,59 @@ export function ProductFormFields({
             required
           />
         </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="discount">Desconto (%)</Label>
+        <Input
+          id="discount"
+          type="number"
+          min="0"
+          max="100"
+          value={formData.discount || "0"}
+          onChange={(e) => onFormChange("discount", e.target.value)}
+          placeholder="0"
+        />
+        <p className="text-xs text-gray-500">
+          Digite o percentual de desconto (0-100)
+        </p>
+      </div>
+
+      <div className="space-y-4">
+        <Label>Badges do Produto</Label>
+
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="isNew"
+            checked={formData.isNew || false}
+            onCheckedChange={(checked) => onFormChange("isNew", !!checked)}
+          />
+          <label
+            htmlFor="isNew"
+            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+          >
+            Novo / Lançamento
+          </label>
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="isFeatured"
+            checked={formData.isFeatured || false}
+            onCheckedChange={(checked) => onFormChange("isFeatured", !!checked)}
+          />
+          <label
+            htmlFor="isFeatured"
+            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+          >
+            Produto em Destaque
+          </label>
+        </div>
+
+        <p className="text-xs text-gray-500">
+          Os badges "Desconto" e "Últimas Unidades" são automáticos baseados no
+          desconto e estoque
+        </p>
       </div>
     </>
   );

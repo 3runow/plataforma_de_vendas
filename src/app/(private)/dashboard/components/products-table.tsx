@@ -30,6 +30,7 @@ export function ProductsTable({
           <TableHead>Descrição</TableHead>
           <TableHead>Preço</TableHead>
           <TableHead>Estoque</TableHead>
+          <TableHead>Badges</TableHead>
           <TableHead className="text-right">Ações</TableHead>
         </TableRow>
       </TableHeader>
@@ -37,7 +38,7 @@ export function ProductsTable({
         {products.length === 0 ? (
           <TableRow>
             <TableCell
-              colSpan={7}
+              colSpan={8}
               className="text-center text-muted-foreground"
             >
               Nenhum produto cadastrado

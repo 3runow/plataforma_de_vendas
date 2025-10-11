@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import { Pencil, Trash2, Image as ImageIcon } from "lucide-react";
 import Image from "next/image";
 import { Product } from "../../../../../types/types";
@@ -43,13 +44,46 @@ export function ProductTableRow({
       <TableCell className="font-medium">{product.id}</TableCell>
       <TableCell>{product.name}</TableCell>
       <TableCell className="max-w-xs truncate">{product.description}</TableCell>
-      <TableCell>{formatCurrency(product.price)}</TableCell>
       <TableCell>
-        <span
-          className={product.stock < 10 ? "text-red-600 font-semibold" : ""}
-        >
-          {product.stock}
-        </span>
+        <div className="flex flex-col gap-1">
+          <span>{formatCurrency(product.price)}</span>
+          {product.discount && product.discount > 0 && (
+            <Badge variant="destructive" className="w-fit">
+              -{product.discount}% OFF
+            </Badge>
+          )}
+        </div>
+      </TableCell>
+      <TableCell>
+        <div className="flex flex-col gap-1">
+          <span
+            className={product.stock < 10 ? "text-red-600 font-semibold" : ""}
+          >
+            {product.stock}
+          </span>
+          {product.stock > 0 && product.stock <= 5 && (
+            <Badge
+              variant="secondary"
+              className="w-fit bg-orange-500 text-white"
+            >
+              Baixo estoque
+            </Badge>
+          )}
+        </div>
+      </TableCell>
+      <TableCell>
+        <div className="flex flex-wrap gap-1">
+          {product.isNew && (
+            <Badge variant="default" className="bg-blue-500">
+              Novo
+            </Badge>
+          )}
+          {product.isFeatured && (
+            <Badge variant="default" className="bg-purple-500">
+              Destaque
+            </Badge>
+          )}
+        </div>
       </TableCell>
       <TableCell className="text-right">
         <div className="flex justify-end gap-2">

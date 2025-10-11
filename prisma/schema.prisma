@@ -52,6 +52,9 @@ model Product {
   price       Float
   stock       Int         @default(0)
   imageUrl    String?     // URL da imagem do produto
+  discount    Float?      @default(0) // Percentual de desconto (0-100)
+  isNew       Boolean     @default(false) // Produto novo/lançamento
+  isFeatured  Boolean     @default(false) // Produto em destaque
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
   items       OrderItem[]

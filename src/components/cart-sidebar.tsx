@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { ShoppingCart } from "lucide-react";
 import { Button } from "./ui/button";
 import {
@@ -15,59 +14,21 @@ import { Separator } from "./ui/separator";
 import { Badge } from "./ui/badge";
 import CartItem from "./cart-item";
 import CartSummary from "./cart-summary";
-
-// Tipo temporário para itens do carrinho
-interface CartItem {
-  id: string;
-  name: string;
-  price: number;
-  quantity: number;
-  image: string;
-}
+import { useCart } from "../contexts/cart-context";
 
 export default function CartSidebar() {
-  // itens mocados para testar
-  const [cartItems, setCartItems] = useState<CartItem[]>([
-    {
-      id: "1",
-      name: "Brick Mickey",
-      price: 89.9,
-      quantity: 2,
-      image: "/assets/image/2025-09-BRICKS-MICKEY.jpg",
-    },
-    {
-      id: "2",
-      name: "Brick Pikachu",
-      price: 79.9,
-      quantity: 1,
-      image: "/assets/image/2025-09-BRICKS-PIKACHU.jpg",
-    },
-  ]);
+  const {
+    cartItems,
+    updateQuantity,
+    removeFromCart,
+    getTotalItems,
+    getTotalPrice,
+  } = useCart();
 
-  const updateQuantity = (id: string, newQuantity: number) => {
-    if (newQuantity === 0) {
-      removeItem(id);
-      return;
-    }
-    setCartItems((items) =>
-      items.map((item) =>
-        item.id === id ? { ...item, quantity: newQuantity } : item
-      )
-    );
-  };
-
-  const removeItem = (id: string) => {
-    setCartItems((items) => items.filter((item) => item.id !== id));
-  };
-
-  const subtotal = cartItems.reduce(
-    (acc, item) => acc + item.price * item.quantity,
-    0
-  );
+  const subtotal = getTotalPrice();
   const shipping = subtotal > 0 ? 15.0 : 0;
   const total = subtotal + shipping;
-
-  const itemCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
+  const itemCount = getTotalItems();
 
   return (
     <Sheet>
@@ -116,9 +77,15 @@ export default function CartSidebar() {
             cartItems.map((item) => (
               <CartItem
                 key={item.id}
-                {...item}
-                onUpdateQuantity={updateQuantity}
-                onRemove={removeItem}
+                id={item.productId.toString()}
+                name={item.name}
+                price={item.price}
+                quantity={item.quantity}
+                image={item.image}
+                onUpdateQuantity={(id, qty) =>
+                  updateQuantity(item.productId, qty)
+                }
+                onRemove={(id) => removeFromCart(item.productId)}
               />
             ))
           )}
