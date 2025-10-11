@@ -8,7 +8,7 @@ export function useProductForm() {
     price: "",
     stock: "",
     imageUrl: "",
-    discount: "0",
+    discount: "",
     isNew: false,
     isFeatured: false,
   });
@@ -92,7 +92,7 @@ export function useProductForm() {
       price: "",
       stock: "",
       imageUrl: "",
-      discount: "0",
+      discount: "",
       isNew: false,
       isFeatured: false,
     });
@@ -110,7 +110,10 @@ export function useProductForm() {
       }),
       stock: product.stock.toString(),
       imageUrl: product.imageUrl || "",
-      discount: product.discount?.toString() || "0",
+      discount:
+        product.discount && product.discount > 0
+          ? product.discount.toString()
+          : "",
       isNew: product.isNew || false,
       isFeatured: product.isFeatured || false,
     });

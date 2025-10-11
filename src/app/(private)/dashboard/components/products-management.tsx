@@ -65,7 +65,10 @@ export function ProductsManagement({
           ),
           stock: parseInt(formData.stock),
           imageUrl: imageUrl || undefined,
-          discount: formData.discount ? parseFloat(formData.discount) : 0,
+          discount:
+            formData.discount && formData.discount !== ""
+              ? parseFloat(formData.discount)
+              : 0,
           isNew: formData.isNew || false,
           isFeatured: formData.isFeatured || false,
         }),
@@ -107,7 +110,10 @@ export function ProductsManagement({
           ),
           stock: parseInt(formData.stock),
           imageUrl: imageUrl || undefined,
-          discount: formData.discount ? parseFloat(formData.discount) : 0,
+          discount:
+            formData.discount && formData.discount !== ""
+              ? parseFloat(formData.discount)
+              : 0,
           isNew: formData.isNew || false,
           isFeatured: formData.isFeatured || false,
         }),

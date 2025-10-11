@@ -81,7 +81,7 @@ export function ProductFormFields({
           type="number"
           min="0"
           max="100"
-          value={formData.discount || "0"}
+          value={formData.discount || ""}
           onChange={(e) => onFormChange("discount", e.target.value)}
           placeholder="0"
         />
