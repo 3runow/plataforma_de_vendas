@@ -135,6 +135,356 @@ const app = new Elysia()
     } catch {
       return { error: "Token inválido." };
     }
-  });
+  })
+
+  // ===== PRODUTOS =====
+  // Criar produto
+  .post(
+    "/api/products",
+    async ({
+      body,
+      request,
+      set,
+    }: {
+      body: any;
+      request: Request;
+      set: any;
+    }) => {
+      const cookies = cookie.parse(request.headers.get("cookie") || "");
+      const token = cookies.token;
+
+      if (!token) {
+        set.status = 401;
+        return { error: "Não autenticado." };
+      }
+
+      try {
+        const decoded = jwt.verify(token, JWT_SECRET) as {
+          id: number;
+          role: string;
+        };
+        const user = await prisma.user.findUnique({
+          where: { id: decoded.id },
+        });
+
+        if (!user || user.role !== "admin") {
+          set.status = 403;
+          return { error: "Acesso negado. Apenas administradores." };
+        }
+
+        const schema = z.object({
+          name: z.string().min(1),
+          description: z.string().min(1),
+          price: z.number().positive(),
+          stock: z.number().int().min(0),
+          imageUrl: z.string().optional(),
+        });
+
+        const parsed = schema.safeParse(body);
+        if (!parsed.success) {
+          set.status = 400;
+          return {
+            error: parsed.error.issues[0]?.message || "Dados inválidos",
+          };
+        }
+
+        const product = await prisma.product.create({
+          data: parsed.data,
+        });
+
+        return product;
+      } catch (e: any) {
+        set.status = 500;
+        return { error: "Erro ao criar produto" };
+      }
+    }
+  )
+
+  // Atualizar produto
+  .put(
+    "/api/products/:id",
+    async ({
+      params,
+      body,
+      request,
+      set,
+    }: {
+      params: any;
+      body: any;
+      request: Request;
+      set: any;
+    }) => {
+      const cookies = cookie.parse(request.headers.get("cookie") || "");
+      const token = cookies.token;
+
+      if (!token) {
+        set.status = 401;
+        return { error: "Não autenticado." };
+      }
+
+      try {
+        const decoded = jwt.verify(token, JWT_SECRET) as {
+          id: number;
+          role: string;
+        };
+        const user = await prisma.user.findUnique({
+          where: { id: decoded.id },
+        });
+
+        if (!user || user.role !== "admin") {
+          set.status = 403;
+          return { error: "Acesso negado. Apenas administradores." };
+        }
+
+        const schema = z.object({
+          name: z.string().min(1).optional(),
+          description: z.string().min(1).optional(),
+          price: z.number().positive().optional(),
+          stock: z.number().int().min(0).optional(),
+          imageUrl: z.string().optional(),
+        });
+
+        const parsed = schema.safeParse(body);
+        if (!parsed.success) {
+          set.status = 400;
+          return {
+            error: parsed.error.issues[0]?.message || "Dados inválidos",
+          };
+        }
+
+        const product = await prisma.product.update({
+          where: { id: parseInt(params.id) },
+          data: parsed.data,
+        });
+
+        return product;
+      } catch (e: any) {
+        set.status = 500;
+        return { error: "Erro ao atualizar produto" };
+      }
+    }
+  )
+
+  // Deletar produto
+  .delete(
+    "/api/products/:id",
+    async ({
+      params,
+      request,
+      set,
+    }: {
+      params: any;
+      request: Request;
+      set: any;
+    }) => {
+      const cookies = cookie.parse(request.headers.get("cookie") || "");
+      const token = cookies.token;
+
+      if (!token) {
+        set.status = 401;
+        return { error: "Não autenticado." };
+      }
+
+      try {
+        const decoded = jwt.verify(token, JWT_SECRET) as {
+          id: number;
+          role: string;
+        };
+        const user = await prisma.user.findUnique({
+          where: { id: decoded.id },
+        });
+
+        if (!user || user.role !== "admin") {
+          set.status = 403;
+          return { error: "Acesso negado. Apenas administradores." };
+        }
+
+        await prisma.product.delete({
+          where: { id: parseInt(params.id) },
+        });
+
+        return { message: "Produto deletado com sucesso" };
+      } catch (e: any) {
+        set.status = 500;
+        return { error: "Erro ao deletar produto" };
+      }
+    }
+  )
+
+  // ===== PEDIDOS =====
+  // Atualizar status de pedido
+  .put(
+    "/api/orders/:id",
+    async ({
+      params,
+      body,
+      request,
+      set,
+    }: {
+      params: any;
+      body: any;
+      request: Request;
+      set: any;
+    }) => {
+      const cookies = cookie.parse(request.headers.get("cookie") || "");
+      const token = cookies.token;
+
+      if (!token) {
+        set.status = 401;
+        return { error: "Não autenticado." };
+      }
+
+      try {
+        const decoded = jwt.verify(token, JWT_SECRET) as {
+          id: number;
+          role: string;
+        };
+        const user = await prisma.user.findUnique({
+          where: { id: decoded.id },
+        });
+
+        if (!user || user.role !== "admin") {
+          set.status = 403;
+          return { error: "Acesso negado. Apenas administradores." };
+        }
+
+        const schema = z.object({
+          status: z.enum([
+            "pending",
+            "processing",
+            "shipped",
+            "delivered",
+            "cancelled",
+          ]),
+        });
+
+        const parsed = schema.safeParse(body);
+        if (!parsed.success) {
+          set.status = 400;
+          return {
+            error: parsed.error.issues[0]?.message || "Dados inválidos",
+          };
+        }
+
+        const order = await prisma.order.update({
+          where: { id: parseInt(params.id) },
+          data: { status: parsed.data.status },
+        });
+
+        return order;
+      } catch (e: any) {
+        set.status = 500;
+        return { error: "Erro ao atualizar pedido" };
+      }
+    }
+  )
+
+  // ===== USUÁRIOS =====
+  // Atualizar role de usuário
+  .put(
+    "/api/users/:id",
+    async ({
+      params,
+      body,
+      request,
+      set,
+    }: {
+      params: any;
+      body: any;
+      request: Request;
+      set: any;
+    }) => {
+      const cookies = cookie.parse(request.headers.get("cookie") || "");
+      const token = cookies.token;
+
+      if (!token) {
+        set.status = 401;
+        return { error: "Não autenticado." };
+      }
+
+      try {
+        const decoded = jwt.verify(token, JWT_SECRET) as {
+          id: number;
+          role: string;
+        };
+        const user = await prisma.user.findUnique({
+          where: { id: decoded.id },
+        });
+
+        if (!user || user.role !== "admin") {
+          set.status = 403;
+          return { error: "Acesso negado. Apenas administradores." };
+        }
+
+        const schema = z.object({
+          role: z.enum(["customer", "admin"]).optional(),
+        });
+
+        const parsed = schema.safeParse(body);
+        if (!parsed.success) {
+          set.status = 400;
+          return {
+            error: parsed.error.issues[0]?.message || "Dados inválidos",
+          };
+        }
+
+        const updatedUser = await prisma.user.update({
+          where: { id: parseInt(params.id) },
+          data: parsed.data,
+        });
+
+        return updatedUser;
+      } catch (e: any) {
+        set.status = 500;
+        return { error: "Erro ao atualizar usuário" };
+      }
+    }
+  )
+
+  // Deletar usuário
+  .delete(
+    "/api/users/:id",
+    async ({
+      params,
+      request,
+      set,
+    }: {
+      params: any;
+      request: Request;
+      set: any;
+    }) => {
+      const cookies = cookie.parse(request.headers.get("cookie") || "");
+      const token = cookies.token;
+
+      if (!token) {
+        set.status = 401;
+        return { error: "Não autenticado." };
+      }
+
+      try {
+        const decoded = jwt.verify(token, JWT_SECRET) as {
+          id: number;
+          role: string;
+        };
+        const user = await prisma.user.findUnique({
+          where: { id: decoded.id },
+        });
+
+        if (!user || user.role !== "admin") {
+          set.status = 403;
+          return { error: "Acesso negado. Apenas administradores." };
+        }
+
+        await prisma.user.delete({
+          where: { id: parseInt(params.id) },
+        });
+
+        return { message: "Usuário deletado com sucesso" };
+      } catch (e: any) {
+        set.status = 500;
+        return { error: "Erro ao deletar usuário" };
+      }
+    }
+  );
 
 export const handler = app.handle;

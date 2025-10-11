@@ -28,20 +28,20 @@ model User {
 }
 
 model Address {
-  id            Int       @id @default(autoincrement())
+  id            Int      @id @default(autoincrement())
   userId        Int
-  recipientName String    // Nome do destinatário
-  cep           String    // CEP (Código de Endereçamento Postal)
-  street        String    // Rua/Avenida
-  number        String    // Número
-  complement    String?   // Complemento (opcional)
-  neighborhood  String    // Bairro
-  city          String    // Cidade
-  state         String    // Estado (UF)
-  isDefault     Boolean   @default(false) // Endereço padrão
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recipientName String   // Nome do destinatário
+  cep           String   // CEP (Código de Endereçamento Postal)
+  street        String   // Rua/Avenida
+  number        String   // Número
+  complement    String?  // Complemento (opcional)
+  neighborhood  String   // Bairro
+  city          String   // Cidade
+  state         String   // Estado (UF)
+  isDefault     Boolean  @default(false) // Endereço padrão
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   orders        Order[]
 }
 
@@ -51,6 +51,7 @@ model Product {
   description String
   price       Float
   stock       Int         @default(0)
+  imageUrl    String?     // URL da imagem do produto
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
   items       OrderItem[]
