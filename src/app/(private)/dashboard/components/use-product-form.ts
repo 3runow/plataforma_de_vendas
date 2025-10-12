@@ -83,6 +83,13 @@ export function useProductForm() {
   const clearImageSelection = () => {
     setImageFile(null);
     setImagePreview(null);
+    setFormData({ ...formData, imageUrl: "" });
+  };
+
+  const handleUrlChange = (url: string) => {
+    setImagePreview(url);
+    setImageFile(null); // Limpa o arquivo se uma URL for usada
+    setFormData({ ...formData, imageUrl: url });
   };
 
   const resetForm = () => {
@@ -134,6 +141,7 @@ export function useProductForm() {
     handleImageChange,
     uploadImage,
     clearImageSelection,
+    handleUrlChange,
     resetForm,
     loadProductData,
     handleFormChange,

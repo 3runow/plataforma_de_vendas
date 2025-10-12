@@ -12,6 +12,7 @@ interface ProductFormFieldsProps {
   onPriceChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onClearImage: () => void;
+  onUrlChange?: (url: string) => void;
 }
 
 export function ProductFormFields({
@@ -21,6 +22,7 @@ export function ProductFormFields({
   onPriceChange,
   onImageChange,
   onClearImage,
+  onUrlChange,
 }: ProductFormFieldsProps) {
   return (
     <>
@@ -48,6 +50,7 @@ export function ProductFormFields({
         imagePreview={imagePreview}
         onImageChange={onImageChange}
         onClearImage={onClearImage}
+        onUrlChange={onUrlChange}
       />
 
       <div className="grid grid-cols-2 gap-4">

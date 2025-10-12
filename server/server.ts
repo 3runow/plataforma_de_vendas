@@ -183,7 +183,14 @@ const app = new Elysia()
           where: { id: decoded.id },
         });
 
+        console.log("Usuário tentando criar produto:", {
+          id: user?.id,
+          email: user?.email,
+          role: user?.role,
+        });
+
         if (!user || user.role !== "admin") {
+          console.log("Acesso negado - usuário:", user);
           set.status = 403;
           return { error: "Acesso negado. Apenas administradores." };
         }
@@ -199,11 +206,15 @@ const app = new Elysia()
           isFeatured: z.boolean().optional(),
         });
 
+        console.log("Dados recebidos no body:", body);
+
         const parsed = schema.safeParse(body);
         if (!parsed.success) {
+          console.error("Erro de validação:", parsed.error.issues);
           set.status = 400;
           return {
             error: parsed.error.issues[0]?.message || "Dados inválidos",
+            details: parsed.error.issues,
           };
         }
 
@@ -213,10 +224,18 @@ const app = new Elysia()
           data: parsed.data,
         });
 
+        console.log("Produto criado com sucesso:", product);
+
         return product;
       } catch (e: any) {
+        console.error("Erro detalhado ao criar produto:", e);
+        console.error("Stack trace:", e.stack);
         set.status = 500;
-        return { error: "Erro ao criar produto" };
+        return {
+          error: "Erro ao criar produto",
+          message: e.message,
+          details: e.toString(),
+        };
       }
     }
   )

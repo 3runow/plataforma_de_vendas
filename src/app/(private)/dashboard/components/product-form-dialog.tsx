@@ -18,10 +18,11 @@ interface ProductFormDialogProps {
   imagePreview: string | null;
   isUploading: boolean;
   onSubmit: (e: React.FormEvent) => void;
-  onFormChange: (field: string, value: string) => void;
+  onFormChange: (field: string, value: string | boolean) => void;
   onPriceChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onClearImage: () => void;
+  onUrlChange?: (url: string) => void;
   submitButtonText: string;
 }
 
@@ -38,6 +39,7 @@ export function ProductFormDialog({
   onPriceChange,
   onImageChange,
   onClearImage,
+  onUrlChange,
   submitButtonText,
 }: ProductFormDialogProps) {
   return (
@@ -55,6 +57,7 @@ export function ProductFormDialog({
             onPriceChange={onPriceChange}
             onImageChange={onImageChange}
             onClearImage={onClearImage}
+            onUrlChange={onUrlChange}
           />
           <Button type="submit" className="w-full" disabled={isUploading}>
             {isUploading ? "Enviando..." : submitButtonText}

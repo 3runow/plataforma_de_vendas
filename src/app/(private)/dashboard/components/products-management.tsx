@@ -40,6 +40,7 @@ export function ProductsManagement({
     handleImageChange,
     uploadImage,
     clearImageSelection,
+    handleUrlChange,
     resetForm,
     loadProductData,
     handleFormChange,
@@ -264,6 +265,7 @@ export function ProductsManagement({
           onPriceChange={handlePriceChange}
           onImageChange={handleImageChange}
           onClearImage={clearImageSelection}
+          onUrlChange={handleUrlChange}
           submitButtonText="Adicionar"
         />
 
@@ -280,6 +282,7 @@ export function ProductsManagement({
           onPriceChange={handlePriceChange}
           onImageChange={handleImageChange}
           onClearImage={clearImageSelection}
+          onUrlChange={handleUrlChange}
           submitButtonText="Salvar Alterações"
         />
       </CardContent>
