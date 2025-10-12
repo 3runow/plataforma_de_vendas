@@ -17,6 +17,7 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useToast } from "@/hooks/use-toast";
 
 // Schemas de validação
 const loginSchema = z.object({
@@ -46,6 +47,7 @@ export default function AuthModal({
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const router = useRouter();
+  const { toast } = useToast();
 
   const loginForm = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -76,7 +78,18 @@ export default function AuthModal({
         );
       }
 
+      // Mostrar toast de sucesso
+      toast({
+        title: "Login realizado!",
+        description: "Bem-vindo de volta! Você foi autenticado com sucesso.",
+        duration: 3000,
+      });
+
       onOpenChangeAction(false);
+
+      // Disparar evento para atualizar header
+      window.dispatchEvent(new Event("auth-change"));
+
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao fazer login");

@@ -42,7 +42,6 @@ export default async function Header() {
           <ContactModal />
         </nav>
 
-        {/* Ações do usuário - alinhadas à direita */}
         <div className="flex items-center gap-2 md:gap-4 ml-auto">
           <CartSidebar />
           {userIsAuthenticated ? <UserDropdown /> : <LoginButton />}

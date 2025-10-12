@@ -9,6 +9,7 @@ import {
   MapPin,
   Package,
   CreditCard,
+  LayoutDashboard,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -19,6 +20,7 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import { useRouter } from "next/navigation";
+import { useToast } from "@/hooks/use-toast";
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -34,7 +36,9 @@ function getGreeting() {
 
 export default function UserDropdown() {
   const router = useRouter();
+  const { toast } = useToast();
   const [userName, setUserName] = useState<string>("");
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const greeting = getGreeting();
 
   useEffect(() => {
@@ -46,6 +50,8 @@ export default function UserDropdown() {
           // pega apenas o primeiro nome
           const firstName = data.user.name?.split(" ")[0] || "Usuário";
           setUserName(firstName);
+          // verifica se é admin
+          setIsAdmin(data.user.role === "admin");
         }
       })
       .catch((error) => {
@@ -55,13 +61,42 @@ export default function UserDropdown() {
 
   const handleLogout = async () => {
     try {
-      await fetch("/api/logout", {
+      const response = await fetch("/api/logout", {
         method: "POST",
       });
-      router.refresh();
-      router.push("/");
+
+      if (response.ok) {
+        // Mostrar toast de sucesso (vermelho para logout)
+        toast({
+          title: "Logout realizado!",
+          description: "Você saiu da sua conta com sucesso. Até logo!",
+          variant: "destructive",
+          duration: 3000,
+        });
+
+        // Disparar evento para atualizar header
+        window.dispatchEvent(new Event("auth-change"));
+
+        // Aguardar um pouco antes de redirecionar
+        setTimeout(() => {
+          router.refresh();
+          router.push("/");
+        }, 500);
+      } else {
+        console.error("Erro no logout:", response.status);
+        toast({
+          title: "Erro ao sair",
+          description: "Ocorreu um erro ao fazer logout. Tente novamente.",
+          variant: "destructive",
+        });
+      }
     } catch (error) {
       console.error("Erro ao fazer logout:", error);
+      toast({
+        title: "Erro ao sair",
+        description: "Ocorreu um erro ao fazer logout. Tente novamente.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -81,6 +116,15 @@ export default function UserDropdown() {
           {userName ? `${greeting}, ${userName}!` : "Minha Conta"}
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        {isAdmin && (
+          <>
+            <DropdownMenuItem onClick={() => router.push("/dashboard")}>
+              <LayoutDashboard className="mr-2 h-4 w-4" />
+              <span>Dashboard Administrativo</span>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+          </>
+        )}
         <DropdownMenuItem>
           <User className="mr-2 h-4 w-4" />
           <span>Perfil</span>

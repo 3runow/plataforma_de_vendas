@@ -62,7 +62,7 @@ export async function middleware(req: NextRequest) {
     const token = req.cookies.get("token")?.value;
     if (!token) {
       const url = req.nextUrl.clone();
-      url.pathname = "/login";
+      url.pathname = "/";
       return NextResponse.redirect(url);
     }
 
@@ -78,7 +78,7 @@ export async function middleware(req: NextRequest) {
       return NextResponse.next();
     } catch (e) {
       const url = req.nextUrl.clone();
-      url.pathname = "/login";
+      url.pathname = "/";
       return NextResponse.redirect(url);
     }
   }

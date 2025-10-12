@@ -50,7 +50,7 @@ export default function ProductCard({
               Novo
             </Badge>
           )}
-          {product.discount && product.discount > 0 && (
+          {(product.discount ?? 0) > 0 && (
             <Badge variant="destructive">-{product.discount}%</Badge>
           )}
           {isLowStock && !isOutOfStock && (
@@ -89,7 +89,7 @@ export default function ProductCard({
             src={product.imageUrl}
             alt={product.name}
             fill
-            className="object-cover transition-transform duration-300 group-hover:scale-110"
+            className="object-contain transition-transform duration-300 group-hover:scale-105 p-4"
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           />
         ) : (
@@ -108,7 +108,7 @@ export default function ProductCard({
         </p>
 
         <div className="flex items-center gap-2">
-          {product.discount && product.discount > 0 ? (
+          {(product.discount ?? 0) > 0 ? (
             <>
               <span className="text-2xl font-bold text-primary">
                 R$ {finalPrice.toFixed(2)}

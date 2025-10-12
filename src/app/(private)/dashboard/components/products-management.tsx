@@ -14,6 +14,8 @@ import { ProductsTable } from "./products-table";
 import { ProductFormDialog } from "./product-form-dialog";
 import { useProductForm } from "./use-product-form";
 import { Product } from "../../../../../types/types";
+import { useRouter } from "next/navigation";
+import { useToast } from "@/hooks/use-toast";
 
 interface ProductsManagementProps {
   products: Product[];
@@ -22,6 +24,8 @@ interface ProductsManagementProps {
 export function ProductsManagement({
   products: initialProducts,
 }: ProductsManagementProps) {
+  const router = useRouter();
+  const { toast } = useToast();
   const [products, setProducts] = useState(initialProducts);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -54,34 +58,60 @@ export function ProductsManagement({
         }
       }
 
+      const productData = {
+        name: formData.name,
+        description: formData.description,
+        price: parseFloat(formData.price.replace(/\./g, "").replace(",", ".")),
+        stock: parseInt(formData.stock),
+        imageUrl: imageUrl || undefined,
+        discount:
+          formData.discount && formData.discount !== ""
+            ? parseFloat(formData.discount)
+            : 0,
+        isNew: formData.isNew || false,
+        isFeatured: formData.isFeatured || false,
+      };
+
+      console.log("Adicionando produto com dados:", productData);
+
       const response = await fetch("/api/products", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: formData.name,
-          description: formData.description,
-          price: parseFloat(
-            formData.price.replace(/\./g, "").replace(",", ".")
-          ),
-          stock: parseInt(formData.stock),
-          imageUrl: imageUrl || undefined,
-          discount:
-            formData.discount && formData.discount !== ""
-              ? parseFloat(formData.discount)
-              : 0,
-          isNew: formData.isNew || false,
-          isFeatured: formData.isFeatured || false,
-        }),
+        body: JSON.stringify(productData),
       });
 
       if (response.ok) {
+        toast({
+          title: "Produto adicionado!",
+          description: `${formData.name} foi adicionado com sucesso.`,
+          duration: 3000,
+        });
         setIsAddDialogOpen(false);
         resetForm();
-        window.location.reload();
+
+        // Buscar produtos atualizados
+        const updatedProducts = await fetch("/api/products").then((res) =>
+          res.json()
+        );
+        setProducts(updatedProducts);
+        router.refresh();
+      } else {
+        const error = await response.json();
+        toast({
+          title: "Erro ao adicionar produto",
+          description: error.error || "Ocorreu um erro ao adicionar o produto.",
+          variant: "destructive",
+          duration: 3000,
+        });
       }
     } catch (error) {
       console.error("Erro ao adicionar produto:", error);
-      alert("Erro ao adicionar produto");
+      toast({
+        title: "Erro ao adicionar produto",
+        description: "Ocorreu um erro ao adicionar o produto.",
+        variant: "destructive",
+        duration: 3000,
+      });
     }
   };
 
@@ -99,35 +129,61 @@ export function ProductsManagement({
         }
       }
 
+      const productData = {
+        name: formData.name,
+        description: formData.description,
+        price: parseFloat(formData.price.replace(/\./g, "").replace(",", ".")),
+        stock: parseInt(formData.stock),
+        imageUrl: imageUrl || undefined,
+        discount:
+          formData.discount && formData.discount !== ""
+            ? parseFloat(formData.discount)
+            : 0,
+        isNew: formData.isNew || false,
+        isFeatured: formData.isFeatured || false,
+      };
+
+      console.log("Enviando dados do produto:", productData);
+
       const response = await fetch(`/api/products/${selectedProduct.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: formData.name,
-          description: formData.description,
-          price: parseFloat(
-            formData.price.replace(/\./g, "").replace(",", ".")
-          ),
-          stock: parseInt(formData.stock),
-          imageUrl: imageUrl || undefined,
-          discount:
-            formData.discount && formData.discount !== ""
-              ? parseFloat(formData.discount)
-              : 0,
-          isNew: formData.isNew || false,
-          isFeatured: formData.isFeatured || false,
-        }),
+        body: JSON.stringify(productData),
       });
 
       if (response.ok) {
+        toast({
+          title: "Produto atualizado!",
+          description: `${formData.name} foi atualizado com sucesso.`,
+          duration: 3000,
+        });
         setIsEditDialogOpen(false);
         setSelectedProduct(null);
         resetForm();
-        window.location.reload();
+
+        // Buscar produtos atualizados
+        const updatedProducts = await fetch("/api/products").then((res) =>
+          res.json()
+        );
+        setProducts(updatedProducts);
+        router.refresh();
+      } else {
+        const error = await response.json();
+        toast({
+          title: "Erro ao editar produto",
+          description: error.error || "Ocorreu um erro ao editar o produto.",
+          variant: "destructive",
+          duration: 3000,
+        });
       }
     } catch (error) {
       console.error("Erro ao editar produto:", error);
-      alert("Erro ao editar produto");
+      toast({
+        title: "Erro ao editar produto",
+        description: "Ocorreu um erro ao editar o produto.",
+        variant: "destructive",
+        duration: 3000,
+      });
     }
   };
 
@@ -140,11 +196,29 @@ export function ProductsManagement({
       });
 
       if (response.ok) {
+        toast({
+          title: "Produto deletado!",
+          description: "O produto foi removido com sucesso.",
+          duration: 3000,
+        });
         setProducts(products.filter((p) => p.id !== id));
+        router.refresh();
+      } else {
+        toast({
+          title: "Erro ao deletar produto",
+          description: "Ocorreu um erro ao deletar o produto.",
+          variant: "destructive",
+          duration: 3000,
+        });
       }
     } catch (error) {
       console.error("Erro ao deletar produto:", error);
-      alert("Erro ao deletar produto");
+      toast({
+        title: "Erro ao deletar produto",
+        description: "Ocorreu um erro ao deletar o produto.",
+        variant: "destructive",
+        duration: 3000,
+      });
     }
   };
 

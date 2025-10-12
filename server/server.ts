@@ -138,6 +138,22 @@ const app = new Elysia()
   })
 
   // ===== PRODUTOS =====
+  // Listar todos os produtos (público)
+  .get("/api/products", async ({ set }: { set: any }) => {
+    try {
+      const products = await prisma.product.findMany({
+        orderBy: {
+          createdAt: "desc",
+        },
+      });
+      return products;
+    } catch (e: any) {
+      console.error("Erro ao buscar produtos:", e);
+      set.status = 500;
+      return { error: "Erro ao buscar produtos" };
+    }
+  })
+
   // Criar produto
   .post(
     "/api/products",
@@ -178,6 +194,9 @@ const app = new Elysia()
           price: z.number().positive(),
           stock: z.number().int().min(0),
           imageUrl: z.string().optional(),
+          discount: z.number().min(0).max(100).optional(),
+          isNew: z.boolean().optional(),
+          isFeatured: z.boolean().optional(),
         });
 
         const parsed = schema.safeParse(body);
@@ -187,6 +206,8 @@ const app = new Elysia()
             error: parsed.error.issues[0]?.message || "Dados inválidos",
           };
         }
+
+        console.log("Criando produto com dados:", parsed.data);
 
         const product = await prisma.product.create({
           data: parsed.data,
@@ -242,6 +263,9 @@ const app = new Elysia()
           price: z.number().positive().optional(),
           stock: z.number().int().min(0).optional(),
           imageUrl: z.string().optional(),
+          discount: z.number().min(0).max(100).optional(),
+          isNew: z.boolean().optional(),
+          isFeatured: z.boolean().optional(),
         });
 
         const parsed = schema.safeParse(body);
@@ -251,6 +275,8 @@ const app = new Elysia()
             error: parsed.error.issues[0]?.message || "Dados inválidos",
           };
         }
+
+        console.log("Atualizando produto com dados:", parsed.data);
 
         const product = await prisma.product.update({
           where: { id: parseInt(params.id) },
