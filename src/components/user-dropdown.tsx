@@ -10,6 +10,7 @@ import {
   Package,
   CreditCard,
   LayoutDashboard,
+  Heart,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -133,17 +134,9 @@ export default function UserDropdown() {
           <Package className="mr-2 h-4 w-4" />
           <span>Meus Pedidos</span>
         </DropdownMenuItem>
-        <DropdownMenuItem>
-          <MapPin className="mr-2 h-4 w-4" />
-          <span>Endereços</span>
-        </DropdownMenuItem>
-        <DropdownMenuItem>
-          <CreditCard className="mr-2 h-4 w-4" />
-          <span>Formas de Pagamento</span>
-        </DropdownMenuItem>
-        <DropdownMenuItem>
-          <Settings className="mr-2 h-4 w-4" />
-          <span>Configurações</span>
+        <DropdownMenuItem onClick={() => router.push("/favoritos")}>
+          <Heart className="mr-2 h-4 w-4" />
+          <span>Meus Favoritos</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleLogout}>

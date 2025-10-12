@@ -7,6 +7,7 @@ import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Product } from "../../types/types";
 import { useState } from "react";
+import { useFavorites } from "@/contexts/favorites-context";
 
 interface ProductCardProps {
   product: Product;
@@ -19,6 +20,9 @@ export default function ProductCard({
 }: ProductCardProps) {
   const [quantity, setQuantity] = useState(1);
   const [isAdding, setIsAdding] = useState(false);
+  const { addToFavorites, removeFromFavorites, isFavorite } = useFavorites();
+
+  const isFavorited = isFavorite(product.id);
 
   const finalPrice = product.discount
     ? product.price * (1 - product.discount / 100)
@@ -38,6 +42,14 @@ export default function ProductCard({
       console.error("Erro ao adicionar ao carrinho:", error);
     } finally {
       setIsAdding(false);
+    }
+  };
+
+  const handleToggleFavorite = () => {
+    if (isFavorited) {
+      removeFromFavorites(product.id);
+    } else {
+      addToFavorites(product);
     }
   };
 
@@ -79,9 +91,12 @@ export default function ProductCard({
         <Button
           variant="ghost"
           size="icon"
-          className="absolute top-2 right-2 z-10 bg-white/80 hover:bg-white"
+          onClick={handleToggleFavorite}
+          className={`absolute top-2 right-2 z-10 bg-white/80 hover:bg-white transition-colors ${
+            isFavorited ? "text-red-500" : "text-gray-600"
+          }`}
         >
-          <Heart className="h-5 w-5" />
+          <Heart className={`h-5 w-5 ${isFavorited ? "fill-current" : ""}`} />
         </Button>
 
         {product.imageUrl ? (
