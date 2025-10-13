@@ -82,10 +82,10 @@ export default function CartSidebar() {
                 price={item.price}
                 quantity={item.quantity}
                 image={item.image}
-                onUpdateQuantity={(id, qty) =>
+                onUpdateQuantity={(_id, qty) =>
                   updateQuantity(item.productId, qty)
                 }
-                onRemove={(id) => removeFromCart(item.productId)}
+                onRemove={() => removeFromCart(item.productId)}
               />
             ))
           )}

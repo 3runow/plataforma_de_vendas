@@ -62,7 +62,7 @@ export async function getUser() {
       email: string;
       role?: string;
     };
-  } catch (error) {
+  } catch {
     return null;
   }
 }

@@ -12,6 +12,28 @@ import StockManagement from "./components/stock-management";
 import StockAlerts from "./components/stock-alerts";
 import { AlertTriangle } from "lucide-react";
 
+interface OrderWithRelations {
+  id: number;
+  total: number;
+  status: string;
+  createdAt: Date;
+  updatedAt: Date;
+  user: {
+    id: number;
+    name: string;
+    email: string;
+  };
+  items: {
+    id: number;
+    quantity: number;
+    product: {
+      id: number;
+      name: string;
+      price: number;
+    };
+  }[];
+}
+
 export default async function Dashboard() {
   const cookieStore = await cookies();
   const token = cookieStore.get("token")?.value;
@@ -74,12 +96,12 @@ export default async function Dashboard() {
     const lowStockProducts = products.filter((p) => p.stock < 10);
 
     // Calcula métricas
-    const totalRevenue = orders
-      .filter((order: any) => order.status !== "cancelled")
+    const totalRevenue = (orders as OrderWithRelations[])
+      .filter((order) => order.status !== "cancelled")
       .reduce((sum, order) => sum + order.total, 0);
 
-    const pendingOrders = orders.filter(
-      (order: any) => order.status === "pending"
+    const pendingOrdersCount = (orders as OrderWithRelations[]).filter(
+      (order) => order.status === "pending"
     ).length;
     const totalProducts = products.length;
     const totalUsers = users.length;
@@ -128,10 +150,10 @@ export default async function Dashboard() {
             <TabsContent value="overview" className="space-y-6">
               <DashboardOverview
                 totalRevenue={totalRevenue}
-                pendingOrders={pendingOrders}
+                pendingOrders={pendingOrdersCount}
                 totalProducts={totalProducts}
                 totalUsers={totalUsers}
-                recentOrders={recentOrders}
+                recentOrders={recentOrders as OrderWithRelations[]}
               />
             </TabsContent>
 
@@ -157,7 +179,7 @@ export default async function Dashboard() {
         </div>
       </div>
     );
-  } catch (err) {
+  } catch {
     redirect("/login");
   }
 }

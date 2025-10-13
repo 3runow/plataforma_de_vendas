@@ -125,8 +125,8 @@ export function ProductFormFields({
         </div>
 
         <p className="text-xs text-gray-500">
-          Os badges "Desconto" e "Últimas Unidades" são automáticos baseados no
-          desconto e estoque
+          Os badges &quot;Desconto&quot; e &quot;Últimas Unidades&quot; são
+          automáticos baseados no desconto e estoque
         </p>
       </div>
     </>

@@ -9,12 +9,37 @@ import {
 } from "@/components/ui/card";
 import { DollarSign, Package, ShoppingCart, Users } from "lucide-react";
 
+interface OrderUser {
+  id: number;
+  name: string;
+  email: string;
+}
+
+interface OrderItem {
+  id: number;
+  quantity: number;
+  product: {
+    id: number;
+    name: string;
+    price: number;
+  };
+}
+
+interface RecentOrder {
+  id: number;
+  total: number;
+  status: string;
+  createdAt: Date;
+  user: OrderUser;
+  items: OrderItem[];
+}
+
 interface DashboardOverviewProps {
   totalRevenue: number;
   pendingOrders: number;
   totalProducts: number;
   totalUsers: number;
-  recentOrders: any[];
+  recentOrders: RecentOrder[];
 }
 
 export function DashboardOverview({

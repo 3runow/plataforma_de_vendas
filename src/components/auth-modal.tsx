@@ -102,7 +102,7 @@ export default function AuthModal({
       window.dispatchEvent(new Event("auth-change"));
 
       router.refresh();
-    } catch (err) {
+    } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Erro ao fazer login");
     }
   };
@@ -219,15 +219,15 @@ export default function AuthModal({
             {isForgotPassword
               ? "Recuperar Senha"
               : isLogin
-              ? "Login"
-              : "Criar Conta"}
+                ? "Login"
+                : "Criar Conta"}
           </DialogTitle>
           <DialogDescription>
             {isForgotPassword
               ? "Digite seu email para receber instruções de recuperação"
               : isLogin
-              ? "Entre com seu email e senha para acessar sua conta"
-              : "Preencha os dados abaixo para criar sua conta"}
+                ? "Entre com seu email e senha para acessar sua conta"
+                : "Preencha os dados abaixo para criar sua conta"}
           </DialogDescription>
         </DialogHeader>
 

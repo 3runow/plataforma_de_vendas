@@ -69,14 +69,18 @@ export async function middleware(req: NextRequest) {
     try {
       const payload = await verifyHS256(token, JWT_SECRET);
 
-      if ((payload as any).role !== "admin") {
+      interface JWTPayload {
+        role?: string;
+      }
+
+      if ((payload as JWTPayload).role !== "admin") {
         const url = req.nextUrl.clone();
         url.pathname = "/";
         return NextResponse.redirect(url);
       }
 
       return NextResponse.next();
-    } catch (e) {
+    } catch {
       const url = req.nextUrl.clone();
       url.pathname = "/";
       return NextResponse.redirect(url);

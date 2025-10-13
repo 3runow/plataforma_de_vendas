@@ -7,9 +7,11 @@ async function handle(req: NextRequest) {
     const { handler: elysiaHandler } = await import(
       "../../../../server/server"
     );
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return await elysiaHandler(req as any);
-  } catch (e: any) {
-    const message = e?.message || "Erro interno";
+  } catch (e) {
+    const error = e as Error;
+    const message = error?.message || "Erro interno";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
