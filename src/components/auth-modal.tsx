@@ -118,7 +118,7 @@ export default function AuthModal({
         body: JSON.stringify(data),
       });
 
-      let responseData: any = null;
+      let responseData: { message?: string; error?: string } | null = null;
       const contentType = res.headers.get("content-type") || "";
       if (contentType.includes("application/json")) {
         responseData = await res.json();

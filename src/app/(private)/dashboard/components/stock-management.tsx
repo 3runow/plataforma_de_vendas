@@ -94,7 +94,7 @@ export default function StockManagement({ products }: StockManagementProps) {
       setSelectedProduct(null);
       setQuantity(0);
       router.refresh();
-    } catch (error) {
+    } catch {
       toast({
         title: "Erro ao atualizar estoque",
         description: "Ocorreu um erro ao tentar atualizar o estoque.",

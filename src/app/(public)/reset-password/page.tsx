@@ -63,7 +63,7 @@ export default function ResetPasswordPage() {
         } else {
           setError("Token de recuperação expirado ou inválido");
         }
-      } catch (err) {
+      } catch {
         setError("Erro ao validar token");
       } finally {
         setValidatingToken(false);

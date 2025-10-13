@@ -13,10 +13,6 @@ export default function ProductsSection() {
   const { addToCart } = useCart();
   const { toast } = useToast();
 
-  useEffect(() => {
-    fetchProducts();
-  }, []);
-
   const fetchProducts = async () => {
     try {
       setLoading(true);
@@ -53,6 +49,11 @@ export default function ProductsSection() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchProducts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleAddToCart = (product: Product, quantity: number) => {
     addToCart(product, quantity);

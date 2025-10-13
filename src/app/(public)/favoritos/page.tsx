@@ -31,7 +31,22 @@ export default function FavoritosPage() {
       });
   }, []);
 
-  const handleAddToCart = (product: any, quantity: number) => {
+  const handleAddToCart = (
+    product: {
+      id: number;
+      name: string;
+      description: string;
+      price: number;
+      stock: number;
+      imageUrl?: string | null;
+      discount?: number | null;
+      isNew?: boolean;
+      isFeatured?: boolean;
+      createdAt: Date;
+      updatedAt: Date;
+    },
+    quantity: number
+  ) => {
     addToCart(product, quantity);
   };
 

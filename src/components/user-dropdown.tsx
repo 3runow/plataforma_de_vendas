@@ -2,16 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
-import {
-  User,
-  LogOut,
-  Settings,
-  MapPin,
-  Package,
-  CreditCard,
-  LayoutDashboard,
-  Heart,
-} from "lucide-react";
+import { User, LogOut, Package, LayoutDashboard, Heart } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
