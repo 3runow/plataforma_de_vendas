@@ -8,16 +8,17 @@ interface CartItemProps {
   price: number;
   quantity: number;
   image: string;
+  maxQuantity?: number;
   onUpdateQuantity: (id: string, newQuantity: number) => void;
   onRemove: (id: string) => void;
 }
-
 export default function CartItem({
   id,
   name,
   price,
   quantity,
   image,
+  maxQuantity = 99,
   onUpdateQuantity,
   onRemove,
 }: CartItemProps) {
@@ -52,6 +53,7 @@ export default function CartItem({
             size="icon"
             className="h-7 w-7"
             onClick={() => onUpdateQuantity(id, quantity + 1)}
+            disabled={quantity >= maxQuantity}
           >
             <Plus className="h-4 w-4" />
           </Button>

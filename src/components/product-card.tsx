@@ -156,15 +156,27 @@ export default function ProductCard({
               size="sm"
               onClick={() => setQuantity(Math.max(1, quantity - 1))}
               className="h-9 w-9 p-0"
+              disabled={quantity <= 1}
             >
               -
             </Button>
-            <span className="w-12 text-center text-sm">{quantity}</span>
+            <input
+              type="number"
+              min={1}
+              max={product.stock}
+              value={quantity}
+              onChange={e => {
+                const val = Math.max(1, Math.min(product.stock, Number(e.target.value)));
+                setQuantity(val);
+              }}
+              className="w-12 text-center text-sm border-0 focus:ring-0 focus:outline-none"
+            />
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
               className="h-9 w-9 p-0"
+              disabled={quantity >= product.stock}
             >
               +
             </Button>

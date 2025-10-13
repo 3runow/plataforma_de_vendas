@@ -16,7 +16,13 @@ import CartItem from "./cart-item";
 import CartSummary from "./cart-summary";
 import { useCart } from "../contexts/cart-context";
 
-export default function CartSidebar() {
+import { Product } from "../../types/types";
+
+interface CartSidebarProps {
+  products: Product[];
+}
+
+export default function CartSidebar({ products = [] }: CartSidebarProps) {
   const {
     cartItems,
     updateQuantity,
@@ -74,20 +80,26 @@ export default function CartSidebar() {
               <p className="text-sm">Adicione produtos para começar</p>
             </div>
           ) : (
-            cartItems.map((item) => (
-              <CartItem
-                key={item.id}
-                id={item.productId.toString()}
-                name={item.name}
-                price={item.price}
-                quantity={item.quantity}
-                image={item.image}
-                onUpdateQuantity={(_id, qty) =>
-                  updateQuantity(item.productId, qty)
-                }
-                onRemove={() => removeFromCart(item.productId)}
-              />
-            ))
+            cartItems.map((item) => {
+              // Buscar o produto original para saber o estoque
+              const product = products?.find((p) => p.id === item.productId);
+              const maxQuantity = product?.stock ?? 99;
+              return (
+                <CartItem
+                  key={item.id}
+                  id={item.productId.toString()}
+                  name={item.name}
+                  price={item.price}
+                  quantity={item.quantity}
+                  image={item.image}
+                  maxQuantity={maxQuantity}
+                  onUpdateQuantity={(_id: string, qty: number) =>
+                    updateQuantity(item.productId, qty)
+                  }
+                  onRemove={() => removeFromCart(item.productId)}
+                />
+              );
+            })
           )}
         </div>
 

@@ -44,11 +44,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const addToCart = (product: Product, quantity: number) => {
     setCartItems((prev) => {
       const existingItem = prev.find((item) => item.productId === product.id);
-
+      const estoque = product.stock;
       if (existingItem) {
+        const novaQuantidade = Math.min(existingItem.quantity + quantity, estoque);
         return prev.map((item) =>
           item.productId === product.id
-            ? { ...item, quantity: item.quantity + quantity }
+            ? { ...item, quantity: novaQuantidade }
             : item
         );
       }
@@ -64,7 +65,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           productId: product.id,
           name: product.name,
           price: finalPrice,
-          quantity,
+          quantity: Math.min(quantity, estoque),
           image: product.imageUrl || "/placeholder.png",
           discount: product.discount || 0,
         },
@@ -77,11 +78,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
 
   const updateQuantity = (productId: number, quantity: number) => {
-    if (quantity === 0) {
+    if (quantity <= 0) {
       removeFromCart(productId);
       return;
     }
-
     setCartItems((prev) =>
       prev.map((item) =>
         item.productId === productId ? { ...item, quantity } : item
