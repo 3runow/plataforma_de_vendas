@@ -87,10 +87,9 @@ export default function FavoritosPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <Heart className="h-8 w-8 text-red-500 fill-current" />
-            <h1 className="text-3xl font-bold text-gray-900">Meus Favoritos</h1>
-          </div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Meus Favoritos
+          </h1>
           <p className="text-gray-600">
             {favorites.length > 0
               ? `Você tem ${favorites.length} ${

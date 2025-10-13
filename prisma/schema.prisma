@@ -14,24 +14,26 @@ datasource db {
 }
 
 model User {
-  id        Int       @id @default(autoincrement())
-  name      String
-  email     String    @unique
-  password  String
-  cpf       String?   @unique // CPF do usuário
-  phone     String?   // Telefone de contato
-  role      String    @default("customer") // valores possíveis: "customer", "admin"
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  orders    Order[]
-  addresses Address[]
+  id               Int       @id @default(autoincrement())
+  name             String
+  email            String    @unique
+  password         String
+  cpf              String?   @unique // CPF do usuário
+  phone            String?   // Telefone de contato
+  role             String    @default("customer") // valores possíveis: "customer", "admin"
+  resetToken       String?   // Token para recuperação de senha
+  resetTokenExpiry DateTime? // Expiração do token de recuperação
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  orders           Order[]
+  addresses        Address[]
 }
 
 model Address {
   id            Int      @id @default(autoincrement())
   userId        Int
   recipientName String   // Nome do destinatário
-  cep           String   // CEP (Código de Endereçamento Postal)
+  cep           String   // CEP
   street        String   // Rua/Avenida
   number        String   // Número
   complement    String?  // Complemento (opcional)

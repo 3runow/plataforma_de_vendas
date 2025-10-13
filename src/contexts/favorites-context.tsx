@@ -57,7 +57,7 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
         // Usar setTimeout para evitar chamar toast durante render
         setTimeout(() => {
           toast({
-            title: "Adicionado aos favoritos! ❤️",
+            title: "Adicionado aos favoritos!",
             description: `${product.name} foi adicionado aos seus favoritos.`,
             duration: 2000,
           });
