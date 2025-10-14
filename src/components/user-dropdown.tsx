@@ -117,11 +117,13 @@ export default function UserDropdown() {
             <DropdownMenuSeparator />
           </>
         )}
-        <DropdownMenuItem>
+        <DropdownMenuItem onClick={() => router.push("/minha-conta")}>
           <User className="mr-2 h-4 w-4" />
-          <span>Perfil</span>
+          <span>Minha Conta</span>
         </DropdownMenuItem>
-        <DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => router.push("/minha-conta?tab=orders")}
+        >
           <Package className="mr-2 h-4 w-4" />
           <span>Meus Pedidos</span>
         </DropdownMenuItem>
