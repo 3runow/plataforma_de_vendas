@@ -5,7 +5,7 @@ import { isAuthenticated } from "@/lib/auth";
 import UserDropdown from "./user-dropdown";
 import LoginButton from "./login-button";
 import MobileMenu from "./mobile-menu";
-import CartSidebar from "./cart-sidebar";
+import CartSidebarWrapper from "./cart-sidebar-wrapper";
 
 export default async function Header() {
   const userIsAuthenticated = await isAuthenticated();
@@ -43,7 +43,7 @@ export default async function Header() {
         </nav>
 
         <div className="flex items-center gap-2 md:gap-4 ml-auto">
-          <CartSidebar />
+          <CartSidebarWrapper />
           {userIsAuthenticated ? <UserDropdown /> : <LoginButton />}
         </div>
       </div>
