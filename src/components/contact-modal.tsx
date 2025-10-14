@@ -89,23 +89,23 @@ export default function ContactModal() {
           </p>
         </DialogTrigger>
 
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="font-bold text-lg">
+            <DialogTitle className="font-bold text-lg sm:text-xl">
               Entre em Contato
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-sm">
               Preencha o formulário abaixo e entraremos em contato em breve.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 mb-4">
-            <div className="flex items-center gap-3 text-sm">
-              <Mail className="h-4 w-4 text-[#022044]" />
-              <span>devlucasbarros@gmail.com</span>
+          <div className="space-y-3 sm:space-y-4 mb-4">
+            <div className="flex items-center gap-3 text-xs sm:text-sm">
+              <Mail className="h-4 w-4 text-[#022044] flex-shrink-0" />
+              <span className="break-all">devlucasbarros@gmail.com</span>
             </div>
-            <div className="flex items-center gap-3 text-sm">
-              <WhatsAppLogo className="h-4 w-4" />
+            <div className="flex items-center gap-3 text-xs sm:text-sm">
+              <WhatsAppLogo className="h-4 w-4 flex-shrink-0" />
               <span>(13) 99622-2102</span>
             </div>
           </div>

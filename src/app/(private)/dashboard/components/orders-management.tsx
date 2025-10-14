@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { ShoppingCart } from "lucide-react";
 
 interface Order {
   id: number;
@@ -73,6 +74,14 @@ export function OrdersManagement({
       year: "numeric",
       hour: "2-digit",
       minute: "2-digit",
+    }).format(new Date(date));
+  };
+
+  const formatDateShort = (date: Date) => {
+    return new Intl.DateTimeFormat("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "2-digit",
     }).format(new Date(date));
   };
 
@@ -126,16 +135,19 @@ export function OrdersManagement({
 
   return (
     <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
+      <CardHeader className="px-3 py-3 sm:px-6 sm:py-6">
+        <div className="flex flex-col gap-3">
           <div>
-            <CardTitle>Gerenciamento de Pedidos</CardTitle>
-            <CardDescription>
+            <CardTitle className="flex items-center gap-2 text-sm sm:text-base md:text-lg mb-1">
+              <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" />
+              Gerenciamento de Pedidos
+            </CardTitle>
+            <CardDescription className="text-xs sm:text-sm">
               Visualize e gerencie todos os pedidos da plataforma
             </CardDescription>
           </div>
           <Select value={filterStatus} onValueChange={setFilterStatus}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-full sm:w-[180px] text-xs sm:text-sm h-8 sm:h-10">
               <SelectValue placeholder="Filtrar por status" />
             </SelectTrigger>
             <SelectContent>
@@ -149,86 +161,173 @@ export function OrdersManagement({
           </Select>
         </div>
       </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>ID</TableHead>
-              <TableHead>Cliente</TableHead>
-              <TableHead>Data</TableHead>
-              <TableHead>Itens</TableHead>
-              <TableHead>Total</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredOrders.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={7}
-                  className="text-center text-muted-foreground"
-                >
-                  Nenhum pedido encontrado
-                </TableCell>
-              </TableRow>
-            ) : (
-              filteredOrders.map((order) => (
-                <TableRow key={order.id}>
-                  <TableCell className="font-medium">#{order.id}</TableCell>
-                  <TableCell>
-                    <div>
-                      <p className="font-medium">{order.user.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {order.user.email}
-                      </p>
-                    </div>
-                  </TableCell>
-                  <TableCell>{formatDate(order.createdAt)}</TableCell>
-                  <TableCell>
-                    <div className="text-sm">
-                      {order.items.map((item, idx) => (
-                        <div
-                          key={idx}
-                          className="text-xs text-muted-foreground"
-                        >
-                          {item.quantity}x {item.product.name}
+      <CardContent className="p-0">
+        {filteredOrders.length === 0 ? (
+          <div className="text-center py-6 sm:py-8 text-muted-foreground text-xs sm:text-sm px-3">
+            Nenhum pedido encontrado
+          </div>
+        ) : (
+          <>
+            {/* Desktop/Tablet - Tabela (lg e acima) */}
+            <div className="hidden lg:block overflow-x-auto px-6 pb-6">
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-16">ID</TableHead>
+                      <TableHead>Cliente</TableHead>
+                      <TableHead>Data</TableHead>
+                      <TableHead>Itens</TableHead>
+                      <TableHead>Total</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredOrders.map((order) => (
+                      <TableRow key={order.id}>
+                        <TableCell className="font-medium">#{order.id}</TableCell>
+                        <TableCell>
+                          <div>
+                            <p className="font-medium text-sm">{order.user.name}</p>
+                            <p className="text-xs text-muted-foreground truncate max-w-[200px]">
+                              {order.user.email}
+                            </p>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {formatDate(order.createdAt)}
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm max-w-[180px]">
+                            {order.items.slice(0, 2).map((item, idx) => (
+                              <div key={idx} className="text-xs text-muted-foreground truncate">
+                                {item.quantity}x {item.product.name}
+                              </div>
+                            ))}
+                            {order.items.length > 2 && (
+                              <div className="text-xs text-muted-foreground">
+                                +{order.items.length - 2} itens
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="font-bold text-sm">
+                          {formatCurrency(order.total)}
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={`${getStatusColor(order.status)} text-xs`}>
+                            {getStatusLabel(order.status)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Select
+                            value={order.status}
+                            onValueChange={(value) => handleStatusChange(order.id, value)}
+                          >
+                            <SelectTrigger className="w-[140px] text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="pending">Pendente</SelectItem>
+                              <SelectItem value="processing">Processando</SelectItem>
+                              <SelectItem value="shipped">Enviado</SelectItem>
+                              <SelectItem value="delivered">Entregue</SelectItem>
+                              <SelectItem value="cancelled">Cancelado</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+
+            {/* Mobile/Tablet - Cards (abaixo de lg) */}
+            <div className="lg:hidden space-y-3 px-3 pb-3">
+              {filteredOrders.map((order) => (
+                <Card key={order.id} className="shadow-sm">
+                  <CardContent className="p-3 sm:p-4">
+                    <div className="space-y-2">
+                      {/* Cabeçalho */}
+                      <div className="flex justify-between items-start gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-bold text-xs sm:text-sm">
+                              Pedido #{order.id}
+                            </span>
+                            <Badge className={`${getStatusColor(order.status)} text-[10px] sm:text-xs`}>
+                              {getStatusLabel(order.status)}
+                            </Badge>
+                          </div>
+                          <p className="text-xs sm:text-sm text-muted-foreground">
+                            {formatDateShort(order.createdAt)}
+                          </p>
                         </div>
-                      ))}
+                        <div className="text-right">
+                          <p className="font-bold text-sm sm:text-base text-primary">
+                            {formatCurrency(order.total)}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Cliente */}
+                      <div className="pt-2 border-t">
+                        <p className="text-xs text-muted-foreground">Cliente</p>
+                        <p className="font-medium text-xs sm:text-sm">{order.user.name}</p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {order.user.email}
+                        </p>
+                      </div>
+
+                      {/* Itens */}
+                      <div className="pt-2 border-t">
+                        <p className="text-xs text-muted-foreground mb-1">Itens</p>
+                        <div className="space-y-0.5">
+                          {order.items.slice(0, 3).map((item, idx) => (
+                            <div key={idx} className="text-xs flex justify-between">
+                              <span className="truncate flex-1">
+                                {item.quantity}x {item.product.name}
+                              </span>
+                              <span className="ml-2 text-muted-foreground">
+                                {formatCurrency(item.product.price * item.quantity)}
+                              </span>
+                            </div>
+                          ))}
+                          {order.items.length > 3 && (
+                            <div className="text-xs text-muted-foreground">
+                              +{order.items.length - 3} item(ns) a mais
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Ações */}
+                      <div className="pt-2 border-t">
+                        <Select
+                          value={order.status}
+                          onValueChange={(value) => handleStatusChange(order.id, value)}
+                        >
+                          <SelectTrigger className="w-full text-xs sm:text-sm h-8 sm:h-9">
+                            <SelectValue placeholder="Alterar status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pending">Pendente</SelectItem>
+                            <SelectItem value="processing">Processando</SelectItem>
+                            <SelectItem value="shipped">Enviado</SelectItem>
+                            <SelectItem value="delivered">Entregue</SelectItem>
+                            <SelectItem value="cancelled">Cancelado</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
-                  </TableCell>
-                  <TableCell className="font-bold">
-                    {formatCurrency(order.total)}
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={getStatusColor(order.status)}>
-                      {getStatusLabel(order.status)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Select
-                      value={order.status}
-                      onValueChange={(value) =>
-                        handleStatusChange(order.id, value)
-                      }
-                    >
-                      <SelectTrigger className="w-[140px]">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="pending">Pendente</SelectItem>
-                        <SelectItem value="processing">Processando</SelectItem>
-                        <SelectItem value="shipped">Enviado</SelectItem>
-                        <SelectItem value="delivered">Entregue</SelectItem>
-                        <SelectItem value="cancelled">Cancelado</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </>
+        )}
       </CardContent>
     </Card>
   );

@@ -232,25 +232,32 @@ export function ProductsManagement({
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <CardTitle>Gerenciamento de Produtos</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-lg sm:text-xl">
+              Gerenciamento de Produtos
+            </CardTitle>
+            <CardDescription className="text-sm">
               Adicione, edite ou remova produtos do catálogo
             </CardDescription>
           </div>
-          <Button onClick={() => setIsAddDialogOpen(true)}>
+          <Button
+            onClick={() => setIsAddDialogOpen(true)}
+            className="w-full sm:w-auto"
+          >
             <Plus className="mr-2 h-4 w-4" />
             Adicionar Produto
           </Button>
         </div>
       </CardHeader>
-      <CardContent>
-        <ProductsTable
-          products={products}
-          onEdit={openEditDialog}
-          onDelete={handleDeleteProduct}
-        />
+      <CardContent className="p-0 sm:p-6">
+        <div className="px-4 sm:px-0">
+          <ProductsTable
+            products={products}
+            onEdit={openEditDialog}
+            onDelete={handleDeleteProduct}
+          />
+        </div>
 
         <ProductFormDialog
           isOpen={isAddDialogOpen}

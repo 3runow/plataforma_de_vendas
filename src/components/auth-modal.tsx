@@ -213,16 +213,16 @@ export default function AuthModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChangeAction}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold">
+          <DialogTitle className="text-xl sm:text-2xl font-bold">
             {isForgotPassword
               ? "Recuperar Senha"
               : isLogin
                 ? "Login"
                 : "Criar Conta"}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-sm">
             {isForgotPassword
               ? "Digite seu email para receber instruções de recuperação"
               : isLogin

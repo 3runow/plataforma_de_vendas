@@ -51,16 +51,19 @@ export default async function MinhaContaPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+        <div className="mb-6 sm:mb-8">
           <Link href="/">
             <Button variant="ghost" className="mb-4 -ml-2">
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Voltar para a loja
+              <span className="hidden sm:inline">Voltar para a loja</span>
+              <span className="sm:hidden">Voltar</span>
             </Button>
           </Link>
-          <h1 className="text-3xl font-bold text-gray-900">Minha Conta</h1>
-          <p className="text-gray-600 mt-2">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+            Minha Conta
+          </h1>
+          <p className="text-sm sm:text-base text-gray-600 mt-2">
             Gerencie suas informações pessoais, endereços e pedidos
           </p>
         </div>

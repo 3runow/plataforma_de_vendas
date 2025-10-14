@@ -27,11 +27,13 @@ export function MetricCard({
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        <CardTitle className="text-xs sm:text-sm font-medium">
+          {title}
+        </CardTitle>
         <Icon className={cn("h-4 w-4", iconColor)} />
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
+        <div className="text-xl sm:text-2xl font-bold">{value}</div>
         {description && (
           <p className="text-xs text-muted-foreground mt-1">{description}</p>
         )}
@@ -46,7 +48,8 @@ export function MetricCard({
               {trend.isPositive ? "↑" : "↓"} {Math.abs(trend.value)}%
             </span>
             <span className="text-xs text-muted-foreground ml-1">
-              vs mês anterior
+              <span className="hidden sm:inline">vs mês anterior</span>
+              <span className="sm:hidden">vs mês ant.</span>
             </span>
           </div>
         )}

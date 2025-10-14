@@ -243,17 +243,20 @@ export default async function Dashboard() {
     });
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-50 to-gray-100 p-4 md:p-8">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-50 to-gray-100 p-2 sm:p-4 md:p-8">
         <div className="max-w-7xl mx-auto">
-          <div className="mb-8">
+          <div className="mb-6 sm:mb-8">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
               <div>
-                <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-2">
                   Dashboard Administrativo
                 </h1>
-                <p className="text-gray-600 flex items-center gap-2">
+                <p className="text-sm sm:text-base text-gray-600 flex items-center gap-2">
                   <span className="inline-block w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                  Bem-vindo, {user.name} •{" "}
+                  <span className="hidden sm:inline">
+                    Bem-vindo, {user.name} •{" "}
+                  </span>
+                  <span className="sm:hidden">Bem-vindo • </span>
                   {new Date().toLocaleDateString("pt-BR", {
                     weekday: "long",
                     year: "numeric",
@@ -265,18 +268,19 @@ export default async function Dashboard() {
               <Link href="/">
                 <Button
                   variant="outline"
-                  className="gap-2 shadow-sm hover:shadow-md transition-shadow"
+                  className="gap-2 shadow-sm hover:shadow-md transition-shadow w-full sm:w-auto"
                 >
                   <Home className="h-4 w-4" />
-                  Voltar à Loja
+                  <span className="hidden sm:inline">Voltar à Loja</span>
+                  <span className="sm:hidden">Loja</span>
                 </Button>
               </Link>
             </div>
             {lowStockCount > 0 && (
-              <div className="mt-4 p-4 bg-gradient-to-r from-orange-50 to-yellow-50 border border-orange-200 rounded-lg flex items-start gap-3 shadow-sm">
+              <div className="mt-4 p-3 sm:p-4 bg-gradient-to-r from-orange-50 to-yellow-50 border border-orange-200 rounded-lg flex items-start gap-3 shadow-sm">
                 <AlertTriangle className="h-5 w-5 text-orange-600 flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-sm text-orange-900 font-medium">
+                  <p className="text-xs sm:text-sm text-orange-900 font-medium">
                     <strong>Atenção:</strong> {lowStockCount} produto
                     {lowStockCount > 1 ? "s" : ""} com estoque baixo (menos de
                     10 unidades)
@@ -290,29 +294,30 @@ export default async function Dashboard() {
             )}
           </div>
 
-          <Tabs defaultValue="overview" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5 lg:w-auto bg-white shadow-sm p-1 rounded-lg">
+          <Tabs defaultValue="overview" className="space-y-4 sm:space-y-6">
+            <TabsList className="grid w-full grid-cols-5 bg-white shadow-sm p-1 rounded-lg h-auto">
               <TabsTrigger
                 value="overview"
-                className="data-[state=active]:bg-purple-600 data-[state=active]:text-white transition-all"
+                className="data-[state=active]:bg-purple-600 data-[state=active]:text-white transition-all text-xs sm:text-sm py-2 sm:py-2.5"
               >
-                Visão Geral
+                <span className="hidden sm:inline">Visão Geral</span>
+                <span className="sm:hidden">Visão</span>
               </TabsTrigger>
               <TabsTrigger
                 value="products"
-                className="data-[state=active]:bg-purple-600 data-[state=active]:text-white transition-all"
+                className="data-[state=active]:bg-purple-600 data-[state=active]:text-white transition-all text-xs sm:text-sm py-2 sm:py-2.5"
               >
                 Produtos
               </TabsTrigger>
               <TabsTrigger
                 value="stock"
-                className="relative data-[state=active]:bg-purple-600 data-[state=active]:text-white transition-all"
+                className="relative data-[state=active]:bg-purple-600 data-[state=active]:text-white transition-all text-xs sm:text-sm py-2 sm:py-2.5"
               >
                 Estoque
                 {lowStockCount > 0 && (
                   <Badge
                     variant="destructive"
-                    className="ml-2 px-1.5 py-0 text-xs animate-pulse"
+                    className="ml-1 sm:ml-2 px-1 sm:px-1.5 py-0 text-xs animate-pulse"
                   >
                     {lowStockCount}
                   </Badge>
@@ -320,19 +325,20 @@ export default async function Dashboard() {
               </TabsTrigger>
               <TabsTrigger
                 value="orders"
-                className="data-[state=active]:bg-purple-600 data-[state=active]:text-white transition-all"
+                className="data-[state=active]:bg-purple-600 data-[state=active]:text-white transition-all text-xs sm:text-sm py-2 sm:py-2.5"
               >
                 Pedidos
               </TabsTrigger>
               <TabsTrigger
                 value="users"
-                className="data-[state=active]:bg-purple-600 data-[state=active]:text-white transition-all"
+                className="data-[state=active]:bg-purple-600 data-[state=active]:text-white transition-all text-xs sm:text-sm py-2 sm:py-2.5"
               >
-                Usuários
+                <span className="hidden sm:inline">Usuários</span>
+                <span className="sm:hidden">Users</span>
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="overview" className="space-y-6">
+            <TabsContent value="overview" className="space-y-4 sm:space-y-6">
               <DashboardOverview
                 totalRevenue={totalRevenue}
                 pendingOrders={pendingOrdersCount}
@@ -348,22 +354,22 @@ export default async function Dashboard() {
               />
             </TabsContent>
 
-            <TabsContent value="products" className="space-y-6">
+            <TabsContent value="products" className="space-y-4 sm:space-y-6">
               <ProductsManagement products={products} />
             </TabsContent>
 
-            <TabsContent value="stock" className="space-y-6">
+            <TabsContent value="stock" className="space-y-4 sm:space-y-6">
               {lowStockProducts.length > 0 && (
                 <StockAlerts products={lowStockProducts} />
               )}
               <StockManagement products={products} />
             </TabsContent>
 
-            <TabsContent value="orders" className="space-y-6">
+            <TabsContent value="orders" className="space-y-4 sm:space-y-6">
               <OrdersManagement orders={orders} />
             </TabsContent>
 
-            <TabsContent value="users" className="space-y-6">
+            <TabsContent value="users" className="space-y-4 sm:space-y-6">
               <UsersManagement users={users} />
             </TabsContent>
           </Tabs>

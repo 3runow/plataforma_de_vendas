@@ -1,7 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { AddressCard } from "./address-card";
@@ -25,8 +31,9 @@ interface AddressesTabProps {
   userId: number;
 }
 
-export function AddressesTab({ addresses: initialAddresses, userId }: AddressesTabProps) {
-  const [addresses, setAddresses] = useState(initialAddresses);
+export function AddressesTab({
+  addresses: initialAddresses,
+}: AddressesTabProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
 
@@ -49,30 +56,30 @@ export function AddressesTab({ addresses: initialAddresses, userId }: AddressesT
     <>
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <CardTitle>Endereços de Entrega</CardTitle>
               <CardDescription>
                 Gerencie seus endereços de entrega
               </CardDescription>
             </div>
-            <Button onClick={handleAddAddress}>
+            <Button onClick={handleAddAddress} className="w-full sm:w-auto">
               <Plus className="mr-2 h-4 w-4" />
               Novo Endereço
             </Button>
           </div>
         </CardHeader>
         <CardContent>
-          {addresses.length === 0 ? (
+          {initialAddresses.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
-              <p>Você ainda não cadastrou nenhum endereço.</p>
-              <Button onClick={handleAddAddress} className="mt-4">
+              <p className="mb-4">Você ainda não cadastrou nenhum endereço.</p>
+              <Button onClick={handleAddAddress} className="w-full sm:w-auto">
                 Adicionar Primeiro Endereço
               </Button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {addresses.map((address) => (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {initialAddresses.map((address) => (
                 <AddressCard
                   key={address.id}
                   address={address}

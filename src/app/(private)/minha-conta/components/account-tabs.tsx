@@ -73,21 +73,35 @@ export function AccountTabs({ user }: AccountTabsProps) {
 
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-      <TabsList className="grid w-full grid-cols-4 mb-8">
-        <TabsTrigger value="personal" className="flex items-center gap-2">
+      <TabsList className="grid w-full grid-cols-4 mb-6 sm:mb-8 h-auto">
+        <TabsTrigger
+          value="personal"
+          className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-2 sm:py-2.5 text-xs sm:text-sm"
+        >
           <User className="h-4 w-4" />
+          <span className="sm:hidden">Dados</span>
           <span className="hidden sm:inline">Dados Pessoais</span>
         </TabsTrigger>
-        <TabsTrigger value="addresses" className="flex items-center gap-2">
+        <TabsTrigger
+          value="addresses"
+          className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-2 sm:py-2.5 text-xs sm:text-sm"
+        >
           <MapPin className="h-4 w-4" />
-          <span className="hidden sm:inline">Endereços</span>
+          <span>Endereços</span>
         </TabsTrigger>
-        <TabsTrigger value="orders" className="flex items-center gap-2">
+        <TabsTrigger
+          value="orders"
+          className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-2 sm:py-2.5 text-xs sm:text-sm"
+        >
           <ShoppingBag className="h-4 w-4" />
-          <span className="hidden sm:inline">Pedidos</span>
+          <span>Pedidos</span>
         </TabsTrigger>
-        <TabsTrigger value="security" className="flex items-center gap-2">
+        <TabsTrigger
+          value="security"
+          className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-2 sm:py-2.5 text-xs sm:text-sm"
+        >
           <Lock className="h-4 w-4" />
+          <span className="sm:hidden">Senha</span>
           <span className="hidden sm:inline">Segurança</span>
         </TabsTrigger>
       </TabsList>

@@ -31,23 +31,25 @@ export function QuickStats({ stats }: QuickStatsProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Estatísticas Rápidas</CardTitle>
+        <CardTitle className="text-lg sm:text-xl">
+          Estatísticas Rápidas
+        </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
           {stats.map((stat, index) => (
             <div
               key={index}
-              className="flex flex-col space-y-2 p-4 bg-gray-50 rounded-lg"
+              className="flex flex-col space-y-2 p-3 sm:p-4 bg-gray-50 rounded-lg"
             >
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">
+                <span className="text-xs sm:text-sm text-muted-foreground">
                   {stat.label}
                 </span>
                 {getTrendIcon(stat.change)}
               </div>
               <div className="space-y-1">
-                <p className="text-2xl font-bold">{stat.value}</p>
+                <p className="text-xl sm:text-2xl font-bold">{stat.value}</p>
                 {stat.change !== undefined && stat.changeLabel && (
                   <p
                     className={cn(

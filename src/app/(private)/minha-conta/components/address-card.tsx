@@ -56,7 +56,8 @@ export function AddressCard({ address, onEdit, onUpdate }: AddressCardProps) {
     } catch (error) {
       toast({
         title: "Erro",
-        description: error instanceof Error ? error.message : "Erro ao excluir endereço",
+        description:
+          error instanceof Error ? error.message : "Erro ao excluir endereço",
         variant: "destructive",
       });
     } finally {
@@ -86,7 +87,9 @@ export function AddressCard({ address, onEdit, onUpdate }: AddressCardProps) {
       toast({
         title: "Erro",
         description:
-          error instanceof Error ? error.message : "Erro ao definir endereço padrão",
+          error instanceof Error
+            ? error.message
+            : "Erro ao definir endereço padrão",
         variant: "destructive",
       });
     } finally {
@@ -97,13 +100,13 @@ export function AddressCard({ address, onEdit, onUpdate }: AddressCardProps) {
   return (
     <Card className={address.isDefault ? "border-blue-500 border-2" : ""}>
       <CardContent className="pt-6">
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <MapPin className="h-5 w-5 text-gray-500" />
-            <h3 className="font-semibold">{address.recipientName}</h3>
+        <div className="flex items-start justify-between mb-4 gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <MapPin className="h-5 w-5 text-gray-500 flex-shrink-0" />
+            <h3 className="font-semibold truncate">{address.recipientName}</h3>
           </div>
           {address.isDefault && (
-            <Badge className="bg-blue-500">
+            <Badge className="bg-blue-500 flex-shrink-0">
               <Star className="h-3 w-3 mr-1" />
               Padrão
             </Badge>
@@ -111,49 +114,61 @@ export function AddressCard({ address, onEdit, onUpdate }: AddressCardProps) {
         </div>
 
         <div className="space-y-1 text-sm text-gray-600 mb-4">
-          <p>
+          <p className="break-words">
             {address.street}, {address.number}
             {address.complement && ` - ${address.complement}`}
           </p>
-          <p>
+          <p className="break-words">
             {address.neighborhood} - {address.city}/{address.state}
           </p>
           <p>CEP: {address.cep}</p>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           {!address.isDefault && (
             <Button
               variant="outline"
               size="sm"
               onClick={handleSetDefault}
               disabled={isSettingDefault}
-              className="flex-1"
+              className="flex-1 w-full sm:w-auto"
             >
               {isSettingDefault ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
                 <Star className="mr-2 h-4 w-4" />
               )}
-              Definir como Padrão
+              <span className="hidden sm:inline">Definir como Padrão</span>
+              <span className="sm:hidden">Padrão</span>
             </Button>
           )}
-          <Button variant="outline" size="sm" onClick={onEdit}>
-            <Edit className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleDelete}
-            disabled={isDeleting}
-            className="text-red-600 hover:text-red-700"
-          >
-            {isDeleting ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Trash2 className="h-4 w-4" />
-            )}
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onEdit}
+              className="flex-1 sm:flex-none"
+            >
+              <Edit className="h-4 w-4 sm:mr-0" />
+              <span className="ml-2 sm:hidden">Editar</span>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="text-red-600 hover:text-red-700 flex-1 sm:flex-none"
+            >
+              {isDeleting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 sm:mr-0" />
+                  <span className="ml-2 sm:hidden">Excluir</span>
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>
