@@ -1,16 +1,18 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import jwt from "jsonwebtoken";
 import { prisma } from "@/lib/prisma";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { DashboardOverview } from "./components/dashboard-overview";
 import { ProductsManagement } from "./components/products-management";
 import { OrdersManagement } from "./components/orders-management";
 import { UsersManagement } from "./components/users-management";
 import StockManagement from "./components/stock-management";
 import StockAlerts from "./components/stock-alerts";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Home, ArrowLeft } from "lucide-react";
 
 interface OrderWithRelations {
   id: number;
@@ -106,45 +108,228 @@ export default async function Dashboard() {
     const totalProducts = products.length;
     const totalUsers = users.length;
 
+    // Prepara dados para o gráfico de vendas (últimos 30 dias)
+    const last30Days = Array.from({ length: 30 }, (_, i) => {
+      const date = new Date();
+      date.setDate(date.getDate() - (29 - i));
+      date.setHours(0, 0, 0, 0);
+      return date;
+    });
+
+    const salesData = last30Days.map((date) => {
+      const dayOrders = (orders as OrderWithRelations[]).filter((order) => {
+        const orderDate = new Date(order.createdAt);
+        orderDate.setHours(0, 0, 0, 0);
+        return (
+          orderDate.getTime() === date.getTime() && order.status !== "cancelled"
+        );
+      });
+
+      return {
+        date: date.toISOString(),
+        revenue: dayOrders.reduce((sum, order) => sum + order.total, 0),
+        orders: dayOrders.length,
+      };
+    });
+
+    // Calcula produtos mais vendidos
+    const productSales = new Map<
+      number,
+      { name: string; quantity: number; revenue: number }
+    >();
+
+    (orders as OrderWithRelations[])
+      .filter((order) => order.status !== "cancelled")
+      .forEach((order) => {
+        order.items.forEach((item) => {
+          const existing = productSales.get(item.product.id);
+          if (existing) {
+            existing.quantity += item.quantity;
+            existing.revenue += item.product.price * item.quantity;
+          } else {
+            productSales.set(item.product.id, {
+              name: item.product.name,
+              quantity: item.quantity,
+              revenue: item.product.price * item.quantity,
+            });
+          }
+        });
+      });
+
+    const topProducts = Array.from(productSales.values())
+      .sort((a, b) => b.quantity - a.quantity)
+      .slice(0, 5);
+
+    // Calcula distribuição de status dos pedidos
+    const statusCount = new Map<string, number>();
+    (orders as OrderWithRelations[]).forEach((order) => {
+      statusCount.set(order.status, (statusCount.get(order.status) || 0) + 1);
+    });
+
+    const statusLabels: Record<string, string> = {
+      pending: "Pendente",
+      processing: "Processando",
+      shipped: "Enviado",
+      delivered: "Entregue",
+      cancelled: "Cancelado",
+    };
+
+    const statusData = Array.from(statusCount.entries()).map(
+      ([status, count]) => ({
+        name: status,
+        value: count,
+        label: statusLabels[status] || status,
+      })
+    );
+
+    // Calcula tendências (comparado com o mês anterior)
+    const now = new Date();
+    const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+
+    const currentMonthRevenue = (orders as OrderWithRelations[])
+      .filter(
+        (order) =>
+          new Date(order.createdAt) >= currentMonthStart &&
+          order.status !== "cancelled"
+      )
+      .reduce((sum, order) => sum + order.total, 0);
+
+    const lastMonthRevenue = (orders as OrderWithRelations[])
+      .filter(
+        (order) =>
+          new Date(order.createdAt) >= lastMonthStart &&
+          new Date(order.createdAt) <= lastMonthEnd &&
+          order.status !== "cancelled"
+      )
+      .reduce((sum, order) => sum + order.total, 0);
+
+    const revenueTrend =
+      lastMonthRevenue > 0
+        ? ((currentMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100
+        : 0;
+
+    const currentMonthPending = (orders as OrderWithRelations[]).filter(
+      (order) =>
+        new Date(order.createdAt) >= currentMonthStart &&
+        order.status === "pending"
+    ).length;
+
+    const lastMonthPending = (orders as OrderWithRelations[]).filter(
+      (order) =>
+        new Date(order.createdAt) >= lastMonthStart &&
+        new Date(order.createdAt) <= lastMonthEnd &&
+        order.status === "pending"
+    ).length;
+
+    const ordersTrend =
+      lastMonthPending > 0
+        ? ((currentMonthPending - lastMonthPending) / lastMonthPending) * 100
+        : 0;
+
+    // Calcula crescimento de usuários (últimos 30 dias)
+    const userGrowthData = last30Days.map((date) => {
+      const dayUsers = users.filter((user) => {
+        const userDate = new Date(user.createdAt);
+        userDate.setHours(0, 0, 0, 0);
+        return userDate.getTime() === date.getTime();
+      });
+
+      return {
+        date: date.toISOString(),
+        count: dayUsers.length,
+      };
+    });
+
     return (
-      <div className="min-h-screen bg-gray-50 p-8">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-50 to-gray-100 p-4 md:p-8">
         <div className="max-w-7xl mx-auto">
           <div className="mb-8">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                Dashboard Administrativo
-              </h1>
-              <p className="text-gray-600 mt-2">Bem-vindo, {user.name}</p>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+              <div>
+                <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
+                  Dashboard Administrativo
+                </h1>
+                <p className="text-gray-600 flex items-center gap-2">
+                  <span className="inline-block w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                  Bem-vindo, {user.name} •{" "}
+                  {new Date().toLocaleDateString("pt-BR", {
+                    weekday: "long",
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}
+                </p>
+              </div>
+              <Link href="/">
+                <Button
+                  variant="outline"
+                  className="gap-2 shadow-sm hover:shadow-md transition-shadow"
+                >
+                  <Home className="h-4 w-4" />
+                  Voltar à Loja
+                </Button>
+              </Link>
             </div>
             {lowStockCount > 0 && (
-              <div className="mt-4 p-4 bg-orange-50 border border-orange-200 rounded-lg flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-orange-600" />
-                <p className="text-sm text-orange-700">
-                  <strong>Atenção:</strong> {lowStockCount} produto
-                  {lowStockCount > 1 ? "s" : ""} com estoque baixo (menos de 10
-                  unidades). Veja na aba <strong>Estoque</strong>.
-                </p>
+              <div className="mt-4 p-4 bg-gradient-to-r from-orange-50 to-yellow-50 border border-orange-200 rounded-lg flex items-start gap-3 shadow-sm">
+                <AlertTriangle className="h-5 w-5 text-orange-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm text-orange-900 font-medium">
+                    <strong>Atenção:</strong> {lowStockCount} produto
+                    {lowStockCount > 1 ? "s" : ""} com estoque baixo (menos de
+                    10 unidades)
+                  </p>
+                  <p className="text-xs text-orange-700 mt-1">
+                    Veja na aba <strong>Estoque</strong> para mais detalhes e
+                    reposição.
+                  </p>
+                </div>
               </div>
             )}
           </div>
 
           <Tabs defaultValue="overview" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5 lg:w-auto">
-              <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-              <TabsTrigger value="products">Produtos</TabsTrigger>
-              <TabsTrigger value="stock" className="relative">
+            <TabsList className="grid w-full grid-cols-5 lg:w-auto bg-white shadow-sm p-1 rounded-lg">
+              <TabsTrigger
+                value="overview"
+                className="data-[state=active]:bg-purple-600 data-[state=active]:text-white transition-all"
+              >
+                Visão Geral
+              </TabsTrigger>
+              <TabsTrigger
+                value="products"
+                className="data-[state=active]:bg-purple-600 data-[state=active]:text-white transition-all"
+              >
+                Produtos
+              </TabsTrigger>
+              <TabsTrigger
+                value="stock"
+                className="relative data-[state=active]:bg-purple-600 data-[state=active]:text-white transition-all"
+              >
                 Estoque
                 {lowStockCount > 0 && (
                   <Badge
                     variant="destructive"
-                    className="ml-2 px-1.5 py-0 text-xs"
+                    className="ml-2 px-1.5 py-0 text-xs animate-pulse"
                   >
                     {lowStockCount}
                   </Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="orders">Pedidos</TabsTrigger>
-              <TabsTrigger value="users">Usuários</TabsTrigger>
+              <TabsTrigger
+                value="orders"
+                className="data-[state=active]:bg-purple-600 data-[state=active]:text-white transition-all"
+              >
+                Pedidos
+              </TabsTrigger>
+              <TabsTrigger
+                value="users"
+                className="data-[state=active]:bg-purple-600 data-[state=active]:text-white transition-all"
+              >
+                Usuários
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" className="space-y-6">
@@ -154,6 +339,12 @@ export default async function Dashboard() {
                 totalProducts={totalProducts}
                 totalUsers={totalUsers}
                 recentOrders={recentOrders as OrderWithRelations[]}
+                salesData={salesData}
+                topProducts={topProducts}
+                statusData={statusData}
+                userGrowthData={userGrowthData}
+                revenueTrend={revenueTrend}
+                ordersTrend={ordersTrend}
               />
             </TabsContent>
 

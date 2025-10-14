@@ -7,7 +7,20 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { DollarSign, Package, ShoppingCart, Users } from "lucide-react";
+import {
+  DollarSign,
+  Package,
+  ShoppingCart,
+  Users,
+  TrendingUp,
+  TrendingDown,
+} from "lucide-react";
+import { MetricCard } from "./metric-card";
+import { SalesChart } from "./sales-chart";
+import { TopProductsChart } from "./top-products-chart";
+import { OrdersStatusChart } from "./orders-status-chart";
+import { UserGrowthChart } from "./user-growth-chart";
+import { QuickStats } from "./quick-stats";
 
 interface OrderUser {
   id: number;
@@ -34,12 +47,42 @@ interface RecentOrder {
   items: OrderItem[];
 }
 
+interface SalesData {
+  date: string;
+  revenue: number;
+  orders: number;
+}
+
+interface TopProduct {
+  name: string;
+  quantity: number;
+  revenue: number;
+}
+
+interface StatusData {
+  name: string;
+  value: number;
+  label: string;
+  [key: string]: string | number;
+}
+
+interface UserGrowthData {
+  date: string;
+  count: number;
+}
+
 interface DashboardOverviewProps {
   totalRevenue: number;
   pendingOrders: number;
   totalProducts: number;
   totalUsers: number;
   recentOrders: RecentOrder[];
+  salesData: SalesData[];
+  topProducts: TopProduct[];
+  statusData: StatusData[];
+  userGrowthData: UserGrowthData[];
+  revenueTrend?: number;
+  ordersTrend?: number;
 }
 
 export function DashboardOverview({
@@ -48,6 +91,12 @@ export function DashboardOverview({
   totalProducts,
   totalUsers,
   recentOrders,
+  salesData,
+  topProducts,
+  statusData,
+  userGrowthData,
+  revenueTrend,
+  ordersTrend,
 }: DashboardOverviewProps) {
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
@@ -90,111 +139,164 @@ export function DashboardOverview({
 
   return (
     <div className="space-y-6">
+      {/* Métricas principais */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Receita Total</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {formatCurrency(totalRevenue)}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Todas as vendas confirmadas
-            </p>
-          </CardContent>
-        </Card>
+        <MetricCard
+          title="Receita Total"
+          value={formatCurrency(totalRevenue)}
+          description="Todas as vendas confirmadas"
+          icon={DollarSign}
+          iconColor="text-green-600"
+          trend={
+            revenueTrend
+              ? {
+                  value: revenueTrend,
+                  isPositive: revenueTrend > 0,
+                }
+              : undefined
+          }
+        />
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Pedidos Pendentes
-            </CardTitle>
-            <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{pendingOrders}</div>
-            <p className="text-xs text-muted-foreground">
-              Aguardando processamento
-            </p>
-          </CardContent>
-        </Card>
+        <MetricCard
+          title="Pedidos Pendentes"
+          value={pendingOrders}
+          description="Aguardando processamento"
+          icon={ShoppingCart}
+          iconColor="text-orange-600"
+          trend={
+            ordersTrend
+              ? {
+                  value: ordersTrend,
+                  isPositive: ordersTrend < 0, // Menos pedidos pendentes é positivo
+                }
+              : undefined
+          }
+        />
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Produtos</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalProducts}</div>
-            <p className="text-xs text-muted-foreground">
-              Total de produtos cadastrados
-            </p>
-          </CardContent>
-        </Card>
+        <MetricCard
+          title="Produtos"
+          value={totalProducts}
+          description="Total de produtos cadastrados"
+          icon={Package}
+          iconColor="text-blue-600"
+        />
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Usuários</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalUsers}</div>
-            <p className="text-xs text-muted-foreground">
-              Total de usuários registrados
-            </p>
-          </CardContent>
-        </Card>
+        <MetricCard
+          title="Usuários"
+          value={totalUsers}
+          description="Total de usuários registrados"
+          icon={Users}
+          iconColor="text-purple-600"
+        />
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Pedidos Recentes</CardTitle>
-          <CardDescription>
-            Últimos 5 pedidos realizados na plataforma
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {recentOrders.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                Nenhum pedido registrado ainda
-              </p>
-            ) : (
-              recentOrders.map((order) => (
-                <div
-                  key={order.id}
-                  className="flex items-center justify-between border-b pb-4 last:border-0"
-                >
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium">Pedido #{order.id}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {order.user.name} • {formatDate(order.createdAt)}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {order.items.length}{" "}
-                      {order.items.length === 1 ? "item" : "itens"}
-                    </p>
-                  </div>
-                  <div className="text-right space-y-2">
-                    <p className="text-sm font-bold">
-                      {formatCurrency(order.total)}
-                    </p>
-                    <span
-                      className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${getStatusColor(
-                        order.status
-                      )}`}
+      {/* Gráficos */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <SalesChart data={salesData} />
+        <OrdersStatusChart data={statusData} />
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <TopProductsChart data={topProducts} />
+        <UserGrowthChart data={userGrowthData} />
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <div className="md:col-span-2">
+          {/* Pedidos Recentes */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Pedidos Recentes</CardTitle>
+              <CardDescription>
+                Últimos 5 pedidos realizados na plataforma
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {recentOrders.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    Nenhum pedido registrado ainda
+                  </p>
+                ) : (
+                  recentOrders.map((order) => (
+                    <div
+                      key={order.id}
+                      className="flex items-center justify-between border-b pb-4 last:border-0"
                     >
-                      {getStatusLabel(order.status)}
-                    </span>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </CardContent>
-      </Card>
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium">
+                          Pedido #{order.id}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {order.user.name} • {formatDate(order.createdAt)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {order.items.length}{" "}
+                          {order.items.length === 1 ? "item" : "itens"}
+                        </p>
+                      </div>
+                      <div className="text-right space-y-2">
+                        <p className="text-sm font-bold">
+                          {formatCurrency(order.total)}
+                        </p>
+                        <span
+                          className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${getStatusColor(
+                            order.status
+                          )}`}
+                        >
+                          {getStatusLabel(order.status)}
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <QuickStats
+          stats={[
+            {
+              label: "Ticket Médio",
+              value: formatCurrency(
+                recentOrders.length > 0
+                  ? recentOrders.reduce((sum, o) => sum + o.total, 0) /
+                      recentOrders.length
+                  : 0
+              ),
+              change: revenueTrend,
+              changeLabel: "vs mês anterior",
+            },
+            {
+              label: "Pedidos Hoje",
+              value: String(
+                recentOrders.filter((o) => {
+                  const today = new Date();
+                  const orderDate = new Date(o.createdAt);
+                  return (
+                    orderDate.getDate() === today.getDate() &&
+                    orderDate.getMonth() === today.getMonth() &&
+                    orderDate.getFullYear() === today.getFullYear()
+                  );
+                }).length
+              ),
+            },
+            {
+              label: "Taxa Conversão",
+              value: `${
+                totalUsers > 0
+                  ? ((recentOrders.length / totalUsers) * 100).toFixed(1)
+                  : 0
+              }%`,
+            },
+            {
+              label: "Produtos Ativos",
+              value: String(totalProducts),
+            },
+          ]}
+        />
+      </div>
     </div>
   );
 }
