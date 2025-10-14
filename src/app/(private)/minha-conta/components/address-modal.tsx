@@ -118,7 +118,7 @@ export function AddressModal({
         city: data.localidade || "",
         state: data.uf || "",
       }));
-    } catch (error) {
+    } catch {
       toast({
         title: "Erro",
         description: "Erro ao buscar CEP",

@@ -12,7 +12,7 @@ import { OrdersManagement } from "./components/orders-management";
 import { UsersManagement } from "./components/users-management";
 import StockManagement from "./components/stock-management";
 import StockAlerts from "./components/stock-alerts";
-import { AlertTriangle, Home, ArrowLeft } from "lucide-react";
+import { AlertTriangle, Home } from "lucide-react";
 
 interface OrderWithRelations {
   id: number;

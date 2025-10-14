@@ -12,8 +12,6 @@ import {
   Package,
   ShoppingCart,
   Users,
-  TrendingUp,
-  TrendingDown,
 } from "lucide-react";
 import { MetricCard } from "./metric-card";
 import { SalesChart } from "./sales-chart";

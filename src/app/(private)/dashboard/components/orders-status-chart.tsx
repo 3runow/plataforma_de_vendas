@@ -38,7 +38,7 @@ const COLORS = {
 export function OrdersStatusChart({ data }: OrdersStatusChartProps) {
   const total = data.reduce((sum, item) => sum + item.value, 0);
 
-  const CustomTooltip = ({ active, payload }: any) => {
+  const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: Array<{ value: number; payload: StatusData }> }) => {
     if (active && payload && payload.length) {
       const data = payload[0];
       const percentage = ((data.value / total) * 100).toFixed(1);
@@ -54,14 +54,22 @@ export function OrdersStatusChart({ data }: OrdersStatusChartProps) {
     return null;
   };
 
-  const renderCustomLabel = ({
-    cx,
-    cy,
-    midAngle,
-    innerRadius,
-    outerRadius,
-    percent,
-  }: any) => {
+  const renderCustomLabel = (props: unknown) => {
+    const {
+      cx,
+      cy,
+      midAngle,
+      innerRadius,
+      outerRadius,
+      percent,
+    } = props as {
+      cx: number;
+      cy: number;
+      midAngle: number;
+      innerRadius: number;
+      outerRadius: number;
+      percent: number;
+    };
     const RADIAN = Math.PI / 180;
     const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
@@ -111,7 +119,7 @@ export function OrdersStatusChart({ data }: OrdersStatusChartProps) {
             </Pie>
             <Tooltip content={<CustomTooltip />} />
             <Legend
-              formatter={(value, entry: any) => entry.payload.label}
+              formatter={(value, entry) => (entry.payload as StatusData).label}
               wrapperStyle={{ fontSize: "14px" }}
             />
           </PieChart>
