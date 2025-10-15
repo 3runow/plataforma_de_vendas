@@ -106,7 +106,13 @@ export default function ContactModal() {
             </div>
             <div className="flex items-center gap-3 text-xs sm:text-sm">
               <WhatsAppLogo className="h-4 w-4 flex-shrink-0" />
-              <span>(13) 99622-2102</span>
+              <a
+                href="https://wa.me/5513996222102"
+                target="_blank"
+                rel="noreferrer"
+              >
+                (13) 99622-2102
+              </a>
             </div>
           </div>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
