@@ -1,12 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { Button } from "./ui/button";
 import { User } from "lucide-react";
 import AuthModal from "./auth-modal";
 
 export default function LoginButton() {
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    // Abre o modal de login se o parâmetro login=true estiver na URL
+    if (searchParams.get("login") === "true") {
+      setShowAuthModal(true);
+    }
+  }, [searchParams]);
 
   return (
     <>

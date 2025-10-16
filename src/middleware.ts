@@ -58,6 +58,28 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
+  // Protege a rota de checkout - requer autenticação
+  if (pathname.startsWith("/checkout")) {
+    const token = req.cookies.get("token")?.value;
+    if (!token) {
+      const url = req.nextUrl.clone();
+      url.pathname = "/";
+      url.searchParams.set("login", "true");
+      return NextResponse.redirect(url);
+    }
+
+    try {
+      await verifyHS256(token, JWT_SECRET);
+      return NextResponse.next();
+    } catch {
+      const url = req.nextUrl.clone();
+      url.pathname = "/";
+      url.searchParams.set("login", "true");
+      return NextResponse.redirect(url);
+    }
+  }
+
+  // Protege a rota de dashboard - requer autenticação e role admin
   if (pathname.startsWith("/dashboard")) {
     const token = req.cookies.get("token")?.value;
     if (!token) {
@@ -91,5 +113,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*"],
+  matcher: ["/dashboard/:path*", "/checkout/:path*"],
 };

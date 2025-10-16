@@ -1,0 +1,196 @@
+"use client";
+
+import { Input } from "@/components/ui/input";
+import {
+  Field,
+  FieldGroup,
+  FieldLabel,
+  FieldSet,
+  FieldLegend,
+  FieldDescription,
+} from "@/components/ui/field";
+
+interface AddressFormProps {
+  addressData: {
+    cep: string;
+    street: string;
+    number: string;
+    complement: string;
+    neighborhood: string;
+    city: string;
+    state: string;
+  };
+  onAddressDataChange: (data: {
+    cep: string;
+    street: string;
+    number: string;
+    complement: string;
+    neighborhood: string;
+    city: string;
+    state: string;
+  }) => void;
+}
+
+export default function AddressForm({
+  addressData,
+  onAddressDataChange,
+}: AddressFormProps) {
+  const formatCEP = (value: string) => {
+    return value
+      .replace(/\D/g, "")
+      .replace(/(\d{5})(\d)/, "$1-$2")
+      .replace(/(-\d{3})\d+?$/, "$1");
+  };
+
+  const handleCepBlur = async () => {
+    const cep = addressData.cep.replace(/\D/g, "");
+    if (cep.length === 8) {
+      try {
+        const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+        const data = await response.json();
+        if (!data.erro) {
+          onAddressDataChange({
+            ...addressData,
+            street: data.logradouro || "",
+            neighborhood: data.bairro || "",
+            city: data.localidade || "",
+            state: data.uf || "",
+          });
+        }
+      } catch (error) {
+        console.error("Erro ao buscar CEP:", error);
+      }
+    }
+  };
+
+  return (
+    <FieldGroup>
+      <FieldSet>
+        <FieldLegend>Informações de Endereço</FieldLegend>
+        <FieldDescription>
+          Digite o CEP para preenchimento automático
+        </FieldDescription>
+        <div className="grid sm:grid-cols-3 gap-4">
+          <Field>
+            <FieldLabel htmlFor="cep">CEP *</FieldLabel>
+            <Input
+              id="cep"
+              required
+              value={addressData.cep}
+              onChange={(e) =>
+                onAddressDataChange({
+                  ...addressData,
+                  cep: formatCEP(e.target.value),
+                })
+              }
+              onBlur={handleCepBlur}
+              placeholder="00000-000"
+              maxLength={9}
+            />
+            <FieldDescription>Informe seu CEP</FieldDescription>
+          </Field>
+        </div>
+        <div className="grid sm:grid-cols-4 gap-4">
+          <div className="sm:col-span-3">
+            <Field>
+              <FieldLabel htmlFor="street">Rua *</FieldLabel>
+              <Input
+                id="street"
+                required
+                value={addressData.street}
+                onChange={(e) =>
+                  onAddressDataChange({
+                    ...addressData,
+                    street: e.target.value,
+                  })
+                }
+                placeholder="Rua das Flores"
+              />
+            </Field>
+          </div>
+          <Field>
+            <FieldLabel htmlFor="number">Número *</FieldLabel>
+            <Input
+              id="number"
+              required
+              value={addressData.number}
+              onChange={(e) =>
+                onAddressDataChange({
+                  ...addressData,
+                  number: e.target.value,
+                })
+              }
+              placeholder="123"
+            />
+          </Field>
+        </div>
+        <div className="grid sm:grid-cols-2 gap-4">
+          <Field>
+            <FieldLabel htmlFor="complement">Complemento</FieldLabel>
+            <Input
+              id="complement"
+              value={addressData.complement}
+              onChange={(e) =>
+                onAddressDataChange({
+                  ...addressData,
+                  complement: e.target.value,
+                })
+              }
+              placeholder="Apto 101"
+            />
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="neighborhood">Bairro *</FieldLabel>
+            <Input
+              id="neighborhood"
+              required
+              value={addressData.neighborhood}
+              onChange={(e) =>
+                onAddressDataChange({
+                  ...addressData,
+                  neighborhood: e.target.value,
+                })
+              }
+              placeholder="Centro"
+            />
+          </Field>
+        </div>
+        <div className="grid sm:grid-cols-3 gap-4">
+          <div className="sm:col-span-2">
+            <Field>
+              <FieldLabel htmlFor="city">Cidade *</FieldLabel>
+              <Input
+                id="city"
+                required
+                value={addressData.city}
+                onChange={(e) =>
+                  onAddressDataChange({
+                    ...addressData,
+                    city: e.target.value,
+                  })
+                }
+                placeholder="São Paulo"
+              />
+            </Field>
+          </div>
+          <Field>
+            <FieldLabel htmlFor="state">Estado *</FieldLabel>
+            <Input
+              id="state"
+              required
+              value={addressData.state}
+              onChange={(e) =>
+                onAddressDataChange({
+                  ...addressData,
+                  state: e.target.value.toUpperCase(),
+                })
+              }
+              placeholder="SP"
+              maxLength={2}
+            />
+          </Field>
+        </div>
+      </FieldSet>
+    </FieldGroup>
+  );
+}

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { ShoppingCart } from "lucide-react";
 import { Button } from "./ui/button";
 import {
@@ -23,6 +24,7 @@ interface CartSidebarProps {
 }
 
 export default function CartSidebar({ products = [] }: CartSidebarProps) {
+  const [open, setOpen] = useState(false);
   const {
     cartItems,
     updateQuantity,
@@ -37,7 +39,7 @@ export default function CartSidebar({ products = [] }: CartSidebarProps) {
   const itemCount = getTotalItems();
 
   return (
-    <Sheet>
+    <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
         <Button
           variant="ghost"
@@ -104,7 +106,12 @@ export default function CartSidebar({ products = [] }: CartSidebarProps) {
         </div>
 
         {cartItems.length > 0 && (
-          <CartSummary subtotal={subtotal} shipping={shipping} total={total} />
+          <CartSummary
+            subtotal={subtotal}
+            shipping={shipping}
+            total={total}
+            onClose={() => setOpen(false)}
+          />
         )}
       </SheetContent>
     </Sheet>
