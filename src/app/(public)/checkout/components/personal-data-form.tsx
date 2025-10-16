@@ -10,7 +10,7 @@ interface PersonalDataFormProps {
     cpf: string;
     phone: string;
   };
-  onFormDataChange: (data: {
+  onFormDataChangeAction: (data: {
     name: string;
     email: string;
     cpf: string;
@@ -20,7 +20,7 @@ interface PersonalDataFormProps {
 
 export default function PersonalDataForm({
   formData,
-  onFormDataChange,
+  onFormDataChangeAction,
 }: PersonalDataFormProps) {
   const formatCPF = (value: string) => {
     return value
@@ -50,7 +50,7 @@ export default function PersonalDataForm({
               required
               value={formData.name}
               onChange={(e) =>
-                onFormDataChange({ ...formData, name: e.target.value })
+                onFormDataChangeAction({ ...formData, name: e.target.value })
               }
               placeholder="João Silva"
             />
@@ -63,7 +63,7 @@ export default function PersonalDataForm({
               required
               value={formData.email}
               onChange={(e) =>
-                onFormDataChange({ ...formData, email: e.target.value })
+                onFormDataChangeAction({ ...formData, email: e.target.value })
               }
               placeholder="joao@exemplo.com"
             />
@@ -77,7 +77,7 @@ export default function PersonalDataForm({
               required
               value={formData.cpf}
               onChange={(e) =>
-                onFormDataChange({
+                onFormDataChangeAction({
                   ...formData,
                   cpf: formatCPF(e.target.value),
                 })
@@ -93,7 +93,7 @@ export default function PersonalDataForm({
               required
               value={formData.phone}
               onChange={(e) =>
-                onFormDataChange({
+                onFormDataChangeAction({
                   ...formData,
                   phone: formatPhone(e.target.value),
                 })

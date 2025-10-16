@@ -12,6 +12,21 @@ export interface Product {
   updatedAt: Date;
 }
 
+// Tipo serializável para uso em componentes client
+export interface SerializableProduct {
+  id: number;
+  name: string;
+  description: string;
+  price: number;
+  stock: number;
+  imageUrl?: string | null;
+  discount?: number | null;
+  isNew?: boolean;
+  isFeatured?: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface ProductFormData {
   name: string;
   description: string;

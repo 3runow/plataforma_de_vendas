@@ -5,13 +5,13 @@ import { ShoppingCart, Heart } from "lucide-react";
 import { Card, CardContent, CardFooter } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
-import { Product } from "../../types/types";
+import { SerializableProduct } from "../../types/types";
 import { useState } from "react";
 import { useFavorites } from "@/contexts/favorites-context";
 
 interface ProductCardProps {
-  product: Product;
-  onAddToCart?: (product: Product, quantity: number) => void;
+  product: SerializableProduct;
+  onAddToCart?: (product: SerializableProduct, quantity: number) => void;
 }
 
 export default function ProductCard({

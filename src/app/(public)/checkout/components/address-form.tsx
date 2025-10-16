@@ -20,7 +20,7 @@ interface AddressFormProps {
     city: string;
     state: string;
   };
-  onAddressDataChange: (data: {
+  onAddressDataChangeAction: (data: {
     cep: string;
     street: string;
     number: string;
@@ -33,7 +33,7 @@ interface AddressFormProps {
 
 export default function AddressForm({
   addressData,
-  onAddressDataChange,
+  onAddressDataChangeAction,
 }: AddressFormProps) {
   const formatCEP = (value: string) => {
     return value
@@ -49,7 +49,7 @@ export default function AddressForm({
         const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
         const data = await response.json();
         if (!data.erro) {
-          onAddressDataChange({
+          onAddressDataChangeAction({
             ...addressData,
             street: data.logradouro || "",
             neighborhood: data.bairro || "",
@@ -78,7 +78,7 @@ export default function AddressForm({
               required
               value={addressData.cep}
               onChange={(e) =>
-                onAddressDataChange({
+                onAddressDataChangeAction({
                   ...addressData,
                   cep: formatCEP(e.target.value),
                 })
@@ -99,7 +99,7 @@ export default function AddressForm({
                 required
                 value={addressData.street}
                 onChange={(e) =>
-                  onAddressDataChange({
+                  onAddressDataChangeAction({
                     ...addressData,
                     street: e.target.value,
                   })
@@ -115,7 +115,7 @@ export default function AddressForm({
               required
               value={addressData.number}
               onChange={(e) =>
-                onAddressDataChange({
+                onAddressDataChangeAction({
                   ...addressData,
                   number: e.target.value,
                 })
@@ -131,7 +131,7 @@ export default function AddressForm({
               id="complement"
               value={addressData.complement}
               onChange={(e) =>
-                onAddressDataChange({
+                onAddressDataChangeAction({
                   ...addressData,
                   complement: e.target.value,
                 })
@@ -146,7 +146,7 @@ export default function AddressForm({
               required
               value={addressData.neighborhood}
               onChange={(e) =>
-                onAddressDataChange({
+                onAddressDataChangeAction({
                   ...addressData,
                   neighborhood: e.target.value,
                 })
@@ -164,7 +164,7 @@ export default function AddressForm({
                 required
                 value={addressData.city}
                 onChange={(e) =>
-                  onAddressDataChange({
+                  onAddressDataChangeAction({
                     ...addressData,
                     city: e.target.value,
                   })
@@ -180,7 +180,7 @@ export default function AddressForm({
               required
               value={addressData.state}
               onChange={(e) =>
-                onAddressDataChange({
+                onAddressDataChangeAction({
                   ...addressData,
                   state: e.target.value.toUpperCase(),
                 })

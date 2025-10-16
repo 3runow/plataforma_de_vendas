@@ -2,12 +2,12 @@
 
 import { useEffect, useState } from "react";
 import ProductList from "./product-list";
-import { Product } from "../../types/types";
+import { SerializableProduct } from "../../types/types";
 import { useCart } from "@/contexts/cart-context";
 import { useToast } from "@/hooks/use-toast";
 
 export default function ProductsSection() {
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<SerializableProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { addToCart } = useCart();
@@ -55,7 +55,7 @@ export default function ProductsSection() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleAddToCart = (product: Product, quantity: number) => {
+  const handleAddToCart = (product: SerializableProduct, quantity: number) => {
     addToCart(product, quantity);
     toast({
       title: "Produto adicionado!",

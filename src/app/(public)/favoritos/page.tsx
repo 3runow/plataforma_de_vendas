@@ -42,8 +42,8 @@ export default function FavoritosPage() {
       discount?: number | null;
       isNew?: boolean;
       isFeatured?: boolean;
-      createdAt: Date;
-      updatedAt: Date;
+      createdAt: string;
+      updatedAt: string;
     },
     quantity: number
   ) => {

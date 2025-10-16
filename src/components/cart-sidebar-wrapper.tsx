@@ -2,10 +2,14 @@
 
 import { useEffect, useState } from "react";
 import CartSidebar from "./cart-sidebar";
-import { Product } from "../../types/types";
+
+interface ProductStock {
+  id: number;
+  stock: number;
+}
 
 export default function CartSidebarWrapper() {
-  const [products, setProducts] = useState<Product[]>([]);
+  const [productsStock, setProductsStock] = useState<ProductStock[]>([]);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -14,7 +18,14 @@ export default function CartSidebarWrapper() {
         if (response.ok) {
           const data = await response.json();
           const productsData = Array.isArray(data) ? data : data.products || [];
-          setProducts(productsData);
+          // Extrair apenas id e stock para serialização
+          const stockData: ProductStock[] = productsData.map(
+            (product: { id: number; stock: number }) => ({
+              id: product.id,
+              stock: product.stock,
+            })
+          );
+          setProductsStock(stockData);
         }
       } catch (error) {
         console.error("Erro ao carregar produtos:", error);
@@ -24,5 +35,5 @@ export default function CartSidebarWrapper() {
     fetchProducts();
   }, []);
 
-  return <CartSidebar products={products} />;
+  return <CartSidebar productsStock={productsStock} />;
 }

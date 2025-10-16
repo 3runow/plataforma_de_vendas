@@ -7,12 +7,12 @@ import React, {
   useEffect,
   useCallback,
 } from "react";
-import { Product } from "../../types/types";
+import { SerializableProduct } from "../../types/types";
 import { useToast } from "@/hooks/use-toast";
 
 interface FavoritesContextType {
-  favorites: Product[];
-  addToFavorites: (product: Product) => void;
+  favorites: SerializableProduct[];
+  addToFavorites: (product: SerializableProduct) => void;
   removeFromFavorites: (productId: number) => void;
   isFavorite: (productId: number) => boolean;
   favoritesCount: number;
@@ -23,7 +23,7 @@ const FavoritesContext = createContext<FavoritesContextType | undefined>(
 );
 
 export function FavoritesProvider({ children }: { children: React.ReactNode }) {
-  const [favorites, setFavorites] = useState<Product[]>([]);
+  const [favorites, setFavorites] = useState<SerializableProduct[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
   const { toast } = useToast();
 
@@ -48,7 +48,7 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
   }, [favorites, isInitialized]);
 
   const addToFavorites = useCallback(
-    (product: Product) => {
+    (product: SerializableProduct) => {
       setFavorites((prev) => {
         if (prev.some((p) => p.id === product.id)) {
           return prev;

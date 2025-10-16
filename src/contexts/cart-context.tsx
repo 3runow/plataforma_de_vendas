@@ -7,11 +7,11 @@ import {
   ReactNode,
   useEffect,
 } from "react";
-import { Product, CartItem } from "../../types/types";
+import { SerializableProduct, CartItem } from "../../types/types";
 
 interface CartContextType {
   cartItems: CartItem[];
-  addToCart: (product: Product, quantity: number) => void;
+  addToCart: (product: SerializableProduct, quantity: number) => void;
   removeFromCart: (productId: number) => void;
   updateQuantity: (productId: number, quantity: number) => void;
   clearCart: () => void;
@@ -41,12 +41,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("cart", JSON.stringify(cartItems));
   }, [cartItems]);
 
-  const addToCart = (product: Product, quantity: number) => {
+  const addToCart = (product: SerializableProduct, quantity: number) => {
     setCartItems((prev) => {
       const existingItem = prev.find((item) => item.productId === product.id);
       const estoque = product.stock;
       if (existingItem) {
-        const novaQuantidade = Math.min(existingItem.quantity + quantity, estoque);
+        const novaQuantidade = Math.min(
+          existingItem.quantity + quantity,
+          estoque
+        );
         return prev.map((item) =>
           item.productId === product.id
             ? { ...item, quantity: novaQuantidade }

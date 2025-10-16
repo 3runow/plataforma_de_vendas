@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import ProductCard from "./product-card";
-import { Product } from "../../types/types";
+import { SerializableProduct } from "../../types/types";
 import {
   Pagination,
   PaginationContent,
@@ -14,8 +14,8 @@ import {
 } from "@/components/ui/pagination";
 
 interface ProductListProps {
-  products: Product[];
-  onAddToCart?: (product: Product, quantity: number) => void;
+  products: SerializableProduct[];
+  onAddToCart?: (product: SerializableProduct, quantity: number) => void;
   itemsPerPage?: number;
 }
 

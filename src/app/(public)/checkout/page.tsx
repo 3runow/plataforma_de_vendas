@@ -210,7 +210,7 @@ export default function CheckoutPage() {
                   <AccordionContent className="px-6 pb-6">
                     <PersonalDataForm
                       formData={formData}
-                      onFormDataChange={setFormData}
+                      onFormDataChangeAction={setFormData}
                     />
                   </AccordionContent>
                 </AccordionItem>
@@ -244,7 +244,7 @@ export default function CheckoutPage() {
                   <AccordionContent className="px-6 pb-6">
                     <AddressForm
                       addressData={addressData}
-                      onAddressDataChange={setAddressData}
+                      onAddressDataChangeAction={setAddressData}
                     />
                   </AccordionContent>
                 </AccordionItem>
@@ -275,7 +275,7 @@ export default function CheckoutPage() {
                   <AccordionContent className="px-6 pb-6">
                     <PaymentForm
                       paymentData={paymentData}
-                      onPaymentDataChange={setPaymentData}
+                      onPaymentDataChangeAction={setPaymentData}
                     />
                   </AccordionContent>
                 </AccordionItem>

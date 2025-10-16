@@ -17,13 +17,16 @@ import CartItem from "./cart-item";
 import CartSummary from "./cart-summary";
 import { useCart } from "../contexts/cart-context";
 
-import { Product } from "../../types/types";
-
-interface CartSidebarProps {
-  products: Product[];
+interface ProductStock {
+  id: number;
+  stock: number;
 }
 
-export default function CartSidebar({ products = [] }: CartSidebarProps) {
+interface CartSidebarProps {
+  productsStock: ProductStock[];
+}
+
+export default function CartSidebar({ productsStock = [] }: CartSidebarProps) {
   const [open, setOpen] = useState(false);
   const {
     cartItems,
@@ -83,9 +86,11 @@ export default function CartSidebar({ products = [] }: CartSidebarProps) {
             </div>
           ) : (
             cartItems.map((item) => {
-              // Buscar o produto original para saber o estoque
-              const product = products?.find((p) => p.id === item.productId);
-              const maxQuantity = product?.stock ?? 99;
+              // Buscar o estoque do produto
+              const productStock = productsStock.find(
+                (p) => p.id === item.productId
+              );
+              const maxQuantity = productStock?.stock ?? 99;
               return (
                 <CartItem
                   key={item.id}

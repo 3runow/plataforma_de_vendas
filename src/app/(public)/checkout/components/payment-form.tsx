@@ -25,7 +25,7 @@ interface PaymentFormProps {
     expiryYear: string;
     cvv: string;
   };
-  onPaymentDataChange: (data: {
+  onPaymentDataChangeAction: (data: {
     cardNumber: string;
     cardName: string;
     expiryMonth: string;
@@ -36,7 +36,7 @@ interface PaymentFormProps {
 
 export default function PaymentForm({
   paymentData,
-  onPaymentDataChange,
+  onPaymentDataChangeAction,
 }: PaymentFormProps) {
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 10 }, (_, i) => currentYear + i);
@@ -64,7 +64,7 @@ export default function PaymentForm({
             required
             value={paymentData.cardName}
             onChange={(e) =>
-              onPaymentDataChange({
+              onPaymentDataChangeAction({
                 ...paymentData,
                 cardName: e.target.value.toUpperCase(),
               })
@@ -79,7 +79,7 @@ export default function PaymentForm({
             required
             value={paymentData.cardNumber}
             onChange={(e) =>
-              onPaymentDataChange({
+              onPaymentDataChangeAction({
                 ...paymentData,
                 cardNumber: formatCardNumber(e.target.value),
               })
@@ -97,7 +97,10 @@ export default function PaymentForm({
             <Select
               value={paymentData.expiryMonth}
               onValueChange={(value) =>
-                onPaymentDataChange({ ...paymentData, expiryMonth: value })
+                onPaymentDataChangeAction({
+                  ...paymentData,
+                  expiryMonth: value,
+                })
               }
               required
             >
@@ -121,7 +124,7 @@ export default function PaymentForm({
             <Select
               value={paymentData.expiryYear}
               onValueChange={(value) =>
-                onPaymentDataChange({ ...paymentData, expiryYear: value })
+                onPaymentDataChangeAction({ ...paymentData, expiryYear: value })
               }
               required
             >
@@ -144,7 +147,7 @@ export default function PaymentForm({
               required
               value={paymentData.cvv}
               onChange={(e) =>
-                onPaymentDataChange({
+                onPaymentDataChangeAction({
                   ...paymentData,
                   cvv: e.target.value.replace(/\D/g, ""),
                 })
