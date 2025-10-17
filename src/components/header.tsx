@@ -15,18 +15,21 @@ export default async function Header() {
   ];
 
   return (
-    <header className="flex items-center justify-between flex-col bg-[#022044] border-b-2 border-zinc-400/10">
-      <div className="relative w-full h-24 md:h-32">
-        <Image
-          src="/assets/image/header.png"
-          alt="Logo"
-          fill
-          className="object-cover"
-          priority
-        />
+    <header className="flex items-center justify-between flex-col border-b-2 border-zinc-400/10 bg-[#87CEEB]">
+      <div className="relative w-full h-24 md:h-32 overflow-hidden flex items-center justify-center bg-[#87CEEB]">
+        <div className="relative w-full h-full">
+          <Image
+            src="/assets/image/header.png"
+            alt="Logo"
+            fill
+            className="object-cover"
+            priority
+            unoptimized
+          />
+        </div>
       </div>
 
-      <div className="flex flex-row gap-4 w-full px-4 md:px-32 py-2">
+      <div className="flex flex-row gap-4 w-full px-4 md:px-32 py-2 bg-[#022044]">
         <MobileMenu navItems={navItems} />
 
         <nav className="hidden md:flex flex-row gap-4 items-center">

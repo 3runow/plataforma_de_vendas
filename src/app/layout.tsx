@@ -4,6 +4,7 @@ import "./globals.css";
 import { CartProvider } from "@/contexts/cart-context";
 import { FavoritesProvider } from "@/contexts/favorites-context";
 import { Toaster } from "@/components/ui/toaster";
+import Footer from "@/components/footer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,11 +29,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-col min-h-screen`}
       >
         <FavoritesProvider>
           <CartProvider>
-            {children}
+            <div className="flex-1">{children}</div>
+            <Footer />
             <Toaster />
           </CartProvider>
         </FavoritesProvider>
