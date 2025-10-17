@@ -3,7 +3,7 @@ import Link from "next/link";
 import ContactModal from "./contact-modal";
 import { isAuthenticated } from "@/lib/auth";
 import UserDropdown from "./user-dropdown";
-import LoginButton from "./login-button";
+import LoginButtonWrapper from "./login-button-wrapper";
 import MobileMenu from "./mobile-menu";
 import CartSidebarWrapper from "./cart-sidebar-wrapper";
 
@@ -47,7 +47,7 @@ export default async function Header() {
 
         <div className="flex items-center gap-2 md:gap-4 ml-auto">
           <CartSidebarWrapper />
-          {userIsAuthenticated ? <UserDropdown /> : <LoginButton />}
+          {userIsAuthenticated ? <UserDropdown /> : <LoginButtonWrapper />}
         </div>
       </div>
     </header>

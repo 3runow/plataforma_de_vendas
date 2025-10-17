@@ -105,13 +105,13 @@ export default function CheckoutPage() {
     if (isPersonalDataComplete() && openSection === "personal-data") {
       setTimeout(() => setOpenSection("address"), 300);
     }
-  }, [formData, openSection]);
+  }, [formData, openSection, isPersonalDataComplete]);
 
   useEffect(() => {
     if (isAddressComplete() && openSection === "address") {
       setTimeout(() => setOpenSection("payment"), 300);
     }
-  }, [addressData, openSection]);
+  }, [addressData, openSection, isAddressComplete]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -139,7 +139,7 @@ export default function CheckoutPage() {
 
       clearCart();
       router.push("/");
-    } catch (error) {
+    } catch {
       toast({
         title: "Erro ao processar pedido",
         description: "Tente novamente mais tarde.",
