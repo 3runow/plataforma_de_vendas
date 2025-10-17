@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { ProductTableRow } from "./product-table-row";
 import { Product } from "../../../../../types/types";
@@ -81,11 +82,14 @@ export function ProductsTable({
                   {/* Imagem */}
                   <div className="flex-shrink-0">
                     {product.imageUrl ? (
-                      <img
-                        src={product.imageUrl}
-                        alt={product.name}
-                        className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-md"
-                      />
+                      <div className="relative w-20 h-20 sm:w-24 sm:h-24">
+                        <Image
+                          src={product.imageUrl}
+                          alt={product.name}
+                          fill
+                          className="object-cover rounded-md"
+                        />
+                      </div>
                     ) : (
                       <div className="w-20 h-20 sm:w-24 sm:h-24 bg-gray-200 rounded-md flex items-center justify-center text-gray-400 text-xs">
                         Sem imagem

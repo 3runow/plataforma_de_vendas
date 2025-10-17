@@ -8,6 +8,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import Image from "next/image";
 import { Package, MapPin, Calendar } from "lucide-react";
 
 interface OrderItem {
@@ -128,11 +129,14 @@ export function OrdersTab({ orders }: OrdersTabProps) {
                               className="flex items-center gap-2 sm:gap-4 p-2 bg-gray-50 rounded"
                             >
                               {item.product.imageUrl && (
-                                <img
-                                  src={item.product.imageUrl}
-                                  alt={item.product.name}
-                                  className="w-12 h-12 sm:w-16 sm:h-16 object-cover rounded flex-shrink-0"
-                                />
+                                <div className="relative w-12 h-12 sm:w-16 sm:h-16 flex-shrink-0">
+                                  <Image
+                                    src={item.product.imageUrl}
+                                    alt={item.product.name}
+                                    fill
+                                    className="object-cover rounded"
+                                  />
+                                </div>
                               )}
                               <div className="flex-1 min-w-0">
                                 <p className="font-medium text-sm sm:text-base truncate">
