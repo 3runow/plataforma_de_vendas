@@ -16,6 +16,16 @@ import PersonalDataForm from "./components/personal-data-form";
 import AddressForm from "./components/address-form";
 import PaymentForm from "./components/payment-form";
 import OrderSummary from "./components/order-summary";
+import ShippingSelector from "./components/shipping-selector";
+import MercadoPagoPayment from "./components/mercadopago-payment";
+
+interface ShippingOption {
+  id: number;
+  name: string;
+  company: string;
+  price: number;
+  deliveryTime: number;
+}
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -23,10 +33,13 @@ export default function CheckoutPage() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [openSection, setOpenSection] = useState<string>("personal-data");
+  const [selectedShipping, setSelectedShipping] =
+    useState<ShippingOption | null>(null);
+  const [useMercadoPago, setUseMercadoPago] = useState(false);
 
   const subtotal = getTotalPrice();
-  const shipping = subtotal > 0 ? 15.0 : 0;
-  const total = subtotal + shipping;
+  const shippingPrice = selectedShipping?.price || 0;
+  const total = subtotal + shippingPrice;
 
   // Formulário de dados pessoais
   const [formData, setFormData] = useState({
@@ -86,7 +99,8 @@ export default function CheckoutPage() {
       addressData.number.trim() !== "" &&
       addressData.neighborhood.trim() !== "" &&
       addressData.city.trim() !== "" &&
-      addressData.state.length === 2
+      addressData.state.length === 2 &&
+      selectedShipping !== null
     );
   };
 
@@ -246,6 +260,26 @@ export default function CheckoutPage() {
                       addressData={addressData}
                       onAddressDataChangeAction={setAddressData}
                     />
+
+                    {/* Seletor de Frete */}
+                    {addressData.cep.length === 9 && (
+                      <div className="mt-6">
+                        <ShippingSelector
+                          fromCep="01310-100"
+                          toCep={addressData.cep}
+                          products={cartItems.map((item) => ({
+                            weight: 0.3,
+                            width: 11,
+                            height: 17,
+                            length: 11,
+                            quantity: item.quantity,
+                            insurance_value: item.price * item.quantity,
+                          }))}
+                          onSelectShippingAction={setSelectedShipping}
+                          selectedShipping={selectedShipping}
+                        />
+                      </div>
+                    )}
                   </AccordionContent>
                 </AccordionItem>
 
@@ -264,19 +298,57 @@ export default function CheckoutPage() {
                       </div>
                       <div className="text-left">
                         <h3 className="text-lg font-semibold">Pagamento</h3>
-                        {isPaymentComplete() && (
+                        {isPaymentComplete() && !useMercadoPago && (
                           <p className="text-sm text-muted-foreground">
                             Cartão •••• {paymentData.cardNumber.slice(-4)}
+                          </p>
+                        )}
+                        {useMercadoPago && (
+                          <p className="text-sm text-muted-foreground">
+                            Mercado Pago
                           </p>
                         )}
                       </div>
                     </div>
                   </AccordionTrigger>
                   <AccordionContent className="px-6 pb-6">
-                    <PaymentForm
-                      paymentData={paymentData}
-                      onPaymentDataChangeAction={setPaymentData}
-                    />
+                    {/* Opção de escolher método de pagamento */}
+                    <div className="mb-6">
+                      <label className="flex items-center space-x-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={useMercadoPago}
+                          onChange={(e) => setUseMercadoPago(e.target.checked)}
+                          className="rounded"
+                        />
+                        <span>Pagar com Mercado Pago</span>
+                      </label>
+                    </div>
+
+                    {useMercadoPago ? (
+                      <MercadoPagoPayment
+                        amount={total}
+                        onPaymentSuccessAction={(data) => {
+                          console.log("Pagamento aprovado:", data);
+                          toast({
+                            title: "Pagamento aprovado!",
+                            description: "Seu pedido foi confirmado.",
+                          });
+                        }}
+                        onPaymentErrorAction={(error) => {
+                          toast({
+                            title: "Erro no pagamento",
+                            description: error,
+                            variant: "destructive",
+                          });
+                        }}
+                      />
+                    ) : (
+                      <PaymentForm
+                        paymentData={paymentData}
+                        onPaymentDataChangeAction={setPaymentData}
+                      />
+                    )}
                   </AccordionContent>
                 </AccordionItem>
               </Accordion>
@@ -287,7 +359,7 @@ export default function CheckoutPage() {
               <OrderSummary
                 cartItems={cartItems}
                 subtotal={subtotal}
-                shipping={shipping}
+                shipping={shippingPrice}
                 total={total}
                 isLoading={isLoading}
               />

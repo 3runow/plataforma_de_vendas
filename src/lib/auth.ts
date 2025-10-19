@@ -71,3 +71,38 @@ export async function isAuthenticated() {
   const user = await getUser();
   return user !== null;
 }
+
+export async function verifyAuth(request: Request) {
+  try {
+    const cookieHeader = request.headers.get("cookie");
+    if (!cookieHeader) {
+      return null;
+    }
+
+    // Parse cookies manually
+    const cookies = cookieHeader.split(";").reduce(
+      (acc, cookie) => {
+        const [key, value] = cookie.trim().split("=");
+        acc[key] = value;
+        return acc;
+      },
+      {} as Record<string, string>
+    );
+
+    const token = cookies["token"];
+    if (!token) {
+      return null;
+    }
+
+    const payload = await verifyHS256(token, JWT_SECRET);
+    return payload as {
+      id: number;
+      userId?: string;
+      name: string;
+      email: string;
+      role?: string;
+    };
+  } catch {
+    return null;
+  }
+}

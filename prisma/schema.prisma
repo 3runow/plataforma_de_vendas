@@ -63,16 +63,29 @@ model Product {
 }
 
 model Order {
-  id        Int         @id @default(autoincrement())
-  userId    Int
-  addressId Int         // Endereço de entrega
-  total     Float
-  status    String      @default("pending") // pending, processing, shipped, delivered, cancelled
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
-  user      User        @relation(fields: [userId], references: [id])
-  address   Address     @relation(fields: [addressId], references: [id])
-  items     OrderItem[]
+  id                    Int         @id @default(autoincrement())
+  userId                Int
+  addressId             Int         // Endereço de entrega
+  total                 Float
+  status                String      @default("pending") // pending, processing, shipped, delivered, cancelled
+  
+  // Campos de pagamento (Mercado Pago)
+  paymentId             String?     // ID do pagamento no Mercado Pago
+  paymentStatus         String?     // Status do pagamento
+  paymentMethod         String?     // Método de pagamento (credit_card, pix, boleto, etc)
+  
+  // Campos de frete (Melhor Envio)
+  shippingService       String?     // Serviço de entrega escolhido
+  shippingPrice         Float?      // Preço do frete
+  shippingDeliveryTime  Int?        // Prazo de entrega em dias
+  shippingTrackingCode  String?     // Código de rastreio
+  melhorEnvioOrderId    String?     // ID do pedido no Melhor Envio
+  
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+  user                  User        @relation(fields: [userId], references: [id])
+  address               Address     @relation(fields: [addressId], references: [id])
+  items                 OrderItem[]
 }
 
 model OrderItem {
