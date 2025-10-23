@@ -48,7 +48,7 @@ model Address {
 }
 
 model Product {
-  id          Int         @id @default(autoincrement())
+  id          BigInt      @id @default(autoincrement())
   name        String
   description String
   price       Float
@@ -91,7 +91,7 @@ model Order {
 model OrderItem {
   id        Int     @id @default(autoincrement())
   orderId   Int
-  productId Int
+  productId BigInt
   quantity  Int
   order     Order   @relation(fields: [orderId], references: [id])
   product   Product @relation(fields: [productId], references: [id])

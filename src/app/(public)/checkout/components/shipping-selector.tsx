@@ -27,6 +27,7 @@ interface ShippingSelectorProps {
   }>;
   onSelectShippingAction: (option: ShippingOption | null) => void;
   selectedShipping: ShippingOption | null;
+  onShippingSelected?: () => void; // Callback quando uma opção é selecionada
 }
 
 export default function ShippingSelector({
@@ -35,6 +36,7 @@ export default function ShippingSelector({
   products,
   onSelectShippingAction,
   selectedShipping,
+  onShippingSelected,
 }: ShippingSelectorProps) {
   const [loading, setLoading] = useState(false);
   const [options, setOptions] = useState<ShippingOption[]>([]);
@@ -63,16 +65,22 @@ export default function ShippingSelector({
         throw new Error(data.error || "Erro ao calcular frete");
       }
 
-      const validOptions = data.options.filter(
-        (opt: ShippingOption) => !opt.error
-      );
+      const validOptions = data.options
+        .filter((opt: ShippingOption) => !opt.error)
+        .map((opt: ShippingOption) => ({
+          ...opt,
+          // Garante que o price seja um número
+          price:
+            typeof opt.price === "string" ? parseFloat(opt.price) : opt.price,
+        }));
       setOptions(validOptions);
 
       if (validOptions.length === 0) {
         setError("Nenhuma opção de frete disponível para este CEP");
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Erro ao calcular frete";
+      const errorMessage =
+        err instanceof Error ? err.message : "Erro ao calcular frete";
       setError(errorMessage);
       setOptions([]);
     } finally {
@@ -119,7 +127,13 @@ export default function ShippingSelector({
         {options.map((option) => (
           <div
             key={option.id}
-            onClick={() => onSelectShippingAction(option)}
+            onClick={() => {
+              onSelectShippingAction(option);
+              // Chama o callback para fechar a seção e avançar
+              if (onShippingSelected) {
+                setTimeout(() => onShippingSelected(), 300);
+              }
+            }}
             className={`border rounded-lg p-4 cursor-pointer transition-all ${
               selectedShipping?.id === option.id
                 ? "border-primary bg-primary/5"

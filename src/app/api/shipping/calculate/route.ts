@@ -39,27 +39,30 @@ export async function POST(request: NextRequest) {
 
     // Calcular frete usando Melhor Envio
     const token = process.env.MELHOR_ENVIO_TOKEN;
-    
+
     if (!token) {
       // Fallback: retorna valores fixos se não tiver token
-      return NextResponse.json([
-        {
-          id: 1,
-          name: "PAC",
-          company: "Correios",
-          price: 15.00,
-          delivery_time: 10,
-          service: "PAC",
-        },
-        {
-          id: 2,
-          name: "SEDEX",
-          company: "Correios",
-          price: 25.00,
-          delivery_time: 5,
-          service: "SEDEX",
-        },
-      ]);
+      return NextResponse.json({
+        success: true,
+        options: [
+          {
+            id: 1,
+            name: "PAC",
+            company: "Correios",
+            price: 15.0,
+            deliveryTime: 10,
+            service: "PAC",
+          },
+          {
+            id: 2,
+            name: "SEDEX",
+            company: "Correios",
+            price: 25.0,
+            deliveryTime: 5,
+            service: "SEDEX",
+          },
+        ],
+      });
     }
 
     const response = await axios.post(
@@ -99,17 +102,19 @@ export async function POST(request: NextRequest) {
     }
 
     // Formatar resposta
-    const shippingOptions = response.data.map((option: ShippingOptionResponse) => ({
-      id: option.id,
-      name: option.name,
-      company: option.company.name,
-      price: option.price,
-      discount: option.discount,
-      deliveryTime: option.delivery_time,
-      deliveryRange: option.delivery_range,
-      customPrice: option.custom_price,
-      error: option.error,
-    }));
+    const shippingOptions = response.data.map(
+      (option: ShippingOptionResponse) => ({
+        id: option.id,
+        name: option.name,
+        company: option.company.name,
+        price: option.price,
+        discount: option.discount,
+        deliveryTime: option.delivery_time,
+        deliveryRange: option.delivery_range,
+        customPrice: option.custom_price,
+        error: option.error,
+      })
+    );
 
     return NextResponse.json({
       success: true,
@@ -117,25 +122,28 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Erro ao calcular frete:", error);
-    
+
     // Se houver erro na API, retorna valores fixos como fallback
-    return NextResponse.json([
-      {
-        id: 1,
-        name: "PAC",
-        company: "Correios",
-        price: 15.00,
-        deliveryTime: 10,
-        service: "PAC",
-      },
-      {
-        id: 2,
-        name: "SEDEX",
-        company: "Correios",
-        price: 25.00,
-        deliveryTime: 5,
-        service: "SEDEX",
-      },
-    ]);
+    return NextResponse.json({
+      success: true,
+      options: [
+        {
+          id: 1,
+          name: "PAC",
+          company: "Correios",
+          price: 15.0,
+          deliveryTime: 10,
+          service: "PAC",
+        },
+        {
+          id: 2,
+          name: "SEDEX",
+          company: "Correios",
+          price: 25.0,
+          deliveryTime: 5,
+          service: "SEDEX",
+        },
+      ],
+    });
   }
 }

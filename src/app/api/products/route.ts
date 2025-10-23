@@ -10,8 +10,12 @@ export async function GET() {
         createdAt: "desc",
       },
     });
-    
-    return NextResponse.json(products);
+    // Corrige serialização de BigInt
+    const productsSerialized = products.map((product) => ({
+      ...product,
+      id: product.id.toString(),
+    }));
+    return NextResponse.json(productsSerialized);
   } catch (error) {
     console.error("Erro ao buscar produtos:", error);
     return NextResponse.json(
@@ -24,12 +28,15 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    
+
     const product = await prisma.product.create({
       data: body,
     });
-    
-    return NextResponse.json(product);
+
+    return NextResponse.json({
+      ...product,
+      id: product.id.toString(),
+    });
   } catch (error) {
     console.error("Erro ao criar produto:", error);
     return NextResponse.json(

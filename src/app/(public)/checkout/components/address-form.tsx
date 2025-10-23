@@ -19,6 +19,7 @@ interface AddressFormProps {
     neighborhood: string;
     city: string;
     state: string;
+    recipientName: string;
   };
   onAddressDataChangeAction: (data: {
     cep: string;
@@ -28,6 +29,7 @@ interface AddressFormProps {
     neighborhood: string;
     city: string;
     state: string;
+    recipientName: string;
   }) => void;
 }
 
@@ -46,9 +48,9 @@ export default function AddressForm({
     const cep = addressData.cep.replace(/\D/g, "");
     if (cep.length === 8) {
       try {
-        const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+        const response = await fetch(`/api/cep/${cep}`);
         const data = await response.json();
-        if (!data.erro) {
+        if (!data.error) {
           onAddressDataChangeAction({
             ...addressData,
             street: data.logradouro || "",
@@ -88,6 +90,22 @@ export default function AddressForm({
               maxLength={9}
             />
             <FieldDescription>Informe seu CEP</FieldDescription>
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="recipientName">Destinatário *</FieldLabel>
+            <Input
+              id="recipientName"
+              required
+              value={addressData.recipientName}
+              onChange={(e) =>
+                onAddressDataChangeAction({
+                  ...addressData,
+                  recipientName: e.target.value,
+                })
+              }
+              placeholder="Nome do destinatário"
+            />
+            <FieldDescription>Quem irá receber o pedido</FieldDescription>
           </Field>
         </div>
         <div className="grid sm:grid-cols-4 gap-4">

@@ -37,6 +37,12 @@ export default function CheckoutPage() {
     useState<ShippingOption | null>(null);
   const [useMercadoPago, setUseMercadoPago] = useState(false);
 
+  // Controla se o usuário já avançou automaticamente (para evitar avanço forçado ao editar)
+  const [hasAutoAdvanced, setHasAutoAdvanced] = useState({
+    personalData: false,
+    address: false,
+  });
+
   const subtotal = getTotalPrice();
   const shippingPrice = selectedShipping?.price || 0;
   const total = subtotal + shippingPrice;
@@ -58,15 +64,18 @@ export default function CheckoutPage() {
     neighborhood: "",
     city: "",
     state: "",
+    recipientName: "",
   });
 
   // Formulário de pagamento (atualizado para usar mês e ano separados)
   const [paymentData, setPaymentData] = useState({
+    paymentMethod: "credit_card",
     cardNumber: "",
     cardName: "",
     expiryMonth: "",
     expiryYear: "",
     cvv: "",
+    cpf: "",
   });
 
   useEffect(() => {
@@ -105,58 +114,163 @@ export default function CheckoutPage() {
   }, [addressData, selectedShipping]);
 
   const isPaymentComplete = () => {
-    return (
-      paymentData.cardName.trim() !== "" &&
-      paymentData.cardNumber.length === 19 &&
-      paymentData.expiryMonth !== "" &&
-      paymentData.expiryYear !== "" &&
-      paymentData.cvv.length >= 3
-    );
+    // Validação para cartão de crédito
+    if (paymentData.paymentMethod === "credit_card") {
+      return (
+        paymentData.cardName.trim() !== "" &&
+        paymentData.cardNumber.length === 19 &&
+        paymentData.expiryMonth !== "" &&
+        paymentData.expiryYear !== "" &&
+        paymentData.cvv.length >= 3
+      );
+    }
+
+    // Validação para PIX e Boleto
+    if (
+      paymentData.paymentMethod === "pix" ||
+      paymentData.paymentMethod === "boleto"
+    ) {
+      return paymentData.cpf.length === 14;
+    }
+
+    return false;
   };
 
-  // Avança automaticamente para a próxima seção quando completa
+  // Avança automaticamente para a próxima seção quando completa (apenas na primeira vez)
   useEffect(() => {
-    if (isPersonalDataComplete() && openSection === "personal-data") {
-      setTimeout(() => setOpenSection("address"), 300);
+    if (
+      isPersonalDataComplete() &&
+      openSection === "personal-data" &&
+      !hasAutoAdvanced.personalData
+    ) {
+      setTimeout(() => {
+        setOpenSection("address");
+        setHasAutoAdvanced((prev) => ({ ...prev, personalData: true }));
+      }, 300);
     }
-  }, [formData, openSection, isPersonalDataComplete]);
+  }, [
+    formData,
+    openSection,
+    isPersonalDataComplete,
+    hasAutoAdvanced.personalData,
+  ]);
 
-  useEffect(() => {
-    if (isAddressComplete() && openSection === "address") {
-      setTimeout(() => setOpenSection("payment"), 300);
+  // Removido auto-avanço da etapa de endereço para pagamento
+
+  // Handler para quando o usuário clica manualmente para abrir/fechar seções
+  const handleSectionChange = (value: string) => {
+    setOpenSection(value);
+    // Reseta as flags de auto-avanço quando o usuário volta para editar
+    if (value === "personal-data") {
+      setHasAutoAdvanced({ personalData: false, address: false });
+    } else if (value === "address") {
+      setHasAutoAdvanced((prev) => ({ ...prev, address: false }));
     }
-  }, [addressData, openSection, isAddressComplete]);
+  };
+
+  // Handler para quando o frete é selecionado
+  const handleShippingSelected = () => {
+    // Avança para a próxima seção (pagamento)
+    setOpenSection("payment");
+    setHasAutoAdvanced((prev) => ({ ...prev, address: true }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    // Validação dos campos de data
-    if (!paymentData.expiryMonth || !paymentData.expiryYear) {
+    // Validação do destinatário
+    if (!addressData.recipientName || addressData.recipientName.trim() === "") {
       toast({
         title: "Erro no formulário",
-        description: "Por favor, preencha a data de validade do cartão.",
+        description: "Por favor, preencha o campo Destinatário.",
         variant: "destructive",
       });
       return;
+    }
+    e.preventDefault();
+
+    // Validação específica por método de pagamento
+    if (paymentData.paymentMethod === "credit_card") {
+      if (!paymentData.expiryMonth || !paymentData.expiryYear) {
+        toast({
+          title: "Erro no formulário",
+          description: "Por favor, preencha a data de validade do cartão.",
+          variant: "destructive",
+        });
+        return;
+      }
+    } else if (
+      paymentData.paymentMethod === "pix" ||
+      paymentData.paymentMethod === "boleto"
+    ) {
+      if (!paymentData.cpf || paymentData.cpf.length !== 14) {
+        toast({
+          title: "Erro no formulário",
+          description: "Por favor, informe um CPF válido.",
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
     setIsLoading(true);
 
     try {
-      // Simulação de processamento de pedido
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      // 1. Cria o pedido
+      const orderRes = await fetch("/api/order/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          address: addressData,
+          items: cartItems.map((item) => ({
+            productId: item.id,
+            quantity: item.quantity,
+            price: item.price,
+          })),
+          shipping: selectedShipping,
+          total: getTotalPrice() + (selectedShipping?.price || 0),
+        }),
+      });
+      const orderJson = await orderRes.json();
+      if (!orderJson.success || !orderJson.order?.id) {
+        throw new Error(orderJson.error || "Erro ao criar pedido");
+      }
+      const orderId = orderJson.order.id;
+
+      // 2. Processa o pagamento
+      const paymentRes = await fetch("/api/payment/process", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orderId,
+          ...paymentData,
+        }),
+      });
+      const paymentJson = await paymentRes.json();
+      if (!paymentJson.success) {
+        throw new Error(paymentJson.error || "Erro ao processar pagamento");
+      }
+
+      // Mensagem personalizada por método de pagamento
+      let successMessage = "Você receberá um e-mail com os detalhes do pedido.";
+      if (paymentData.paymentMethod === "pix") {
+        successMessage =
+          "O QR Code PIX foi gerado! Verifique seu e-mail para realizar o pagamento.";
+      } else if (paymentData.paymentMethod === "boleto") {
+        successMessage =
+          "O boleto foi gerado! Você receberá o link por e-mail.";
+      }
 
       toast({
         title: "Pedido realizado com sucesso!",
-        description: "Você receberá um e-mail com os detalhes do pedido.",
+        description: successMessage,
       });
 
       clearCart();
       router.push("/");
-    } catch {
+    } catch (err) {
       toast({
         title: "Erro ao processar pedido",
-        description: "Tente novamente mais tarde.",
+        description:
+          err instanceof Error ? err.message : "Tente novamente mais tarde.",
         variant: "destructive",
       });
     } finally {
@@ -190,7 +304,7 @@ export default function CheckoutPage() {
                 type="single"
                 collapsible
                 value={openSection}
-                onValueChange={setOpenSection}
+                onValueChange={handleSectionChange}
                 className="space-y-4"
               >
                 {/* Dados Pessoais */}
@@ -235,23 +349,43 @@ export default function CheckoutPage() {
                     <div className="flex items-center gap-3">
                       <div
                         className={`flex items-center justify-center w-8 h-8 rounded-full ${
-                          isAddressComplete()
+                          addressData.cep.length === 9 &&
+                          addressData.street.trim() !== "" &&
+                          addressData.number.trim() !== "" &&
+                          addressData.neighborhood.trim() !== "" &&
+                          addressData.city.trim() !== "" &&
+                          addressData.state.length === 2 &&
+                          selectedShipping !== null
                             ? "bg-green-500 text-white"
                             : "bg-gray-200 text-gray-600"
                         }`}
                       >
-                        {isAddressComplete() ? "✓" : "2"}
+                        {addressData.cep.length === 9 &&
+                        addressData.street.trim() !== "" &&
+                        addressData.number.trim() !== "" &&
+                        addressData.neighborhood.trim() !== "" &&
+                        addressData.city.trim() !== "" &&
+                        addressData.state.length === 2 &&
+                        selectedShipping !== null
+                          ? "✓"
+                          : "2"}
                       </div>
                       <div className="text-left">
                         <h3 className="text-lg font-semibold">
                           Endereço de Entrega
                         </h3>
-                        {isAddressComplete() && (
-                          <p className="text-sm text-muted-foreground">
-                            {addressData.street}, {addressData.number} •{" "}
-                            {addressData.city}/{addressData.state}
-                          </p>
-                        )}
+                        {addressData.cep.length === 9 &&
+                          addressData.street.trim() !== "" &&
+                          addressData.number.trim() !== "" &&
+                          addressData.neighborhood.trim() !== "" &&
+                          addressData.city.trim() !== "" &&
+                          addressData.state.length === 2 &&
+                          selectedShipping !== null && (
+                            <p className="text-sm text-muted-foreground">
+                              {addressData.street}, {addressData.number} •{" "}
+                              {addressData.city}/{addressData.state}
+                            </p>
+                          )}
                       </div>
                     </div>
                   </AccordionTrigger>
@@ -277,6 +411,7 @@ export default function CheckoutPage() {
                           }))}
                           onSelectShippingAction={setSelectedShipping}
                           selectedShipping={selectedShipping}
+                          onShippingSelected={handleShippingSelected}
                         />
                       </div>
                     )}
@@ -328,6 +463,15 @@ export default function CheckoutPage() {
                     {useMercadoPago ? (
                       <MercadoPagoPayment
                         amount={total}
+                        paymentMethod={
+                          paymentData.paymentMethod as
+                            | "credit_card"
+                            | "pix"
+                            | "boleto"
+                        }
+                        payerEmail={formData.email}
+                        payerName={formData.name}
+                        payerCpf={paymentData.cpf || formData.cpf}
                         onPaymentSuccessAction={(data) => {
                           console.log("Pagamento aprovado:", data);
                           toast({

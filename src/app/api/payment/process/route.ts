@@ -30,6 +30,13 @@ export async function POST(request: NextRequest) {
       identificationNumber,
     } = body;
 
+    // Validar orderId
+    if (!orderId) {
+      return NextResponse.json(
+        { error: "orderId não informado" },
+        { status: 400 }
+      );
+    }
     // Buscar o pedido
     const order = await prisma.order.findUnique({
       where: { id: orderId },
@@ -102,7 +109,8 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Erro ao processar pagamento:", error);
-    const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
+    const errorMessage =
+      error instanceof Error ? error.message : "Erro desconhecido";
 
     return NextResponse.json(
       {
