@@ -25,6 +25,7 @@ export default async function Header() {
             className="object-cover"
             priority
             unoptimized
+            draggable="false"
           />
         </div>
       </div>
