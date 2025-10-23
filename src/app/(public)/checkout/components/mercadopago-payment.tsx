@@ -40,7 +40,11 @@ export default function MercadoPagoPayment({
 
   useEffect(() => {
     if (sdkLoaded && window.MercadoPago) {
-      const publicKey = process.env.NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY;
+      // Tenta pegar do env, senão usa a chave diretamente
+      const publicKey = 
+        process.env.NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY || 
+        "TEST-6dc16094-e309-4bb2-94c3-9cb3608e274f";
+      
       if (!publicKey) {
         console.error("Mercado Pago public key not found");
         return;
