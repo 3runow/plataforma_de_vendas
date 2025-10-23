@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import ProductCard from "./product-card";
 import { SerializableProduct } from "../../types/types";
 import {
@@ -25,6 +25,18 @@ export default function ProductList({
   itemsPerPage = 8,
 }: ProductListProps) {
   const [currentPage, setCurrentPage] = useState(1);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   // calcula produtos da página atual
   const totalPages = Math.ceil(products.length / itemsPerPage);
@@ -40,35 +52,47 @@ export default function ProductList({
   };
 
   // gerar números de página para exibir
-  const getPageNumbers = () => {
+  const getPageNumbers = (isMobile: boolean = false) => {
     const pages: (number | string)[] = [];
-    const maxVisible = 5;
+    const maxVisible = isMobile ? 3 : 5;
 
     if (totalPages <= maxVisible) {
       for (let i = 1; i <= totalPages; i++) {
         pages.push(i);
       }
     } else {
-      if (currentPage <= 3) {
-        for (let i = 1; i <= 4; i++) {
-          pages.push(i);
-        }
-        pages.push("ellipsis");
-        pages.push(totalPages);
-      } else if (currentPage >= totalPages - 2) {
-        pages.push(1);
-        pages.push("ellipsis");
-        for (let i = totalPages - 3; i <= totalPages; i++) {
-          pages.push(i);
+      if (isMobile) {
+        // Para mobile: apenas página atual e vizinhos imediatos
+        if (currentPage === 1) {
+          pages.push(1, 2, "ellipsis", totalPages);
+        } else if (currentPage === totalPages) {
+          pages.push(1, "ellipsis", totalPages - 1, totalPages);
+        } else {
+          pages.push(1, "ellipsis", currentPage, "ellipsis", totalPages);
         }
       } else {
-        pages.push(1);
-        pages.push("ellipsis");
-        for (let i = currentPage - 1; i <= currentPage + 1; i++) {
-          pages.push(i);
+        // Para desktop: lógica original
+        if (currentPage <= 3) {
+          for (let i = 1; i <= 4; i++) {
+            pages.push(i);
+          }
+          pages.push("ellipsis");
+          pages.push(totalPages);
+        } else if (currentPage >= totalPages - 2) {
+          pages.push(1);
+          pages.push("ellipsis");
+          for (let i = totalPages - 3; i <= totalPages; i++) {
+            pages.push(i);
+          }
+        } else {
+          pages.push(1);
+          pages.push("ellipsis");
+          for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+            pages.push(i);
+          }
+          pages.push("ellipsis");
+          pages.push(totalPages);
         }
-        pages.push("ellipsis");
-        pages.push(totalPages);
       }
     }
 
@@ -105,8 +129,8 @@ export default function ProductList({
           </div>
 
           {totalPages > 1 && (
-            <Pagination>
-              <PaginationContent>
+            <Pagination className="mt-8">
+              <PaginationContent className="flex-wrap gap-2">
                 <PaginationItem>
                   <PaginationPrevious
                     href="#"
@@ -122,7 +146,7 @@ export default function ProductList({
                   />
                 </PaginationItem>
 
-                {getPageNumbers().map((page, index) => (
+                {getPageNumbers(isMobile).map((page, index) => (
                   <PaginationItem key={index}>
                     {page === "ellipsis" ? (
                       <PaginationEllipsis />
