@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/contexts/cart-context";
 import { ChevronLeft } from "lucide-react";
@@ -83,16 +83,16 @@ export default function CheckoutPage() {
   }, [cartItems, router, toast]);
 
   // Verifica se uma seção está completa
-  const isPersonalDataComplete = () => {
+  const isPersonalDataComplete = useCallback(() => {
     return (
       formData.name.trim() !== "" &&
       formData.email.trim() !== "" &&
       formData.cpf.length === 14 &&
       formData.phone.length === 15
     );
-  };
+  }, [formData]);
 
-  const isAddressComplete = () => {
+  const isAddressComplete = useCallback(() => {
     return (
       addressData.cep.length === 9 &&
       addressData.street.trim() !== "" &&
@@ -102,7 +102,7 @@ export default function CheckoutPage() {
       addressData.state.length === 2 &&
       selectedShipping !== null
     );
-  };
+  }, [addressData, selectedShipping]);
 
   const isPaymentComplete = () => {
     return (

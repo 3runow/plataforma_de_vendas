@@ -52,8 +52,9 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
-    console.error("Erro no webhook do Mercado Pago:", error);
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
+    console.error("Erro no webhook do Mercado Pago:", errorMessage);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

@@ -6,15 +6,26 @@ import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import Script from "next/script";
 
+interface MercadoPagoInstance {
+  bricks: () => {
+    create: (type: string, id: string, options: unknown) => Promise<void>;
+  };
+}
+
 declare global {
   interface Window {
-    MercadoPago: any;
+    MercadoPago: new (publicKey: string, options?: { locale: string }) => MercadoPagoInstance;
   }
+}
+
+interface PaymentData {
+  amount: number;
+  [key: string]: unknown;
 }
 
 interface MercadoPagoPaymentProps {
   amount: number;
-  onPaymentSuccessAction: (paymentData: any) => void;
+  onPaymentSuccessAction: (paymentData: PaymentData) => void;
   onPaymentErrorAction: (error: string) => void;
 }
 
@@ -25,16 +36,18 @@ export default function MercadoPagoPayment({
 }: MercadoPagoPaymentProps) {
   const [sdkLoaded, setSdkLoaded] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [mp, setMp] = useState<any>(null);
+  const [mp, setMp] = useState<MercadoPagoInstance | null>(null);
 
   useEffect(() => {
     if (sdkLoaded && window.MercadoPago) {
-      const mercadopago = new window.MercadoPago(
-        process.env.NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY,
-        {
-          locale: "pt-BR",
-        }
-      );
+      const publicKey = process.env.NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY;
+      if (!publicKey) {
+        console.error("Mercado Pago public key not found");
+        return;
+      }
+      const mercadopago = new window.MercadoPago(publicKey, {
+        locale: "pt-BR",
+      });
       setMp(mercadopago);
     }
   }, [sdkLoaded]);
@@ -52,14 +65,15 @@ export default function MercadoPagoPayment({
       // Por exemplo, criar um formulário de pagamento do Mercado Pago
 
       // Exemplo simplificado - em produção, você deve usar o Checkout Pro ou Checkout Transparente
-      const paymentData = {
+      const paymentData: PaymentData = {
         amount: amount,
         // Adicione outros dados necessários
       };
 
       onPaymentSuccessAction(paymentData);
-    } catch (error: any) {
-      onPaymentErrorAction(error.message || "Erro ao processar pagamento");
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Erro ao processar pagamento";
+      onPaymentErrorAction(errorMessage);
     } finally {
       setLoading(false);
     }

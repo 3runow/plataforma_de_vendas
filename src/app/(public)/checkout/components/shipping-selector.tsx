@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
@@ -40,13 +40,7 @@ export default function ShippingSelector({
   const [options, setOptions] = useState<ShippingOption[]>([]);
   const [error, setError] = useState<string>("");
 
-  useEffect(() => {
-    if (fromCep && toCep && toCep.length === 9) {
-      calculateShipping();
-    }
-  }, [toCep]);
-
-  const calculateShipping = async () => {
+  const calculateShipping = useCallback(async () => {
     setLoading(true);
     setError("");
 
@@ -77,13 +71,20 @@ export default function ShippingSelector({
       if (validOptions.length === 0) {
         setError("Nenhuma opção de frete disponível para este CEP");
       }
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Erro ao calcular frete";
+      setError(errorMessage);
       setOptions([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [fromCep, toCep, products]);
+
+  useEffect(() => {
+    if (fromCep && toCep && toCep.length === 9) {
+      calculateShipping();
+    }
+  }, [toCep, fromCep, calculateShipping]);
 
   if (loading) {
     return (

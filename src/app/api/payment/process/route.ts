@@ -100,13 +100,14 @@ export async function POST(request: NextRequest) {
         paymentMethodId: response.payment_method_id,
       },
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Erro ao processar pagamento:", error);
+    const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
 
     return NextResponse.json(
       {
         error: "Erro ao processar pagamento",
-        details: error.message,
+        details: errorMessage,
       },
       { status: 500 }
     );

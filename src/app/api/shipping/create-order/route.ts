@@ -182,16 +182,14 @@ export async function POST(request: NextRequest) {
       melhorEnvioOrderId,
       trackingCode,
     });
-  } catch (error: any) {
-    console.error(
-      "Erro ao criar pedido de frete:",
-      error.response?.data || error.message
-    );
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
+    console.error("Erro ao criar pedido de frete:", errorMessage);
 
     return NextResponse.json(
       {
         error: "Erro ao criar pedido de frete",
-        details: error.response?.data || error.message,
+        details: errorMessage,
       },
       { status: 500 }
     );

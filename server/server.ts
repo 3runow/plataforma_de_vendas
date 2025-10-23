@@ -2,7 +2,7 @@ import { Elysia } from "elysia";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import cookie from "cookie";
+import * as cookie from "cookie";
 import { prisma } from "../src/lib/prisma";
 
 const JWT_SECRET = process.env.JWT_SECRET || "supersecret"; // colocar no .env

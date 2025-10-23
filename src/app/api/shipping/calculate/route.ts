@@ -62,8 +62,20 @@ export async function POST(request: NextRequest) {
       }
     );
 
+    interface ShippingOptionResponse {
+      id: number;
+      name: string;
+      company: { name: string };
+      price: number;
+      discount: number;
+      delivery_time: number;
+      delivery_range: { min: number; max: number };
+      custom_price: number;
+      error: string | null;
+    }
+
     // Formatar resposta
-    const shippingOptions = response.data.map((option: any) => ({
+    const shippingOptions = response.data.map((option: ShippingOptionResponse) => ({
       id: option.id,
       name: option.name,
       company: option.company.name,
@@ -79,16 +91,14 @@ export async function POST(request: NextRequest) {
       success: true,
       options: shippingOptions,
     });
-  } catch (error: any) {
-    console.error(
-      "Erro ao calcular frete:",
-      error.response?.data || error.message
-    );
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
+    console.error("Erro ao calcular frete:", errorMessage);
 
     return NextResponse.json(
       {
         error: "Erro ao calcular frete",
-        details: error.response?.data || error.message,
+        details: errorMessage,
       },
       { status: 500 }
     );
