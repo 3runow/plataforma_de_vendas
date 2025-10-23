@@ -19,7 +19,7 @@ export default async function Header() {
       <div className="relative w-full h-24 md:h-32 overflow-hidden flex items-center justify-center bg-[#87CEEB]">
         <div className="relative w-full h-full">
           <Image
-            src="/assets/image/header.png"
+            src="/assets/header.jpeg"
             alt="Logo"
             fill
             className="object-cover"
