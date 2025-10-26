@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PersonalInfoTab } from "./personal-info-tab";
 import { AddressesTab } from "./addresses-tab";
-import { OrdersTab } from "./orders-tab";
+import OrdersTab from "./orders-tab";
 import { SecurityTab } from "./security-tab";
 import { User, MapPin, ShoppingBag, Lock } from "lucide-react";
 
@@ -115,7 +115,7 @@ export function AccountTabs({ user }: AccountTabsProps) {
       </TabsContent>
 
       <TabsContent value="orders">
-        <OrdersTab orders={user.orders} />
+        <OrdersTab userId={user.id} />
       </TabsContent>
 
       <TabsContent value="security">

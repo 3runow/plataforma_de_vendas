@@ -17,7 +17,7 @@ import AddressForm from "./components/address-form";
 import PaymentForm from "./components/payment-form";
 import OrderSummary from "./components/order-summary";
 import ShippingSelector from "./components/shipping-selector";
-import MercadoPagoPayment from "./components/mercadopago-payment";
+import StripePayment from "./components/stripe-payment";
 
 interface ShippingOption {
   id: number;
@@ -35,7 +35,9 @@ export default function CheckoutPage() {
   const [openSection, setOpenSection] = useState<string>("personal-data");
   const [selectedShipping, setSelectedShipping] =
     useState<ShippingOption | null>(null);
-  const [useMercadoPago, setUseMercadoPago] = useState(false);
+  const [useStripe, setUseStripe] = useState(true);
+  const [paymentProcessed, setPaymentProcessed] = useState(false);
+  const [currentOrderId, setCurrentOrderId] = useState<number | null>(null);
 
   // Controla se o usuário já avançou automaticamente (para evitar avanço forçado ao editar)
   const [hasAutoAdvanced, setHasAutoAdvanced] = useState({
@@ -185,36 +187,35 @@ export default function CheckoutPage() {
       });
       return;
     }
-    e.preventDefault();
 
-    // Validação específica por método de pagamento
-    if (paymentData.paymentMethod === "credit_card") {
-      if (!paymentData.expiryMonth || !paymentData.expiryYear) {
-        toast({
-          title: "Erro no formulário",
-          description: "Por favor, preencha a data de validade do cartão.",
-          variant: "destructive",
-        });
-        return;
-      }
-    } else if (
-      paymentData.paymentMethod === "pix" ||
-      paymentData.paymentMethod === "boleto"
-    ) {
-      if (!paymentData.cpf || paymentData.cpf.length !== 14) {
-        toast({
-          title: "Erro no formulário",
-          description: "Por favor, informe um CPF válido.",
-          variant: "destructive",
-        });
-        return;
-      }
+    // Verifica se o pagamento foi processado
+    if (!paymentProcessed) {
+      toast({
+        title: "Pagamento necessário",
+        description: "Por favor, processe o pagamento primeiro.",
+        variant: "destructive",
+      });
+      return;
     }
+
+    e.preventDefault();
 
     setIsLoading(true);
 
     try {
-      // 1. Cria o pedido
+      // Se já temos um order_id, significa que o pagamento foi processado
+      if (currentOrderId) {
+        toast({
+          title: "Pedido confirmado!",
+          description: "Seu pedido foi processado com sucesso.",
+        });
+
+        clearCart();
+        router.push(`/checkout/confirmation?orderId=${currentOrderId}`);
+        return;
+      }
+
+      // Cria o pedido (sem reduzir estoque ainda)
       const orderRes = await fetch("/api/order/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -233,39 +234,14 @@ export default function CheckoutPage() {
       if (!orderJson.success || !orderJson.order?.id) {
         throw new Error(orderJson.error || "Erro ao criar pedido");
       }
-      const orderId = orderJson.order.id;
 
-      // 2. Processa o pagamento
-      const paymentRes = await fetch("/api/payment/process", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          orderId,
-          ...paymentData,
-        }),
-      });
-      const paymentJson = await paymentRes.json();
-      if (!paymentJson.success) {
-        throw new Error(paymentJson.error || "Erro ao processar pagamento");
-      }
-
-      // Mensagem personalizada por método de pagamento
-      let successMessage = "Você receberá um e-mail com os detalhes do pedido.";
-      if (paymentData.paymentMethod === "pix") {
-        successMessage =
-          "O QR Code PIX foi gerado! Verifique seu e-mail para realizar o pagamento.";
-      } else if (paymentData.paymentMethod === "boleto") {
-        successMessage =
-          "O boleto foi gerado! Você receberá o link por e-mail.";
-      }
+      // Salva o order_id para usar no pagamento
+      setCurrentOrderId(orderJson.order.id);
 
       toast({
-        title: "Pedido realizado com sucesso!",
-        description: successMessage,
+        title: "Pedido criado!",
+        description: "Agora processe o pagamento para confirmar.",
       });
-
-      clearCart();
-      router.push("/");
     } catch (err) {
       toast({
         title: "Erro ao processar pedido",
@@ -433,66 +409,54 @@ export default function CheckoutPage() {
                       </div>
                       <div className="text-left">
                         <h3 className="text-lg font-semibold">Pagamento</h3>
-                        {isPaymentComplete() && !useMercadoPago && (
+                        {isPaymentComplete() && !useStripe && (
                           <p className="text-sm text-muted-foreground">
                             Cartão •••• {paymentData.cardNumber.slice(-4)}
                           </p>
                         )}
-                        {useMercadoPago && (
+                        {useStripe && (
                           <p className="text-sm text-muted-foreground">
-                            Mercado Pago
+                            Stripe
                           </p>
                         )}
                       </div>
                     </div>
                   </AccordionTrigger>
                   <AccordionContent className="px-6 pb-6">
-                    {/* Opção de escolher método de pagamento */}
-                    <div className="mb-6">
-                      <label className="flex items-center space-x-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={useMercadoPago}
-                          onChange={(e) => setUseMercadoPago(e.target.checked)}
-                          className="rounded"
-                        />
-                        <span>Pagar com Mercado Pago</span>
-                      </label>
-                    </div>
+                    <StripePayment
+                      amount={total}
+                      paymentMethod={
+                        paymentData.paymentMethod as
+                          | "credit_card"
+                          | "pix"
+                          | "boleto"
+                      }
+                      payerEmail={formData.email}
+                      payerName={formData.name}
+                      payerCpf={paymentData.cpf || formData.cpf}
+                      orderId={currentOrderId || undefined}
+                      onPaymentSuccessAction={(data) => {
+                        console.log("Pagamento aprovado:", data);
+                        setPaymentProcessed(true);
+                        toast({
+                          title: "Pagamento aprovado!",
+                          description: "Redirecionando para confirmação...",
+                        });
 
-                    {useMercadoPago ? (
-                      <MercadoPagoPayment
-                        amount={total}
-                        paymentMethod={
-                          paymentData.paymentMethod as
-                            | "credit_card"
-                            | "pix"
-                            | "boleto"
-                        }
-                        payerEmail={formData.email}
-                        payerName={formData.name}
-                        payerCpf={paymentData.cpf || formData.cpf}
-                        onPaymentSuccessAction={(data) => {
-                          console.log("Pagamento aprovado:", data);
-                          toast({
-                            title: "Pagamento aprovado!",
-                            description: "Seu pedido foi confirmado.",
-                          });
-                        }}
-                        onPaymentErrorAction={(error) => {
-                          toast({
-                            title: "Erro no pagamento",
-                            description: error,
-                            variant: "destructive",
-                          });
-                        }}
-                      />
-                    ) : (
-                      <PaymentForm
-                        paymentData={paymentData}
-                        onPaymentDataChangeAction={setPaymentData}
-                      />
-                    )}
+                        // Redireciona para a página de sucesso simples
+                        setTimeout(() => {
+                          router.push("/checkout/success-simple");
+                        }, 1000);
+                      }}
+                      onPaymentErrorAction={(error) => {
+                        setPaymentProcessed(false);
+                        toast({
+                          title: "Erro no pagamento",
+                          description: error,
+                          variant: "destructive",
+                        });
+                      }}
+                    />
                   </AccordionContent>
                 </AccordionItem>
               </Accordion>
@@ -506,6 +470,7 @@ export default function CheckoutPage() {
                 shipping={shippingPrice}
                 total={total}
                 isLoading={isLoading}
+                paymentProcessed={paymentProcessed}
               />
             </div>
           </div>

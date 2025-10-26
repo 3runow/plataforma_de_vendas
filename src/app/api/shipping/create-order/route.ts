@@ -8,13 +8,9 @@ const MELHOR_ENVIO_API =
     ? "https://sandbox.melhorenvio.com.br/api/v2/me"
     : "https://melhorenvio.com.br/api/v2/me";
 
-/**
- * Cria um pedido de frete no Melhor Envio após a aprovação do pagamento
- */
 export async function POST(request: NextRequest) {
   try {
     const user = await verifyAuth(request);
-
     if (!user) {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
@@ -22,7 +18,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { orderId } = body;
 
-    // Buscar o pedido com todos os dados necessários
+    console.log("Criando pedido no Melhor Envio para orderId:", orderId);
+
+    // Buscar o pedido
     const order = await prisma.order.findUnique({
       where: { id: orderId },
       include: {
@@ -47,36 +45,30 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
     }
 
-    // Verificar se o pagamento foi aprovado
-    if (order.paymentStatus !== "approved") {
-      return NextResponse.json(
-        { error: "Pagamento não aprovado" },
-        { status: 400 }
-      );
-    }
-
-    // Preparar dados do pedido de frete
+    // Preparar dados para o Melhor Envio
     const shippingData = {
-      service: order.shippingService || "", // ID do serviço escolhido
+      service: order.shippingService || "1",
       from: {
-        name: "Sua Loja",
+        name: "BRICKS",
         phone: "11999999999",
-        email: "loja@example.com",
-        document: "12345678000100", // CNPJ
-        address: "Rua Exemplo",
+        email: "contato@bricks.com.br",
+        document: "12345678000199",
+        company_document: "12345678000199",
+        state_register: "123456789",
+        address: "Rua das Flores, 123",
         complement: "",
         number: "123",
         district: "Centro",
         city: "São Paulo",
-        state_abbr: "SP",
         country_id: "BR",
-        postal_code: "01310100", // CEP de origem
+        postal_code: "01234567",
+        note: "Loja BRICKS",
       },
       to: {
         name: order.address.recipientName,
         phone: order.user.phone || "11999999999",
         email: order.user.email,
-        document: order.user.cpf || "",
+        document: order.user.cpf || "00000000000",
         address: order.address.street,
         complement: order.address.complement || "",
         number: order.address.number,
@@ -84,7 +76,7 @@ export async function POST(request: NextRequest) {
         city: order.address.city,
         state_abbr: order.address.state,
         country_id: "BR",
-        postal_code: order.address.cep.replace(/\D/g, ""),
+        postal_code: order.address.cep,
       },
       products: order.items.map((item) => ({
         name: item.product.name,
@@ -93,22 +85,20 @@ export async function POST(request: NextRequest) {
       })),
       volumes: [
         {
-          height: 17,
-          width: 11,
-          length: 11,
-          weight: 0.3,
+          height: 10,
+          width: 10,
+          length: 10,
+          weight:
+            0.3 * order.items.reduce((sum, item) => sum + item.quantity, 0),
         },
       ],
-      options: {
-        insurance_value: order.total,
-        receipt: false,
-        own_hand: false,
-      },
     };
 
-    // Criar o pedido no Melhor Envio
+    console.log("Dados do frete:", shippingData);
+
+    // Criar pedido no Melhor Envio
     const response = await axios.post(
-      `${MELHOR_ENVIO_API}/cart`,
+      `${MELHOR_ENVIO_API}/shipment`,
       shippingData,
       {
         headers: {
@@ -119,77 +109,45 @@ export async function POST(request: NextRequest) {
       }
     );
 
-    const melhorEnvioOrderId = response.data.id;
+    console.log("Resposta do Melhor Envio:", response.data);
 
-    // Comprar o frete (em produção, você deve verificar o saldo antes)
-    await axios.post(
-      `${MELHOR_ENVIO_API}/shipment/checkout`,
-      {
-        orders: [melhorEnvioOrderId],
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.MELHOR_ENVIO_TOKEN}`,
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-      }
-    );
-
-    // Gerar etiqueta
-    await axios.post(
-      `${MELHOR_ENVIO_API}/shipment/generate`,
-      {
-        orders: [melhorEnvioOrderId],
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.MELHOR_ENVIO_TOKEN}`,
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-      }
-    );
-
-    // Buscar informações de rastreio
-    const trackingResponse = await axios.get(
-      `${MELHOR_ENVIO_API}/shipment/tracking`,
-      {
-        params: {
-          orders: melhorEnvioOrderId,
-        },
-        headers: {
-          Authorization: `Bearer ${process.env.MELHOR_ENVIO_TOKEN}`,
-          Accept: "application/json",
-        },
-      }
-    );
-
-    const trackingCode = trackingResponse.data[0]?.tracking || "";
-
-    // Atualizar o pedido com as informações de rastreio
+    // Atualizar pedido com dados do frete
     await prisma.order.update({
       where: { id: orderId },
       data: {
-        melhorEnvioOrderId: melhorEnvioOrderId,
-        shippingTrackingCode: trackingCode,
-        status: "processing",
+        melhorEnvioOrderId: response.data.id?.toString(),
+        shippingTrackingCode: response.data.tracking,
+        status: "shipped",
       },
     });
 
     return NextResponse.json({
       success: true,
-      melhorEnvioOrderId,
-      trackingCode,
+      shipping: {
+        id: response.data.id,
+        tracking: response.data.tracking,
+        status: response.data.status,
+      },
     });
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
-    console.error("Erro ao criar pedido de frete:", errorMessage);
+    console.error("Erro ao criar pedido no Melhor Envio:", error);
+
+    // Se falhar, apenas atualizar status
+    try {
+      await prisma.order.update({
+        where: { id: body.orderId },
+        data: {
+          status: "processing",
+        },
+      });
+    } catch (updateError) {
+      console.error("Erro ao atualizar status do pedido:", updateError);
+    }
 
     return NextResponse.json(
       {
-        error: "Erro ao criar pedido de frete",
-        details: errorMessage,
+        error: "Erro ao criar pedido no Melhor Envio",
+        details: error instanceof Error ? error.message : "Erro desconhecido",
       },
       { status: 500 }
     );

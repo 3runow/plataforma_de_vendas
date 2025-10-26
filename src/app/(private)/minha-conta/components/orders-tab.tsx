@@ -1,5 +1,6 @@
 "use client";
 
+import React, { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -41,7 +42,7 @@ interface Order {
 }
 
 interface OrdersTabProps {
-  orders: Order[];
+  userId: number;
 }
 
 const statusMap: Record<string, { label: string; color: string }> = {
@@ -52,7 +53,35 @@ const statusMap: Record<string, { label: string; color: string }> = {
   cancelled: { label: "Cancelado", color: "bg-red-500" },
 };
 
-export function OrdersTab({ orders }: OrdersTabProps) {
+export default function OrdersTab({ userId }: OrdersTabProps) {
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    async function fetchOrders() {
+      setLoading(true);
+      try {
+        console.log("Buscando pedidos para usuário:", userId);
+        const res = await fetch("/api/order/list");
+        const data = await res.json();
+        console.log("Resposta da API de pedidos:", data);
+
+        if (data.success && Array.isArray(data.orders)) {
+          console.log("Pedidos carregados:", data.orders.length);
+          setOrders(data.orders);
+        } else {
+          console.log("Nenhum pedido encontrado ou erro na resposta");
+          setOrders([]);
+        }
+      } catch (err) {
+        console.error("Erro ao buscar pedidos:", err);
+        setOrders([]);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchOrders();
+  }, [userId]);
+
   return (
     <Card>
       <CardHeader>
@@ -62,7 +91,12 @@ export function OrdersTab({ orders }: OrdersTabProps) {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {orders.length === 0 ? (
+        {loading ? (
+          <div className="text-center py-8 text-gray-500">
+            <Package className="h-12 w-12 mx-auto mb-4 text-gray-400 animate-spin" />
+            <p>Carregando pedidos...</p>
+          </div>
+        ) : orders.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
             <Package className="h-12 w-12 mx-auto mb-4 text-gray-400" />
             <p>Você ainda não fez nenhum pedido.</p>
@@ -74,9 +108,9 @@ export function OrdersTab({ orders }: OrdersTabProps) {
                 label: order.status,
                 color: "bg-gray-500",
               };
-
               return (
                 <Card key={order.id} className="overflow-hidden">
+                  {/* ...existing code... */}
                   <div className="bg-gray-50 px-4 sm:px-6 py-4 border-b">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                       <div className="flex flex-wrap items-center gap-4">
@@ -113,7 +147,6 @@ export function OrdersTab({ orders }: OrdersTabProps) {
                       </Badge>
                     </div>
                   </div>
-
                   <CardContent className="pt-4 sm:pt-6">
                     <div className="space-y-4">
                       {/* Items */}
@@ -156,7 +189,6 @@ export function OrdersTab({ orders }: OrdersTabProps) {
                           ))}
                         </div>
                       </div>
-
                       {/* Endereço de entrega */}
                       <div>
                         <h4 className="font-semibold mb-2 flex items-center gap-2 text-sm sm:text-base">

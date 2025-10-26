@@ -6,144 +6,120 @@ const MELHOR_ENVIO_API =
     ? "https://sandbox.melhorenvio.com.br/api/v2/me"
     : "https://melhorenvio.com.br/api/v2/me";
 
-interface ShippingItem {
-  weight: number; // peso em kg
-  width: number; // largura em cm
-  height: number; // altura em cm
-  length: number; // comprimento em cm
-  quantity: number;
-  insurance_value: number; // valor do produto
-}
-
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { from, to, products } = body;
 
-    if (!from || !to || !products || products.length === 0) {
-      return NextResponse.json(
-        { error: "Dados incompletos para cálculo de frete" },
-        { status: 400 }
-      );
+    console.log("Calculando frete:", { from, to, products });
+
+    // Validar dados de entrada
+    if (!from?.cep || !to?.cep || !products || !Array.isArray(products)) {
+      console.log("Dados inválidos para cálculo de frete, usando fallback");
+      return getFallbackShipping();
     }
 
-    // Preparar os produtos para a API do Melhor Envio
-    const packages = products.map((item: ShippingItem) => ({
-      weight: item.weight || 0.3, // peso mínimo padrão
-      width: item.width || 11,
-      height: item.height || 17,
-      length: item.length || 11,
-      quantity: item.quantity || 1,
-      insurance_value: item.insurance_value,
+    // Dados do remetente (sua loja)
+    const fromData = {
+      postal_code: from.cep.replace(/\D/g, ""), // Remove caracteres não numéricos
+    };
+
+    // Dados do destinatário
+    const toData = {
+      postal_code: to.cep.replace(/\D/g, ""), // Remove caracteres não numéricos
+    };
+
+    // Dados dos produtos
+    const productsData = products.map((product: any) => ({
+      id: product.id || Math.random().toString(),
+      width: Number(product.width) || 10,
+      height: Number(product.height) || 10,
+      length: Number(product.length) || 10,
+      weight: Number(product.weight) || 0.3,
+      insurance_value: Number(product.price) || 0,
+      quantity: Number(product.quantity) || 1,
     }));
 
-    // Calcular frete usando Melhor Envio
-    const token = process.env.MELHOR_ENVIO_TOKEN;
+    console.log("Dados preparados para Melhor Envio:", {
+      from: fromData,
+      to: toData,
+      products: productsData,
+    });
 
-    if (!token) {
-      // Fallback: retorna valores fixos se não tiver token
-      return NextResponse.json({
-        success: true,
-        options: [
-          {
-            id: 1,
-            name: "PAC",
-            company: "Correios",
-            price: 15.0,
-            deliveryTime: 10,
-            service: "PAC",
-          },
-          {
-            id: 2,
-            name: "SEDEX",
-            company: "Correios",
-            price: 25.0,
-            deliveryTime: 5,
-            service: "SEDEX",
-          },
-        ],
-      });
+    // Verificar se temos token do Melhor Envio
+    if (!process.env.MELHOR_ENVIO_TOKEN) {
+      console.log("Token do Melhor Envio não configurado, usando fallback");
+      return getFallbackShipping();
     }
 
+    // Calcular frete
     const response = await axios.post(
       `${MELHOR_ENVIO_API}/shipment/calculate`,
       {
-        from: {
-          postal_code: from.replace(/\D/g, ""), // Remove formatação do CEP
-        },
-        to: {
-          postal_code: to.replace(/\D/g, ""),
-        },
-        products: packages,
-        options: {
-          receipt: false,
-          own_hand: false,
-        },
+        from: fromData,
+        to: toData,
+        products: productsData,
+        services: "1,2,3,4", // Códigos dos serviços
       },
       {
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${process.env.MELHOR_ENVIO_TOKEN}`,
           "Content-Type": "application/json",
           Accept: "application/json",
         },
+        timeout: 10000, // 10 segundos de timeout
       }
     );
 
-    interface ShippingOptionResponse {
-      id: number;
-      name: string;
-      company: { name: string };
-      price: number;
-      discount: number;
-      delivery_time: number;
-      delivery_range: { min: number; max: number };
-      custom_price: number;
-      error: string | null;
-    }
+    console.log("Resposta do Melhor Envio:", response.data);
 
-    // Formatar resposta
-    const shippingOptions = response.data.map(
-      (option: ShippingOptionResponse) => ({
-        id: option.id,
-        name: option.name,
-        company: option.company.name,
-        price: option.price,
-        discount: option.discount,
-        deliveryTime: option.delivery_time,
-        deliveryRange: option.delivery_range,
-        customPrice: option.custom_price,
-        error: option.error,
-      })
-    );
+    // Validar resposta
+    if (!response.data || !Array.isArray(response.data)) {
+      console.log("Resposta inválida do Melhor Envio, usando fallback");
+      return getFallbackShipping();
+    }
 
     return NextResponse.json({
       success: true,
-      options: shippingOptions,
+      services: response.data,
     });
   } catch (error) {
     console.error("Erro ao calcular frete:", error);
+    console.log("Usando frete fallback devido ao erro");
 
-    // Se houver erro na API, retorna valores fixos como fallback
-    return NextResponse.json({
-      success: true,
-      options: [
-        {
-          id: 1,
-          name: "PAC",
-          company: "Correios",
-          price: 15.0,
-          deliveryTime: 10,
-          service: "PAC",
-        },
-        {
-          id: 2,
-          name: "SEDEX",
-          company: "Correios",
-          price: 25.0,
-          deliveryTime: 5,
-          service: "SEDEX",
-        },
-      ],
-    });
+    return getFallbackShipping();
   }
+}
+
+function getFallbackShipping() {
+  console.log("Retornando frete fallback");
+  return NextResponse.json({
+    success: true,
+    services: [
+      {
+        id: 1,
+        name: "PAC",
+        company: "Correios",
+        price: 15.0,
+        delivery_time: 5,
+        delivery_range: {
+          min: 3,
+          max: 7,
+        },
+        error: false,
+      },
+      {
+        id: 2,
+        name: "SEDEX",
+        company: "Correios",
+        price: 25.0,
+        delivery_time: 2,
+        delivery_range: {
+          min: 1,
+          max: 3,
+        },
+        error: false,
+      },
+    ],
+  });
 }

@@ -11,6 +11,7 @@ interface OrderSummaryProps {
   shipping: number;
   total: number;
   isLoading: boolean;
+  paymentProcessed: boolean;
 }
 
 export default function OrderSummary({
@@ -19,6 +20,7 @@ export default function OrderSummary({
   shipping,
   total,
   isLoading,
+  paymentProcessed,
 }: OrderSummaryProps) {
   return (
     <Card className="sticky top-4">
@@ -59,8 +61,22 @@ export default function OrderSummary({
           <span className="text-primary">R$ {total.toFixed(2)}</span>
         </div>
 
-        <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
-          {isLoading ? "Processando..." : "Confirmar Pedido"}
+        <Button
+          type="submit"
+          className="w-full"
+          size="lg"
+          disabled={isLoading || !paymentProcessed}
+        >
+          {isLoading ? (
+            <div className="flex items-center justify-center">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+              Processando...
+            </div>
+          ) : !paymentProcessed ? (
+            "Processe o pagamento primeiro"
+          ) : (
+            "Confirmar Pedido"
+          )}
         </Button>
 
         <p className="text-xs text-muted-foreground text-center">

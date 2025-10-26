@@ -2,11 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
   request: NextRequest,
-  context: { params: { cep: string } }
+  context: { params: Promise<{ cep: string }> }
 ) {
   try {
     // Next.js API dynamic routes: acessar context.params.cep diretamente
-    const cep = context.params.cep.replace(/\D/g, "");
+    const { cep: cepParam } = await context.params;
+    const cep = cepParam.replace(/\D/g, "");
 
     if (cep.length !== 8) {
       return NextResponse.json({ error: "CEP inválido" }, { status: 400 });

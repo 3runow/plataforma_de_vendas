@@ -60,12 +60,22 @@ export default function ShippingSelector({
       });
 
       const data = await response.json();
+      console.log("Resposta da API de frete:", data);
 
       if (!response.ok) {
         throw new Error(data.error || "Erro ao calcular frete");
       }
 
-      const validOptions = data.options
+      // Verificar se temos dados válidos
+      const services = data.services || data.options || [];
+      console.log("Serviços encontrados:", services);
+
+      if (!Array.isArray(services)) {
+        console.error("Resposta inválida da API de frete:", services);
+        throw new Error("Resposta inválida da API de frete");
+      }
+
+      const validOptions = services
         .filter((opt: ShippingOption) => !opt.error)
         .map((opt: ShippingOption) => ({
           ...opt,

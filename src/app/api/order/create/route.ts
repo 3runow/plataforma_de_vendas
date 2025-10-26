@@ -31,6 +31,29 @@ export async function POST(request: NextRequest) {
       addressId = addressCreated.id;
     }
 
+    // Verifica se há estoque suficiente (mas não reduz ainda)
+    for (const item of items) {
+      const product = await prisma.product.findUnique({
+        where: { id: item.productId },
+      });
+
+      if (!product) {
+        return NextResponse.json(
+          { error: `Produto com ID ${item.productId} não encontrado` },
+          { status: 404 }
+        );
+      }
+
+      if (product.stock < item.quantity) {
+        return NextResponse.json(
+          {
+            error: `Estoque insuficiente para o produto ${product.name}. Disponível: ${product.stock}, Solicitado: ${item.quantity}`,
+          },
+          { status: 400 }
+        );
+      }
+    }
+
     // Cria o pedido
     const order = await prisma.order.create({
       data: {
@@ -52,6 +75,14 @@ export async function POST(request: NextRequest) {
         items: true,
         address: true,
       },
+    });
+
+    console.log("Pedido criado:", {
+      id: order.id,
+      userId: order.userId,
+      status: order.status,
+      total: order.total,
+      itemsCount: order.items.length,
     });
 
     return NextResponse.json({ success: true, order });
