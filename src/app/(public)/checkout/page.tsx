@@ -46,18 +46,20 @@ export default function CheckoutPage() {
   const [paymentProcessed, setPaymentProcessed] = useState(false);
   const [currentOrderId, setCurrentOrderId] = useState<number | null>(null);
   const [showSaveAddressDialog, setShowSaveAddressDialog] = useState(false);
-  const [savedAddresses, setSavedAddresses] = useState<{
-    id: number;
-    recipientName: string;
-    cep: string;
-    street: string;
-    number: string;
-    complement?: string;
-    neighborhood: string;
-    city: string;
-    state: string;
-    isDefault: boolean;
-  }[]>([]);
+  const [savedAddresses, setSavedAddresses] = useState<
+    {
+      id: number;
+      recipientName: string;
+      cep: string;
+      street: string;
+      number: string;
+      complement?: string;
+      neighborhood: string;
+      city: string;
+      state: string;
+      isDefault: boolean;
+    }[]
+  >([]);
   const [useSavedAddress, setUseSavedAddress] = useState(true);
   const [selectedAddressId, setSelectedAddressId] = useState<number | null>(
     null
@@ -105,7 +107,7 @@ export default function CheckoutPage() {
   });
 
   // Formulário de pagamento (para validação)
-  const [paymentData, setPaymentData] = useState({
+  const [paymentData] = useState({
     paymentMethod: "credit_card",
     cardNumber: "",
     cardName: "",
@@ -140,7 +142,9 @@ export default function CheckoutPage() {
             // Preencher endereço padrão ou o primeiro se existir
             if (addresses.length > 0) {
               const defaultAddress =
-                addresses.find((addr: { isDefault: boolean }) => addr.isDefault) || addresses[0];
+                addresses.find(
+                  (addr: { isDefault: boolean }) => addr.isDefault
+                ) || addresses[0];
               setSelectedAddressId(defaultAddress.id);
               setAddressData({
                 addressName: defaultAddress.recipientName || "",
@@ -634,13 +638,21 @@ export default function CheckoutPage() {
                             }
                             className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
                           >
-                            {savedAddresses.map((address: { id: number; recipientName: string | null; street: string; number: string; isDefault: boolean }) => (
-                              <option key={address.id} value={address.id}>
-                                {address.recipientName || "Sem nome"} - {address.street},{" "}
-                                {address.number}{" "}
-                                {address.isDefault && "(Padrão)"}
-                              </option>
-                            ))}
+                            {savedAddresses.map(
+                              (address: {
+                                id: number;
+                                recipientName: string | null;
+                                street: string;
+                                number: string;
+                                isDefault: boolean;
+                              }) => (
+                                <option key={address.id} value={address.id}>
+                                  {address.recipientName || "Sem nome"} -{" "}
+                                  {address.street}, {address.number}{" "}
+                                  {address.isDefault && "(Padrão)"}
+                                </option>
+                              )
+                            )}
                           </select>
                         )}
                       </div>

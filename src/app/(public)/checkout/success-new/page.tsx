@@ -8,7 +8,10 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
 function CheckoutSuccessNewContent() {
+<<<<<<< HEAD
   const searchParams = useSearchParams();
+=======
+>>>>>>> f8e3cc5c8d767d8f7b2ea35302861cfcf6046728
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [orderId, setOrderId] = useState<number | null>(null);
@@ -147,6 +150,7 @@ function CheckoutSuccessNewContent() {
 
 export default function CheckoutSuccessNewPage() {
   return (
+<<<<<<< HEAD
     <Suspense fallback={
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -155,6 +159,18 @@ export default function CheckoutSuccessNewPage() {
         </div>
       </div>
     }>
+=======
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+            <p>Carregando...</p>
+          </div>
+        </div>
+      }
+    >
+>>>>>>> f8e3cc5c8d767d8f7b2ea35302861cfcf6046728
       <CheckoutSuccessNewContent />
     </Suspense>
   );

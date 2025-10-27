@@ -49,6 +49,14 @@ interface StripePaymentProps {
   onPaymentErrorAction: (error: string) => void;
 }
 
+interface CheckoutFormProps {
+  amount: number;
+  paymentMethod: "credit_card" | "pix" | "boleto";
+  orderId?: number;
+  onPaymentSuccessAction: (paymentData: PaymentData) => void;
+  onPaymentErrorAction: (error: string) => void;
+}
+
 interface PaymentMethodOption {
   id: string;
   name: string;
@@ -59,13 +67,10 @@ interface PaymentMethodOption {
 function CheckoutForm({
   amount,
   paymentMethod,
-  payerEmail,
-  payerName,
-  payerCpf,
   orderId,
   onPaymentSuccessAction,
   onPaymentErrorAction,
-}: StripePaymentProps) {
+}: CheckoutFormProps) {
   const stripe = useStripe();
   const elements = useElements();
   const [loading, setLoading] = useState(false);
@@ -416,9 +421,6 @@ export default function StripePayment({
             <CheckoutForm
               amount={amount}
               paymentMethod={selectedMethod}
-              payerEmail={payerEmail}
-              payerName={payerNameInput}
-              payerCpf={payerCpfInput}
               orderId={orderId}
               onPaymentSuccessAction={onPaymentSuccessAction}
               onPaymentErrorAction={onPaymentErrorAction}

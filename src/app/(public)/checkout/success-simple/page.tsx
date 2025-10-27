@@ -12,8 +12,6 @@ export default function CheckoutSuccessSimplePage() {
   const [loading, setLoading] = useState(true);
   const [orderId, setOrderId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [hasCreatedOrder, setHasCreatedOrder] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
   const hasCalledCreateOrder = useRef(false);
   const orderCreationInProgress = useRef(false);
 
@@ -64,18 +62,16 @@ export default function CheckoutSuccessSimplePage() {
       setError("Erro de conexão");
     } finally {
       setLoading(false);
-      setIsCreating(false);
       orderCreationInProgress.current = false;
     }
   };
 
   useEffect(() => {
-    if (!hasCreatedOrder && !isCreating && !hasCalledCreateOrder.current) {
-      setHasCreatedOrder(true);
-      setIsCreating(true);
+    if (!hasCalledCreateOrder.current) {
       createOrder();
     }
-  }, [hasCreatedOrder, isCreating]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (loading) {
     return (
