@@ -1,17 +1,13 @@
 "use client";
 
 import { useEffect, useState, Suspense } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { CheckCircle, Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
 function CheckoutSuccessNewContent() {
-<<<<<<< HEAD
-  const searchParams = useSearchParams();
-=======
->>>>>>> f8e3cc5c8d767d8f7b2ea35302861cfcf6046728
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [orderId, setOrderId] = useState<number | null>(null);
@@ -150,16 +146,6 @@ function CheckoutSuccessNewContent() {
 
 export default function CheckoutSuccessNewPage() {
   return (
-<<<<<<< HEAD
-    <Suspense fallback={
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
-          <p className="text-gray-600">Carregando...</p>
-        </div>
-      </div>
-    }>
-=======
     <Suspense
       fallback={
         <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -170,7 +156,6 @@ export default function CheckoutSuccessNewPage() {
         </div>
       }
     >
->>>>>>> f8e3cc5c8d767d8f7b2ea35302861cfcf6046728
       <CheckoutSuccessNewContent />
     </Suspense>
   );
