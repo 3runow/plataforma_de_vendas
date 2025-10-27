@@ -140,10 +140,10 @@ export default function CheckoutPage() {
             // Preencher endereço padrão ou o primeiro se existir
             if (addresses.length > 0) {
               const defaultAddress =
-                addresses.find((addr: any) => addr.isDefault) || addresses[0];
+                addresses.find((addr: { isDefault: boolean }) => addr.isDefault) || addresses[0];
               setSelectedAddressId(defaultAddress.id);
               setAddressData({
-                addressName: defaultAddress.name || "",
+                addressName: defaultAddress.recipientName || "",
                 cep: defaultAddress.cep || "",
                 street: defaultAddress.street || "",
                 number: defaultAddress.number || "",
@@ -634,9 +634,9 @@ export default function CheckoutPage() {
                             }
                             className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
                           >
-                            {savedAddresses.map((address: any) => (
+                            {savedAddresses.map((address: { id: number; recipientName: string | null; street: string; number: string; isDefault: boolean }) => (
                               <option key={address.id} value={address.id}>
-                                {address.name || "Sem nome"} - {address.street},{" "}
+                                {address.recipientName || "Sem nome"} - {address.street},{" "}
                                 {address.number}{" "}
                                 {address.isDefault && "(Padrão)"}
                               </option>
