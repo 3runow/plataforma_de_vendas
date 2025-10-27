@@ -3,7 +3,7 @@ import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
-  apiVersion: "2024-12-18.acacia",
+  apiVersion: "2025-02-24.acacia",
 });
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || "";
@@ -57,7 +57,7 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
   if (order_id && user_id) {
     // Busca o pedido com os itens
     const order = await prisma.order.findUnique({
-      where: { id: order_id },
+      where: { id: parseInt(order_id) },
       include: {
         items: true,
       },
@@ -66,7 +66,7 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
     if (order) {
       // Atualiza o status do pedido
       await prisma.order.update({
-        where: { id: order_id },
+        where: { id: parseInt(order_id) },
         data: {
           paymentId: paymentIntent.id,
           paymentStatus: "approved",
@@ -94,7 +94,7 @@ async function handlePaymentFailure(paymentIntent: Stripe.PaymentIntent) {
 
   if (order_id && user_id) {
     await prisma.order.update({
-      where: { id: order_id },
+      where: { id: parseInt(order_id) },
       data: {
         paymentId: paymentIntent.id,
         paymentStatus: "failed",
