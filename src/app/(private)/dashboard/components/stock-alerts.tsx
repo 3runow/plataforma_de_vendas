@@ -16,8 +16,10 @@ interface StockAlertsProps {
 }
 
 export default function StockAlerts({ products }: StockAlertsProps) {
-  const criticalStock = products.filter((p) => p.stock === 0);
-  const lowStock = products.filter((p) => p.stock > 0 && p.stock < 10);
+  // Defensive: ensure products is an array (API might return an error object)
+  const safeProducts = Array.isArray(products) ? products : [];
+  const criticalStock = safeProducts.filter((p) => p.stock === 0);
+  const lowStock = safeProducts.filter((p) => p.stock > 0 && p.stock < 10);
 
   return (
     <div className="grid gap-4 grid-cols-1 md:grid-cols-2">

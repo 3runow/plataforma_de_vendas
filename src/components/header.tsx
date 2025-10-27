@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import ContactModal from "./contact-modal";
@@ -33,16 +34,21 @@ export default async function Header() {
       <div className="flex flex-row gap-4 w-full px-4 md:px-32 py-2 bg-[#022044]">
         <MobileMenu navItems={navItems} />
 
-        <nav className="hidden md:flex flex-row gap-4 items-center">
+        <nav className="hidden md:flex flex-row gap-8 items-center">
           {navItems.map((item, index) => (
-            <Link
-              href={item.href}
-              key={index}
-              className="hover:underline text-zinc-50 font-medium"
-            >
-              {item.label}
-            </Link>
+            <Fragment key={index}>
+              <Link
+                href={item.href}
+                className="hover:underline text-zinc-50 font-medium"
+              >
+                {item.label}
+              </Link>
+              {index < navItems.length - 1 && (
+                <div className="h-6 w-px bg-zinc-400/30"></div>
+              )}
+            </Fragment>
           ))}
+          <div className="h-6 w-px bg-zinc-400/30"></div>
           <ContactModal />
         </nav>
 

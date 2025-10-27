@@ -13,6 +13,7 @@ import { UsersManagement } from "./components/users-management";
 import StockManagement from "./components/stock-management";
 import StockAlerts from "./components/stock-alerts";
 import { AlertTriangle, Home } from "lucide-react";
+import { Product } from "../../../../types/types";
 
 interface OrderWithRelations {
   id: number;
@@ -69,7 +70,11 @@ export default async function Dashboard() {
         include: {
           user: true,
           items: {
-            include: {
+            select: {
+              id: true,
+              quantity: true,
+              productId: true,
+              orderId: true,
               product: true,
             },
           },
@@ -84,7 +89,11 @@ export default async function Dashboard() {
         include: {
           user: true,
           items: {
-            include: {
+            select: {
+              id: true,
+              quantity: true,
+              productId: true,
+              orderId: true,
               product: true,
             },
           },
@@ -94,8 +103,8 @@ export default async function Dashboard() {
     ]);
 
     // Conta produtos com estoque baixo
-    const lowStockCount = products.filter((p) => p.stock < 10).length;
-    const lowStockProducts = products.filter((p) => p.stock < 10);
+    const lowStockCount = products.filter((p: Product) => p.stock < 10).length;
+    const lowStockProducts = products.filter((p:Product) => p.stock < 10);
 
     // Calcula métricas
     const totalRevenue = (orders as OrderWithRelations[])
@@ -230,7 +239,7 @@ export default async function Dashboard() {
 
     // Calcula crescimento de usuários (últimos 30 dias)
     const userGrowthData = last30Days.map((date) => {
-      const dayUsers = users.filter((user) => {
+      const dayUsers = users.filter((user: { createdAt: Date }) => {
         const userDate = new Date(user.createdAt);
         userDate.setHours(0, 0, 0, 0);
         return userDate.getTime() === date.getTime();

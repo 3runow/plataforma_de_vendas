@@ -90,11 +90,19 @@ export function ProductsManagement({
         setIsAddDialogOpen(false);
         resetForm();
 
-        // Buscar produtos atualizados
-        const updatedProducts = await fetch("/api/products").then((res) =>
-          res.json()
-        );
-        setProducts(updatedProducts);
+        // Buscar produtos atualizados - valida resposta antes de setar o state
+        const resp = await fetch("/api/products");
+        if (resp.ok) {
+          const updatedProducts = await resp.json();
+          if (Array.isArray(updatedProducts)) {
+            setProducts(updatedProducts);
+          } else {
+            console.error("/api/products retornou dados inesperados:", updatedProducts);
+          }
+        } else {
+          const err = await resp.json().catch(() => ({}));
+          console.error("Erro ao buscar produtos:", err);
+        }
         router.refresh();
       } else {
         const error = await response.json();
@@ -162,11 +170,19 @@ export function ProductsManagement({
         setSelectedProduct(null);
         resetForm();
 
-        // Buscar produtos atualizados
-        const updatedProducts = await fetch("/api/products").then((res) =>
-          res.json()
-        );
-        setProducts(updatedProducts);
+        // Buscar produtos atualizados - valida resposta antes de setar o state
+        const resp = await fetch("/api/products");
+        if (resp.ok) {
+          const updatedProducts = await resp.json();
+          if (Array.isArray(updatedProducts)) {
+            setProducts(updatedProducts);
+          } else {
+            console.error("/api/products retornou dados inesperados:", updatedProducts);
+          }
+        } else {
+          const err = await resp.json().catch(() => ({}));
+          console.error("Erro ao buscar produtos:", err);
+        }
         router.refresh();
       } else {
         const error = await response.json();

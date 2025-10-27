@@ -28,6 +28,8 @@ interface ShippingSelectorProps {
   onSelectShippingAction: (option: ShippingOption | null) => void;
   selectedShipping: ShippingOption | null;
   onShippingSelected?: () => void; // Callback quando uma opção é selecionada
+  recipientName?: string; // Nome do destinatário
+  neighborhood?: string; // Bairro
 }
 
 export default function ShippingSelector({
@@ -37,6 +39,8 @@ export default function ShippingSelector({
   onSelectShippingAction,
   selectedShipping,
   onShippingSelected,
+  recipientName = "",
+  neighborhood = "",
 }: ShippingSelectorProps) {
   const [loading, setLoading] = useState(false);
   const [options, setOptions] = useState<ShippingOption[]>([]);
@@ -99,10 +103,19 @@ export default function ShippingSelector({
   }, [fromCep, toCep, products]);
 
   useEffect(() => {
-    if (fromCep && toCep && toCep.length === 9) {
+    // Só calcula o frete se todos os campos obrigatórios estiverem preenchidos
+    const cepValid = toCep && toCep.length === 9;
+    const recipientValid = recipientName && recipientName.trim() !== "";
+    const neighborhoodValid = neighborhood && neighborhood.trim() !== "";
+    
+    if (fromCep && cepValid && recipientValid && neighborhoodValid) {
       calculateShipping();
+    } else {
+      // Limpa as opções se algum campo estiver vazio
+      setOptions([]);
+      setError("");
     }
-  }, [toCep, fromCep, calculateShipping]);
+  }, [toCep, fromCep, recipientName, neighborhood, calculateShipping]);
 
   if (loading) {
     return (
@@ -127,6 +140,20 @@ export default function ShippingSelector({
   }
 
   if (options.length === 0) {
+    const cepValid = toCep && toCep.length === 9;
+    const recipientValid = recipientName && recipientName.trim() !== "";
+    const neighborhoodValid = neighborhood && neighborhood.trim() !== "";
+    
+    if (!cepValid || !recipientValid || !neighborhoodValid) {
+      return (
+        <Card className="p-6">
+          <p className="text-sm text-muted-foreground">
+            Preencha todos os campos obrigatórios (CEP, Destinatário e Bairro) para calcular o frete.
+          </p>
+        </Card>
+      );
+    }
+    
     return null;
   }
 

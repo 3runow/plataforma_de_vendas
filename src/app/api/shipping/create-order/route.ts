@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
         country_id: "BR",
         postal_code: order.address.cep,
       },
-      products: order.items.map((item) => ({
+      products: order.items.map((item: { product: { name: string; price: number }; quantity: number }) => ({
         name: item.product.name,
         quantity: item.quantity,
         unitary_value: item.product.price,
@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
           width: 10,
           length: 10,
           weight:
-            0.3 * order.items.reduce((sum, item) => sum + item.quantity, 0),
+            0.3 * order.items.reduce((sum: number, item: { quantity: number }) => sum + item.quantity, 0),
         },
       ],
     };
@@ -134,6 +134,7 @@ export async function POST(request: NextRequest) {
 
     // Se falhar, apenas atualizar status
     try {
+      const body = await request.json();
       await prisma.order.update({
         where: { id: body.orderId },
         data: {

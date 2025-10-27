@@ -46,7 +46,10 @@ export default function StockManagement({ products }: StockManagementProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
 
-  const filteredProducts = products.filter((product) =>
+  // Defensive: ensure products is an array before filtering (prevents runtime errors
+  // when an API returns an error object or undefined)
+  const safeProducts = Array.isArray(products) ? products : [];
+  const filteredProducts = safeProducts.filter((product) =>
     product.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 

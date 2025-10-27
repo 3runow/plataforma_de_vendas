@@ -95,6 +95,7 @@ model OrderItem {
   orderId   Int
   productId Int
   quantity  Int
+  price     Float   @default(0) // Preço do produto no momento da compra
   order     Order   @relation(fields: [orderId], references: [id])
   product   Product @relation(fields: [productId], references: [id])
 }

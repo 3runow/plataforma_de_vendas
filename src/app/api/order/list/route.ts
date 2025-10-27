@@ -15,7 +15,15 @@ export async function GET(request: NextRequest) {
       where: { userId: user.id },
       orderBy: { createdAt: "desc" },
       include: {
-        items: { include: { product: true } },
+        items: {
+          select: {
+            id: true,
+            productId: true,
+            quantity: true,
+            orderId: true,
+            product: true,
+          },
+        },
         address: true,
       },
     });

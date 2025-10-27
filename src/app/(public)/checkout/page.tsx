@@ -388,6 +388,8 @@ export default function CheckoutPage() {
                           onSelectShippingAction={setSelectedShipping}
                           selectedShipping={selectedShipping}
                           onShippingSelected={handleShippingSelected}
+                          recipientName={addressData.recipientName}
+                          neighborhood={addressData.neighborhood}
                         />
                       </div>
                     )}

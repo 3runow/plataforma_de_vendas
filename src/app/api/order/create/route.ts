@@ -65,14 +65,23 @@ export async function POST(request: NextRequest) {
         shippingPrice: shipping?.price || null,
         shippingDeliveryTime: shipping?.deliveryTime || null,
         items: {
-          create: items.map((item: any) => ({
+          create: items.map((item: { productId: number; quantity: number; price: number }) => ({
             productId: item.productId,
             quantity: item.quantity,
+            // price removido - campo não existe no banco ainda
           })),
         },
       },
       include: {
-        items: true,
+        items: {
+          select: {
+            id: true,
+            productId: true,
+            quantity: true,
+            orderId: true,
+            product: true,
+          },
+        },
         address: true,
       },
     });
@@ -83,6 +92,12 @@ export async function POST(request: NextRequest) {
       status: order.status,
       total: order.total,
       itemsCount: order.items.length,
+      items: order.items.map((item: { productId: number; product: { name: string; price: number }; quantity: number }) => ({
+        productId: item.productId,
+        productName: item.product.name,
+        quantity: item.quantity,
+        unitPrice: item.product.price, // Preço do produto (não do OrderItem)
+      })),
     });
 
     return NextResponse.json({ success: true, order });

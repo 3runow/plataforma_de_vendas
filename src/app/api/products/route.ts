@@ -10,12 +10,8 @@ export async function GET() {
         createdAt: "desc",
       },
     });
-    // Corrige serialização de BigInt
-    const productsSerialized = products.map((product) => ({
-      ...product,
-      id: product.id.toString(),
-    }));
-    return NextResponse.json(productsSerialized);
+    
+    return NextResponse.json(products);
   } catch (error) {
     console.error("Erro ao buscar produtos:", error);
     return NextResponse.json(
