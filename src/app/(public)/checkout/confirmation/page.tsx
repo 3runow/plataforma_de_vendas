@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { CheckCircle, Package, Truck, CreditCard } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,7 +35,7 @@ interface OrderData {
   };
 }
 
-export default function OrderConfirmationPage() {
+function OrderConfirmationContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [order, setOrder] = useState<OrderData | null>(null);
@@ -323,5 +323,21 @@ export default function OrderConfirmationPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function OrderConfirmationPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 py-12">
+        <div className="container mx-auto px-4 max-w-4xl">
+          <div className="text-center">
+            <p className="text-gray-600">Carregando informações do pedido...</p>
+          </div>
+        </div>
+      </div>
+    }>
+      <OrderConfirmationContent />
+    </Suspense>
   );
 }
