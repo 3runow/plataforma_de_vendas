@@ -17,6 +17,7 @@ import { Loader2 } from "lucide-react";
 
 interface Address {
   id: number;
+  name?: string | null;
   recipientName: string;
   cep: string;
   street: string;
@@ -45,6 +46,7 @@ export function AddressModal({
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingCep, setIsLoadingCep] = useState(false);
   const [formData, setFormData] = useState({
+    name: "",
     recipientName: "",
     cep: "",
     street: "",
@@ -59,6 +61,7 @@ export function AddressModal({
   useEffect(() => {
     if (address) {
       setFormData({
+        name: address.name || "",
         recipientName: address.recipientName,
         cep: address.cep,
         street: address.street,
@@ -71,6 +74,7 @@ export function AddressModal({
       });
     } else {
       setFormData({
+        name: "",
         recipientName: "",
         cep: "",
         street: "",
@@ -134,9 +138,7 @@ export function AddressModal({
     setIsLoading(true);
 
     try {
-      const url = address
-        ? `/api/addresses/${address.id}`
-        : "/api/addresses";
+      const url = address ? `/api/addresses/${address.id}` : "/api/addresses";
       const method = address ? "PUT" : "POST";
 
       const response = await fetch(url, {
@@ -167,7 +169,8 @@ export function AddressModal({
     } catch (error) {
       toast({
         title: "Erro",
-        description: error instanceof Error ? error.message : "Erro ao salvar endereço",
+        description:
+          error instanceof Error ? error.message : "Erro ao salvar endereço",
         variant: "destructive",
       });
     } finally {
@@ -188,6 +191,18 @@ export function AddressModal({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="name">Nome do Endereço</Label>
+            <Input
+              id="name"
+              value={formData.name}
+              onChange={(e) =>
+                setFormData({ ...formData, name: e.target.value })
+              }
+              placeholder="Ex: Casa, Trabalho, Apartamento"
+            />
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="recipientName">Nome do Destinatário</Label>
             <Input
@@ -289,7 +304,10 @@ export function AddressModal({
                 id="state"
                 value={formData.state}
                 onChange={(e) =>
-                  setFormData({ ...formData, state: e.target.value.toUpperCase() })
+                  setFormData({
+                    ...formData,
+                    state: e.target.value.toUpperCase(),
+                  })
                 }
                 placeholder="UF"
                 maxLength={2}

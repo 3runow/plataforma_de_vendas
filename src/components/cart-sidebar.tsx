@@ -37,8 +37,8 @@ export default function CartSidebar({ productsStock = [] }: CartSidebarProps) {
   } = useCart();
 
   const subtotal = getTotalPrice();
-  const shipping = subtotal > 0 ? 15.0 : 0;
-  const total = subtotal + shipping;
+  const shipping = null; // Frete será calculado no checkout
+  const total = subtotal; // Só mostra o subtotal no carrinho
   const itemCount = getTotalItems();
 
   return (

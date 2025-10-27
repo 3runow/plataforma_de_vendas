@@ -52,6 +52,7 @@ export async function PUT(
     const address = await prisma.address.update({
       where: { id: addressId },
       data: {
+        name: data.name || null,
         recipientName: data.recipientName,
         cep: data.cep,
         street: data.street,
@@ -103,6 +104,25 @@ export async function DELETE(
       );
     }
 
+    // Verifica se há pedidos associados a este endereço
+    const ordersCount = await prisma.order.count({
+      where: {
+        addressId: addressId,
+      },
+    });
+
+    if (ordersCount > 0) {
+      return NextResponse.json(
+        {
+          error:
+            "Não é possível excluir este endereço porque existem pedidos associados a ele. Exclua os pedidos primeiro ou escolha outro endereço como padrão.",
+          hasOrders: true,
+          ordersCount,
+        },
+        { status: 400 }
+      );
+    }
+
     await prisma.address.delete({
       where: { id: addressId },
     });
@@ -110,6 +130,22 @@ export async function DELETE(
     return NextResponse.json({ message: "Endereço excluído com sucesso" });
   } catch (error) {
     console.error("Erro ao excluir endereço:", error);
+
+    // Verifica se é erro de constraint de chave estrangeira
+    if (
+      error instanceof Error &&
+      error.message.includes("Foreign key constraint")
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            "Não é possível excluir este endereço porque há pedidos associados a ele.",
+          hasOrders: true,
+        },
+        { status: 400 }
+      );
+    }
+
     return NextResponse.json(
       { error: "Erro ao excluir endereço" },
       { status: 500 }

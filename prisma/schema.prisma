@@ -33,6 +33,7 @@ model User {
 model Address {
   id            Int      @id @default(autoincrement())
   userId        Int
+  name          String?  // Nome customizado do endereço (ex: "Casa", "Trabalho")
   recipientName String   // Nome do destinatário
   cep           String   // CEP
   street        String   // Rua/Avenida

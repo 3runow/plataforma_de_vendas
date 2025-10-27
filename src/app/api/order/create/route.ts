@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { address, items, shipping, total } = body;
 
-    // Cria o endereço se necessário
+    // Verifica se já existe um endereço idêntico para evitar duplicatas
     let addressId = address.id;
     if (!addressId) {
       if (!address.recipientName) {
@@ -21,14 +21,45 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
       }
-      const addressCreated = await prisma.address.create({
-        data: {
-          ...address,
+
+      // Verifica se já existe um endereço idêntico
+      const existingAddress = await prisma.address.findFirst({
+        where: {
           userId: user.id,
           recipientName: address.recipientName,
+          street: address.street,
+          number: address.number,
+          neighborhood: address.neighborhood,
+          city: address.city,
+          state: address.state,
+          cep: address.cep,
         },
       });
-      addressId = addressCreated.id;
+
+      if (existingAddress) {
+        console.log(
+          "Endereço já existe, usando o existente:",
+          existingAddress.id
+        );
+        addressId = existingAddress.id;
+      } else {
+        console.log("Criando novo endereço");
+        const addressCreated = await prisma.address.create({
+          data: {
+            name: address.name || null,
+            recipientName: address.recipientName,
+            cep: address.cep,
+            street: address.street,
+            number: address.number,
+            complement: address.complement || null,
+            neighborhood: address.neighborhood,
+            city: address.city,
+            state: address.state,
+            userId: user.id,
+          },
+        });
+        addressId = addressCreated.id;
+      }
     }
 
     // Verifica se há estoque suficiente (mas não reduz ainda)
@@ -65,11 +96,13 @@ export async function POST(request: NextRequest) {
         shippingPrice: shipping?.price || null,
         shippingDeliveryTime: shipping?.deliveryTime || null,
         items: {
-          create: items.map((item: { productId: number; quantity: number; price: number }) => ({
-            productId: item.productId,
-            quantity: item.quantity,
-            // price removido - campo não existe no banco ainda
-          })),
+          create: items.map(
+            (item: { productId: number; quantity: number; price: number }) => ({
+              productId: item.productId,
+              quantity: item.quantity,
+              // price removido - campo não existe no banco ainda
+            })
+          ),
         },
       },
       include: {
@@ -92,12 +125,18 @@ export async function POST(request: NextRequest) {
       status: order.status,
       total: order.total,
       itemsCount: order.items.length,
-      items: order.items.map((item: { productId: number; product: { name: string; price: number }; quantity: number }) => ({
-        productId: item.productId,
-        productName: item.product.name,
-        quantity: item.quantity,
-        unitPrice: item.product.price, // Preço do produto (não do OrderItem)
-      })),
+      items: order.items.map(
+        (item: {
+          productId: number;
+          product: { name: string; price: number };
+          quantity: number;
+        }) => ({
+          productId: item.productId,
+          productName: item.product.name,
+          quantity: item.quantity,
+          unitPrice: item.product.price, // Preço do produto (não do OrderItem)
+        })
+      ),
     });
 
     return NextResponse.json({ success: true, order });

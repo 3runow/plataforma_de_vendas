@@ -48,6 +48,7 @@ export default function OrderConfirmationPage() {
     } else {
       setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
   const fetchOrder = async (orderId: number) => {

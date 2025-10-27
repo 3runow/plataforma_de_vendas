@@ -28,6 +28,7 @@ export async function POST(request: Request) {
     const address = await prisma.address.create({
       data: {
         userId: user.id,
+        name: data.name || null,
         recipientName: data.recipientName,
         cep: data.cep,
         street: data.street,

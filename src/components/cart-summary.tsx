@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 
 interface CartSummaryProps {
   subtotal: number;
-  shipping: number;
+  shipping: number | null;
   total: number;
   onClose?: () => void;
 }
@@ -36,15 +36,24 @@ export default function CartSummary({
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Frete</span>
-            <span className="font-medium">R$ {shipping.toFixed(2)}</span>
+            <span className="font-medium text-muted-foreground text-sm">
+              {shipping !== null ? `R$ ${shipping.toFixed(2)}` : "A consultar"}
+            </span>
           </div>
           <Separator />
           <div className="flex justify-between text-base">
-            <span className="font-semibold">Total</span>
+            <span className="font-semibold">
+              {shipping === null ? "Total (sem frete)" : "Total"}
+            </span>
             <span className="font-bold text-primary">
               R$ {total.toFixed(2)}
             </span>
           </div>
+          {shipping === null && (
+            <p className="text-xs text-muted-foreground text-center mt-1">
+              Frete será calculado no checkout
+            </p>
+          )}
         </div>
 
         <div className="space-y-3">

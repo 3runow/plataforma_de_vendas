@@ -15,6 +15,7 @@ import { AddressModal } from "./address-modal";
 
 interface Address {
   id: number;
+  name?: string | null;
   recipientName: string;
   cep: string;
   street: string;

@@ -14,19 +14,25 @@ export async function POST(request: NextRequest) {
     console.log("Calculando frete:", { from, to, products });
 
     // Validar dados de entrada
-    if (!from?.cep || !to?.cep || !products || !Array.isArray(products)) {
+    if (!from || !to || !products || !Array.isArray(products)) {
       console.log("Dados inválidos para cálculo de frete, usando fallback");
       return getFallbackShipping();
     }
 
-    // Dados do remetente (sua loja)
+    // Dados do remetente (sua loja) - aceita com ou sem traço
+    const fromCepClean =
+      typeof from === "string"
+        ? from.replace(/\D/g, "")
+        : from.replace(/\D/g, "");
     const fromData = {
-      postal_code: from.cep.replace(/\D/g, ""), // Remove caracteres não numéricos
+      postal_code: fromCepClean,
     };
 
-    // Dados do destinatário
+    // Dados do destinatário - aceita com ou sem traço
+    const toCepClean =
+      typeof to === "string" ? to.replace(/\D/g, "") : to.replace(/\D/g, "");
     const toData = {
-      postal_code: to.cep.replace(/\D/g, ""), // Remove caracteres não numéricos
+      postal_code: toCepClean,
     };
 
     // Dados dos produtos
@@ -52,14 +58,21 @@ export async function POST(request: NextRequest) {
       return getFallbackShipping();
     }
 
-    // Calcular frete
+    // Calcular frete com mais transportadoras famosas
+    // Serviços principais do Melhor Envio
+    // 1,2,3,4 = Correios (PAC, SEDEX, SEDEX 10, SEDEX 12)
+    // 5,6 = Transportadoras (várias)
+    // 8 = PAC Módico
+    // 9,10 = Jadlog (Package, Com)
+    const services = "1,2,3,4,8,9,10,17,22,24,27";
+
     const response = await axios.post(
       `${MELHOR_ENVIO_API}/shipment/calculate`,
       {
         from: fromData,
         to: toData,
         products: productsData,
-        services: "1,2,3,4", // Códigos dos serviços
+        services: services,
       },
       {
         headers: {
@@ -117,6 +130,66 @@ function getFallbackShipping() {
         delivery_range: {
           min: 1,
           max: 3,
+        },
+        error: false,
+      },
+      {
+        id: 3,
+        name: "SEDEX 10",
+        company: "Correios",
+        price: 40.0,
+        delivery_time: 1,
+        delivery_range: {
+          min: 1,
+          max: 1,
+        },
+        error: false,
+      },
+      {
+        id: 4,
+        name: "SEDEX 12",
+        company: "Correios",
+        price: 35.0,
+        delivery_time: 1,
+        delivery_range: {
+          min: 1,
+          max: 2,
+        },
+        error: false,
+      },
+      {
+        id: 9,
+        name: ".Package",
+        company: "Jadlog",
+        price: 18.0,
+        delivery_time: 6,
+        delivery_range: {
+          min: 5,
+          max: 7,
+        },
+        error: false,
+      },
+      {
+        id: 10,
+        name: ".Com",
+        company: "Jadlog",
+        price: 20.0,
+        delivery_time: 5,
+        delivery_range: {
+          min: 4,
+          max: 6,
+        },
+        error: false,
+      },
+      {
+        id: 17,
+        name: "Correios PAC Módico",
+        company: "Correios",
+        price: 16.0,
+        delivery_time: 5,
+        delivery_range: {
+          min: 3,
+          max: 7,
         },
         error: false,
       },

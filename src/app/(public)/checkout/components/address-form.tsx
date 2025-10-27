@@ -12,6 +12,7 @@ import {
 
 interface AddressFormProps {
   addressData: {
+    addressName?: string;
     cep: string;
     street: string;
     number: string;
@@ -22,6 +23,7 @@ interface AddressFormProps {
     recipientName: string;
   };
   onAddressDataChangeAction: (data: {
+    addressName?: string;
     cep: string;
     street: string;
     number: string;
@@ -72,6 +74,26 @@ export default function AddressForm({
         <FieldDescription>
           Digite o CEP para preenchimento automático
         </FieldDescription>
+
+        {/* Campo de nome do endereço */}
+        <Field>
+          <FieldLabel htmlFor="addressName">Nome do Endereço</FieldLabel>
+          <Input
+            id="addressName"
+            value={addressData.addressName || ""}
+            onChange={(e) =>
+              onAddressDataChangeAction({
+                ...addressData,
+                addressName: e.target.value,
+              })
+            }
+            placeholder="Ex: Casa, Trabalho, Apartamento"
+          />
+          <FieldDescription>
+            Como você quer chamar este endereço?
+          </FieldDescription>
+        </Field>
+
         <div className="grid sm:grid-cols-3 gap-4">
           <Field>
             <FieldLabel htmlFor="cep">CEP *</FieldLabel>

@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 
 interface Address {
   id: number;
+  name?: string | null;
   recipientName: string;
   cep: string;
   street: string;
@@ -101,8 +102,13 @@ export function AddressCard({ address, onEdit, onUpdate }: AddressCardProps) {
     <Card className={address.isDefault ? "border-blue-500 border-2" : ""}>
       <CardContent className="pt-6">
         <div className="flex items-start justify-between mb-4 gap-2">
-          <div className="flex items-center gap-2 min-w-0">
+          <div className="flex items-center gap-2 min-w-0 flex-wrap">
             <MapPin className="h-5 w-5 text-gray-500 flex-shrink-0" />
+            {address.name && (
+              <Badge variant="outline" className="flex-shrink-0">
+                {address.name}
+              </Badge>
+            )}
             <h3 className="font-semibold truncate">{address.recipientName}</h3>
           </div>
           {address.isDefault && (

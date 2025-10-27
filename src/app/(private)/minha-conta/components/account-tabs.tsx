@@ -11,6 +11,7 @@ import { User, MapPin, ShoppingBag, Lock } from "lucide-react";
 
 interface Address {
   id: number;
+  name?: string | null;
   recipientName: string;
   cep: string;
   street: string;

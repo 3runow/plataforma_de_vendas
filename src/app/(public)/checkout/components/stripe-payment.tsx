@@ -78,21 +78,26 @@ function CheckoutForm({
     setLoading(true);
 
     try {
+      console.log("💳 Iniciando pagamento com orderId:", orderId);
+
       const { error } = await stripe.confirmPayment({
         elements,
         confirmParams: {
-          return_url: `${window.location.origin}/checkout/success`,
+          return_url: `${window.location.origin}/checkout/confirmation?orderId=${orderId}`,
         },
         redirect: "if_required",
       });
 
       if (error) {
+        console.error("❌ Erro no pagamento:", error);
         onPaymentErrorAction(error.message || "Erro no pagamento");
       } else {
+        console.log("✅ Pagamento confirmado pelo Stripe");
         setPaymentCompleted(true);
 
         // Atualiza o pedido diretamente quando o pagamento é confirmado
         try {
+          console.log("📦 Confirmando pedido com orderId:", orderId);
           await fetch("/api/order/confirm-payment", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -102,10 +107,12 @@ function CheckoutForm({
               paymentStatus: "approved",
             }),
           });
+          console.log("✅ Pedido confirmado com sucesso");
         } catch (err) {
-          console.error("Erro ao confirmar pagamento:", err);
+          console.error("❌ Erro ao confirmar pagamento:", err);
         }
 
+        console.log("🔄 Chamando onPaymentSuccessAction com orderId:", orderId);
         onPaymentSuccessAction({
           amount,
           paymentMethod,
@@ -114,6 +121,7 @@ function CheckoutForm({
         });
       }
     } catch (err) {
+      console.error("❌ Erro na requisição de pagamento:", err);
       onPaymentErrorAction(
         err instanceof Error ? err.message : "Erro ao processar pagamento"
       );
