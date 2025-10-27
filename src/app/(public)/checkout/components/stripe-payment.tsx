@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ import {
   useStripe,
   useElements,
 } from "@stripe/react-stripe-js";
+import type { LucideIcon } from "lucide-react";
 
 // Make sure to call `loadStripe` outside of a component's render to avoid
 // recreating the `Stripe` object on every render.
@@ -51,7 +52,7 @@ interface StripePaymentProps {
 interface PaymentMethodOption {
   id: string;
   name: string;
-  icon: any;
+  icon: LucideIcon;
   description: string;
 }
 

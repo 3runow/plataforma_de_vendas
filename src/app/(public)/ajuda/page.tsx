@@ -203,8 +203,8 @@ export default function AjudaPage() {
                     Como Solicitar
                   </h3>
                   <ol className="space-y-2 list-decimal list-inside">
-                    <li>Acesse sua conta e vá em "Meus Pedidos"</li>
-                    <li>Selecione o pedido e clique em "Solicitar Troca"</li>
+                    <li>Acesse sua conta e vá em &quot;Meus Pedidos&quot;</li>
+                    <li>Selecione o pedido e clique em &quot;Solicitar Troca&quot;</li>
                     <li>Escolha o motivo e aguarde a aprovação</li>
                     <li>
                       Após aprovado, envie o produto com a etiqueta fornecida
@@ -242,7 +242,7 @@ export default function AjudaPage() {
                   </h3>
                   <ol className="space-y-3 list-decimal list-inside">
                     <li>
-                      Acesse sua conta e vá em <strong>"Meus Pedidos"</strong>
+                      Acesse sua conta e vá em <strong>&quot;Meus Pedidos&quot;</strong>
                     </li>
                     <li>Selecione o pedido que deseja rastrear</li>
                     <li>

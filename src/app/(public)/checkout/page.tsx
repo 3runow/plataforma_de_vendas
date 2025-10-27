@@ -46,7 +46,18 @@ export default function CheckoutPage() {
   const [paymentProcessed, setPaymentProcessed] = useState(false);
   const [currentOrderId, setCurrentOrderId] = useState<number | null>(null);
   const [showSaveAddressDialog, setShowSaveAddressDialog] = useState(false);
-  const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
+  const [savedAddresses, setSavedAddresses] = useState<{
+    id: number;
+    recipientName: string;
+    cep: string;
+    street: string;
+    number: string;
+    complement?: string;
+    neighborhood: string;
+    city: string;
+    state: string;
+    isDefault: boolean;
+  }[]>([]);
   const [useSavedAddress, setUseSavedAddress] = useState(true);
   const [selectedAddressId, setSelectedAddressId] = useState<number | null>(
     null
@@ -161,7 +172,7 @@ export default function CheckoutPage() {
       );
       if (address) {
         setAddressData({
-          addressName: address.name || "",
+          addressName: address.recipientName || "",
           cep: address.cep || "",
           street: address.street || "",
           number: address.number || "",
@@ -649,7 +660,7 @@ export default function CheckoutPage() {
                               );
                               if (address) {
                                 setAddressData({
-                                  addressName: address.name || "",
+                                  addressName: address.recipientName || "",
                                   cep: address.cep || "",
                                   street: address.street || "",
                                   number: address.number || "",

@@ -80,9 +80,18 @@ export default function ShippingSelector({
       }
 
       const validOptions = services
-        .filter((opt: any) => !opt.error)
-        .map((opt: any) => ({
-          id: opt.id,
+        .filter((opt: { error?: string }) => !opt.error)
+        .map((opt: { 
+          id: number | string; 
+          name: string; 
+          company: string | { name: string }; 
+          price: string | number; 
+          delivery_time?: number;
+          deliveryTime?: number;
+          delivery_range?: { max: number };
+          error?: string 
+        }) => ({
+          id: typeof opt.id === 'string' ? parseInt(opt.id) : opt.id,
           name: opt.name,
           company:
             typeof opt.company === "object" ? opt.company.name : opt.company,

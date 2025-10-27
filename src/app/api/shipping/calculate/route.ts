@@ -36,7 +36,15 @@ export async function POST(request: NextRequest) {
     };
 
     // Dados dos produtos
-    const productsData = products.map((product: any) => ({
+    const productsData = products.map((product: {
+      id?: string | number;
+      width?: number;
+      height?: number;
+      length?: number;
+      weight?: number;
+      price?: number;
+      quantity?: number;
+    }) => ({
       id: product.id || Math.random().toString(),
       width: Number(product.width) || 10,
       height: Number(product.height) || 10,

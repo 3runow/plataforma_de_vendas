@@ -6,7 +6,7 @@ import { verifyAuth } from "@/lib/auth";
 const orderCreationLocks = new Map<number, boolean>();
 
 export async function POST(request: NextRequest) {
-  let user: any = null;
+  let user: { id: number; email: string; role?: string; name?: string } | null = null;
 
   try {
     console.log("=== CRIANDO PEDIDO SIMPLES ===");
@@ -120,9 +120,9 @@ export async function POST(request: NextRequest) {
           const groupedItems = localStorageItems.reduce(
             (
               acc: Record<number, { productId: number; quantity: number }>,
-              item: any
+              item: { productId: number | string; quantity: number }
             ) => {
-              const productId = parseInt(item.productId);
+              const productId = typeof item.productId === 'string' ? parseInt(item.productId) : item.productId;
               if (acc[productId]) {
                 acc[productId].quantity += item.quantity;
               } else {

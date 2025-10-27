@@ -46,8 +46,7 @@ export async function POST(request: NextRequest) {
         console.log("Criando novo endereço");
         const addressCreated = await prisma.address.create({
           data: {
-            name: address.name || null,
-            recipientName: address.recipientName,
+            recipientName: address.recipientName || address.name || "Cliente",
             cep: address.cep,
             street: address.street,
             number: address.number,
