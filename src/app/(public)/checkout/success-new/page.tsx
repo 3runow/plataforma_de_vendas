@@ -1,14 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { CheckCircle, Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
-export default function CheckoutSuccessNewPage() {
-  const searchParams = useSearchParams();
+function CheckoutSuccessNewContent() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [orderId, setOrderId] = useState<number | null>(null);
@@ -142,5 +141,22 @@ export default function CheckoutSuccessNewPage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+export default function CheckoutSuccessNewPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+            <p>Carregando...</p>
+          </div>
+        </div>
+      }
+    >
+      <CheckoutSuccessNewContent />
+    </Suspense>
   );
 }
