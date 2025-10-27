@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
 
     // Agrupar itens por produto para evitar duplicatas
     const groupedItems = cartItems.reduce(
-      (acc, item) => {
+      (acc: Record<number, { productId: number; quantity: number }>, item: { productId: string; quantity: number }) => {
         const productId = parseInt(item.productId);
         if (acc[productId]) {
           acc[productId].quantity += item.quantity;
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
 
     // Adicionar itens agrupados ao banco
     const createdItems = [];
-    for (const item of Object.values(groupedItems)) {
+    for (const item of Object.values(groupedItems) as { productId: number; quantity: number }[]) {
       try {
         const cartItem = await prisma.cartItem.create({
           data: {
