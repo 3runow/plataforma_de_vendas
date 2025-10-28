@@ -95,6 +95,7 @@ export async function POST(request: NextRequest) {
           create: cartItems.map((item) => ({
             productId: item.productId,
             quantity: item.quantity,
+            price: item.product.price,
           })),
         },
       },

@@ -188,20 +188,50 @@ export default function Footer() {
                 FORMAS DE PAGAMENTO
               </p>
               <div className="flex flex-wrap gap-2 justify-center md:justify-start">
-                <div className="px-3 py-1.5 bg-white rounded text-xs font-semibold text-zinc-800">
-                  VISA
+                <div className="px-3 py-1.5 bg-white rounded flex items-center justify-center">
+                  <Image
+                    src="/assets/icons/visa.svg"
+                    alt="Visa"
+                    width={40}
+                    height={32}
+                    className="h-8 w-auto"
+                  />
                 </div>
-                <div className="px-3 py-1.5 bg-white rounded text-xs font-semibold text-zinc-800">
-                  MASTERCARD
+                <div className="px-3 py-1.5 bg-white rounded flex items-center justify-center">
+                  <Image
+                    src="/assets/icons/mastercard.svg"
+                    alt="Mastercard"
+                    width={40}
+                    height={24}
+                    className="h-6 w-auto"
+                  />
                 </div>
-                <div className="px-3 py-1.5 bg-white rounded text-xs font-semibold text-zinc-800">
-                  ELO
+                <div className="px-3 py-1.5 bg-white rounded flex items-center justify-center">
+                  <Image
+                    src="/assets/icons/elo.svg"
+                    alt="Elo"
+                    width={40}
+                    height={24}
+                    className="h-6 w-auto"
+                  />
                 </div>
-                <div className="px-3 py-1.5 bg-white rounded text-xs font-semibold text-zinc-800">
-                  PIX
+                <div className="px-3 py-1.5 bg-white rounded flex items-center justify-center">
+                  <Image
+                    src="/assets/icons/pix.svg"
+                    alt="PIX"
+                    width={40}
+                    height={24}
+                    className="h-6 w-auto"
+                  />
                 </div>
-                <div className="px-3 py-1.5 bg-white rounded text-xs font-semibold text-zinc-800">
-                  BOLETO
+                <div className="px-3 py-1.5 bg-white rounded flex items-center justify-center">
+                  <Image
+                    src="/assets/icons/boleto.svg"
+                    alt="Boleto"
+                    width={40}
+                    height={24}
+                    className="h-6 w-auto"
+                  />
                 </div>
               </div>
             </div>

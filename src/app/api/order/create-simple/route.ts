@@ -6,7 +6,8 @@ import { verifyAuth } from "@/lib/auth";
 const orderCreationLocks = new Map<number, boolean>();
 
 export async function POST(request: NextRequest) {
-  let user: { id: number; email: string; role?: string; name?: string } | null = null;
+  let user: { id: number; email: string; role?: string; name?: string } | null =
+    null;
 
   try {
     console.log("=== CRIANDO PEDIDO SIMPLES ===");
@@ -122,7 +123,10 @@ export async function POST(request: NextRequest) {
               acc: Record<number, { productId: number; quantity: number }>,
               item: { productId: number | string; quantity: number }
             ) => {
-              const productId = typeof item.productId === 'string' ? parseInt(item.productId) : item.productId;
+              const productId =
+                typeof item.productId === "string"
+                  ? parseInt(item.productId)
+                  : item.productId;
               if (acc[productId]) {
                 acc[productId].quantity += item.quantity;
               } else {
@@ -311,6 +315,7 @@ export async function POST(request: NextRequest) {
             create: cartItems.map((item) => ({
               productId: item.productId,
               quantity: item.quantity,
+              price: item.product.price,
             })),
           },
         },

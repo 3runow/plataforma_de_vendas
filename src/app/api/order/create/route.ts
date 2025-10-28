@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
             (item: { productId: number; quantity: number; price: number }) => ({
               productId: item.productId,
               quantity: item.quantity,
-              // price removido - campo não existe no banco ainda
+              price: item.price,
             })
           ),
         },
