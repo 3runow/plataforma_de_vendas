@@ -52,7 +52,14 @@ export async function POST(request: NextRequest) {
 }
 
 async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
-  const { order_id, user_id } = paymentIntent.metadata;
+  const { order_id, user_id, payment_method } = paymentIntent.metadata;
+
+  console.log("✅ Pagamento confirmado:", {
+    paymentIntentId: paymentIntent.id,
+    order_id,
+    user_id,
+    payment_method,
+  });
 
   if (order_id && user_id) {
     // Busca o pedido com os itens
@@ -70,6 +77,7 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
         data: {
           paymentId: paymentIntent.id,
           paymentStatus: "approved",
+          paymentMethod: payment_method || "unknown",
           status: "processing",
         },
       });
@@ -85,6 +93,8 @@ async function handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
           },
         });
       }
+
+      console.log(`✅ Pedido ${order_id} atualizado para processamento`);
     }
   }
 }

@@ -29,7 +29,46 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Dados incompletos" }, { status: 400 });
     }
 
-    // Create payment intent
+    // Configuração específica para PIX (simulado)
+    if (paymentMethod === "pix") {
+      // Para contas Stripe que não têm PIX habilitado, simulamos o comportamento
+      // Em produção, você precisará habilitar PIX na sua conta Stripe
+
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: Math.round(amount),
+        currency,
+        automatic_payment_methods: {
+          enabled: true,
+        },
+        metadata: {
+          user_id: user.id,
+          payer_email: payerEmail,
+          payer_name: payerName,
+          payer_cpf: payerCpf,
+          order_id: orderId?.toString() || "",
+          payment_method: paymentMethod,
+        },
+      });
+
+      // Simula dados do PIX para demonstração
+      const pixData = {
+        hosted_voucher_url: `https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=PIX_SIMULADO_${paymentIntent.id}`,
+        instructions: {
+          amount: Math.round(amount),
+          qr_code: `PIX_SIMULADO_${paymentIntent.id}`,
+          qr_code_text: `PIX Simulado - Pedido ${orderId}`,
+        },
+      };
+
+      return NextResponse.json({
+        clientSecret: paymentIntent.client_secret,
+        paymentIntentId: paymentIntent.id,
+        pixData: pixData,
+        isSimulated: true, // Flag para indicar que é simulado
+      });
+    }
+
+    // Para cartão de crédito, usa automatic_payment_methods
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(amount),
       currency,
@@ -41,13 +80,14 @@ export async function POST(request: NextRequest) {
         payer_email: payerEmail,
         payer_name: payerName,
         payer_cpf: payerCpf,
-        order_id: orderId || "",
+        order_id: orderId?.toString() || "",
         payment_method: paymentMethod,
       },
     });
 
     return NextResponse.json({
       clientSecret: paymentIntent.client_secret,
+      paymentIntentId: paymentIntent.id,
     });
   } catch (error) {
     console.error("Erro ao criar payment intent:", error);

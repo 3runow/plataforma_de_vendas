@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -193,6 +193,16 @@ export default function StripePayment({
   const [payerCpfInput, setPayerCpfInput] = useState(payerCpf);
   const [installments, setInstallments] = useState("1");
   const [paymentCompleted, setPaymentCompleted] = useState(false);
+  const [pixPaymentIntentId, setPixPaymentIntentId] = useState<string>("");
+  const [pixQrCode, setPixQrCode] = useState<string>("");
+  const [pixLoading, setPixLoading] = useState(false);
+  const [pixPollingInterval, setPixPollingInterval] =
+    useState<NodeJS.Timeout | null>(null);
+  const [pixInstructions, setPixInstructions] = useState<{
+    amount?: number;
+    qr_code?: string;
+    qr_code_text?: string;
+  } | null>(null);
 
   const paymentMethods: PaymentMethodOption[] = [
     {
@@ -231,6 +241,50 @@ export default function StripePayment({
     { value: "6", label: "6x sem juros" },
     { value: "12", label: "12x com juros" },
   ];
+
+  // Polling para verificar status do pagamento PIX
+  useEffect(() => {
+    if (!pixPaymentIntentId || paymentCompleted) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const response = await fetch("/api/stripe/payment-intent-status", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ paymentIntentId: pixPaymentIntentId }),
+        });
+
+        const data = await response.json();
+
+        if (data.status === "succeeded") {
+          // Pagamento confirmado
+          if (pixPollingInterval) {
+            clearInterval(pixPollingInterval);
+            setPixPollingInterval(null);
+          }
+
+          onPaymentSuccessAction({
+            amount,
+            paymentMethod: "pix",
+            status: "succeeded",
+            paymentId: pixPaymentIntentId,
+            orderId: orderId || data.orderId,
+          });
+        }
+      } catch (error) {
+        console.error("Erro ao verificar status do pagamento:", error);
+      }
+    }, 5000); // Verifica a cada 5 segundos
+
+    setPixPollingInterval(interval);
+
+    return () => {
+      if (pixPollingInterval) {
+        clearInterval(pixPollingInterval);
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pixPaymentIntentId, paymentCompleted]);
 
   if (loading) {
     return (
@@ -484,14 +538,209 @@ export default function StripePayment({
           </Button>
         )}
 
-        {/* Botão de pagamento para PIX e Boleto */}
-        {(selectedMethod === "pix" || selectedMethod === "boleto") && (
+        {/* Seção de PIX */}
+        {selectedMethod === "pix" && (
+          <div className="space-y-4">
+            {!pixQrCode && !pixLoading && (
+              <Button
+                type="button"
+                onClick={async () => {
+                  setPixLoading(true);
+                  try {
+                    const response = await fetch(
+                      "/api/stripe/create-payment-intent",
+                      {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          amount: Math.round(amount * 100), // Convert to cents
+                          currency: "brl",
+                          paymentMethod: selectedMethod,
+                          payerEmail,
+                          payerName: payerNameInput,
+                          payerCpf: payerCpfInput,
+                          orderId: orderId,
+                        }),
+                      }
+                    );
+
+                    const data = await response.json();
+                    if (data.error) {
+                      onPaymentErrorAction(
+                        data.error || "Erro ao criar pagamento PIX"
+                      );
+                    } else if (data.pixData) {
+                      setPixPaymentIntentId(data.paymentIntentId);
+                      setPixQrCode(data.pixData.hosted_voucher_url || "");
+                      setPixInstructions(data.pixData.instructions);
+                      setPaymentCompleted(true);
+
+                      // Se for simulado, mostra um toast informativo
+                      if (data.isSimulated) {
+                        console.log(
+                          "⚠️ PIX Simulado - Para usar PIX real, habilite na conta Stripe"
+                        );
+                      }
+                    } else {
+                      onPaymentErrorAction("QR Code PIX não foi gerado");
+                    }
+                  } catch (error) {
+                    onPaymentErrorAction(
+                      error instanceof Error
+                        ? error.message
+                        : "Erro ao processar PIX"
+                    );
+                  } finally {
+                    setPixLoading(false);
+                  }
+                }}
+                disabled={pixLoading}
+                className="w-full"
+                size="lg"
+              >
+                {pixLoading ? (
+                  <div className="flex items-center justify-center">
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Carregando...
+                  </div>
+                ) : (
+                  `Gerar PIX R$ ${amount.toFixed(2)}`
+                )}
+              </Button>
+            )}
+
+            {/* Display do QR Code PIX */}
+            {pixQrCode && (
+              <div className="bg-white border-2 border-primary rounded-lg p-6 text-center space-y-4">
+                <div className="flex flex-col items-center space-y-2">
+                  <QrCode className="w-8 h-8 text-primary" />
+                  <h3 className="text-lg font-semibold">Pague com PIX</h3>
+                  <p className="text-sm text-gray-600">
+                    Escaneie o QR Code com o app do seu banco
+                  </p>
+                </div>
+
+                <div className="bg-white p-4 rounded-lg border-2 border-gray-200 inline-block">
+                  {pixQrCode.startsWith("https://") ? (
+                    <img
+                      src={pixQrCode}
+                      alt="QR Code PIX"
+                      className="w-64 h-64"
+                    />
+                  ) : (
+                    <div className="w-64 h-64 flex items-center justify-center text-gray-400">
+                      QR Code indisponível
+                    </div>
+                  )}
+                </div>
+
+                {/* Exibe instruções do PIX se disponível */}
+                {pixInstructions && (
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-left space-y-2">
+                    <p className="text-xs font-semibold text-gray-700">
+                      Instruções para pagamento:
+                    </p>
+                    {pixInstructions.amount && (
+                      <p className="text-xs text-gray-600">
+                        <span className="font-medium">Valor:</span> R${" "}
+                        {(pixInstructions.amount / 100).toFixed(2)}
+                      </p>
+                    )}
+                    {pixInstructions.qr_code && (
+                      <p className="text-xs text-gray-600 break-all">
+                        <span className="font-medium">Código PIX:</span>{" "}
+                        {pixInstructions.qr_code}
+                      </p>
+                    )}
+                    {pixInstructions.qr_code_text && (
+                      <p className="text-xs text-gray-600 break-all">
+                        <span className="font-medium">Texto:</span>{" "}
+                        {pixInstructions.qr_code_text}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <p className="text-xs text-blue-800">
+                    O QR Code expira em 1 hora. Após o pagamento, o pedido será
+                    processado automaticamente.
+                  </p>
+                </div>
+
+                {/* Aviso para PIX simulado */}
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                  <p className="text-xs text-yellow-800">
+                    <strong>⚠️ PIX Simulado:</strong> Este é um QR Code de
+                    demonstração. Para usar PIX real, habilite o PIX na sua
+                    conta Stripe em:
+                    <a
+                      href="https://dashboard.stripe.com/account/payments/settings"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline ml-1"
+                    >
+                      dashboard.stripe.com
+                    </a>
+                  </p>
+                </div>
+
+                {/* Botão para simular confirmação do pagamento */}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={async () => {
+                    try {
+                      const response = await fetch(
+                        "/api/stripe/simulate-pix-confirmation",
+                        {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            paymentIntentId: pixPaymentIntentId,
+                          }),
+                        }
+                      );
+
+                      const data = await response.json();
+                      if (data.success) {
+                        onPaymentSuccessAction({
+                          amount,
+                          paymentMethod: "pix",
+                          status: "succeeded",
+                          paymentId: pixPaymentIntentId,
+                          orderId: data.orderId,
+                        });
+                      } else {
+                        onPaymentErrorAction(
+                          data.error || "Erro ao simular pagamento"
+                        );
+                      }
+                    } catch (error) {
+                      onPaymentErrorAction(
+                        error instanceof Error
+                          ? error.message
+                          : "Erro ao simular pagamento"
+                      );
+                    }
+                  }}
+                  className="w-full"
+                >
+                  🧪 Simular Confirmação do Pagamento (Teste)
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Botão de pagamento para Boleto */}
+        {selectedMethod === "boleto" && (
           <Button
             type="button"
             onClick={() => {
               if (!paymentCompleted) {
                 setPaymentCompleted(true);
-                // Para PIX e Boleto, chamamos diretamente a função de sucesso
+                // Para Boleto, chamamos diretamente a função de sucesso
                 onPaymentSuccessAction({
                   amount,
                   paymentMethod: selectedMethod,
@@ -520,10 +769,8 @@ export default function StripePayment({
                     d="M5 13l4 4L19 7"
                   ></path>
                 </svg>
-                {selectedMethod === "pix" ? "PIX Gerado" : "Boleto Gerado"}
+                Boleto Gerado
               </div>
-            ) : selectedMethod === "pix" ? (
-              `Gerar PIX R$ ${amount.toFixed(2)}`
             ) : (
               `Gerar Boleto R$ ${amount.toFixed(2)}`
             )}

@@ -24,7 +24,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingCart } from "lucide-react";
+import { ShoppingCart, Eye } from "lucide-react";
+import { OrderDetailsModal } from "./order-details-modal";
 
 interface Order {
   id: number;
@@ -59,6 +60,8 @@ export function OrdersManagement({
 }: OrdersManagementProps) {
   const [orders, setOrders] = useState(initialOrders);
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
@@ -133,6 +136,16 @@ export function OrdersManagement({
       ? orders
       : orders.filter((order) => order.status === filterStatus);
 
+  const handleOrderClick = (orderId: number) => {
+    setSelectedOrderId(orderId);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedOrderId(null);
+  };
+
   return (
     <Card>
       <CardHeader className="px-3 py-3 sm:px-6 sm:py-6">
@@ -185,11 +198,19 @@ export function OrdersManagement({
                   </TableHeader>
                   <TableBody>
                     {filteredOrders.map((order) => (
-                      <TableRow key={order.id}>
-                        <TableCell className="font-medium">#{order.id}</TableCell>
+                      <TableRow
+                        key={order.id}
+                        className="cursor-pointer hover:bg-gray-50 transition-colors"
+                        onClick={() => handleOrderClick(order.id)}
+                      >
+                        <TableCell className="font-medium">
+                          #{order.id}
+                        </TableCell>
                         <TableCell>
                           <div>
-                            <p className="font-medium text-sm">{order.user.name}</p>
+                            <p className="font-medium text-sm">
+                              {order.user.name}
+                            </p>
                             <p className="text-xs text-muted-foreground truncate max-w-[200px]">
                               {order.user.email}
                             </p>
@@ -201,7 +222,10 @@ export function OrdersManagement({
                         <TableCell>
                           <div className="text-sm max-w-[180px]">
                             {order.items.slice(0, 2).map((item, idx) => (
-                              <div key={idx} className="text-xs text-muted-foreground truncate">
+                              <div
+                                key={idx}
+                                className="text-xs text-muted-foreground truncate"
+                              >
                                 {item.quantity}x {item.product.name}
                               </div>
                             ))}
@@ -216,26 +240,53 @@ export function OrdersManagement({
                           {formatCurrency(order.total)}
                         </TableCell>
                         <TableCell>
-                          <Badge className={`${getStatusColor(order.status)} text-xs`}>
+                          <Badge
+                            className={`${getStatusColor(order.status)} text-xs`}
+                          >
                             {getStatusLabel(order.status)}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
-                          <Select
-                            value={order.status}
-                            onValueChange={(value) => handleStatusChange(order.id, value)}
-                          >
-                            <SelectTrigger className="w-[140px] text-xs">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="pending">Pendente</SelectItem>
-                              <SelectItem value="processing">Processando</SelectItem>
-                              <SelectItem value="shipped">Enviado</SelectItem>
-                              <SelectItem value="delivered">Entregue</SelectItem>
-                              <SelectItem value="cancelled">Cancelado</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <div className="flex items-center gap-2 justify-end">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOrderClick(order.id);
+                              }}
+                              className="p-1 hover:bg-gray-100 rounded transition-colors"
+                              title="Ver detalhes"
+                            >
+                              <Eye className="h-4 w-4 text-gray-600" />
+                            </button>
+                            <Select
+                              value={order.status}
+                              onValueChange={(value) =>
+                                handleStatusChange(order.id, value)
+                              }
+                            >
+                              <SelectTrigger
+                                className="w-[140px] text-xs"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="pending">
+                                  Pendente
+                                </SelectItem>
+                                <SelectItem value="processing">
+                                  Processando
+                                </SelectItem>
+                                <SelectItem value="shipped">Enviado</SelectItem>
+                                <SelectItem value="delivered">
+                                  Entregue
+                                </SelectItem>
+                                <SelectItem value="cancelled">
+                                  Cancelado
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -247,7 +298,11 @@ export function OrdersManagement({
             {/* Mobile/Tablet - Cards (abaixo de lg) */}
             <div className="lg:hidden space-y-3 px-3 pb-3">
               {filteredOrders.map((order) => (
-                <Card key={order.id} className="shadow-sm">
+                <Card
+                  key={order.id}
+                  className="shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+                  onClick={() => handleOrderClick(order.id)}
+                >
                   <CardContent className="p-3 sm:p-4">
                     <div className="space-y-2">
                       {/* Cabeçalho */}
@@ -257,7 +312,9 @@ export function OrdersManagement({
                             <span className="font-bold text-xs sm:text-sm">
                               Pedido #{order.id}
                             </span>
-                            <Badge className={`${getStatusColor(order.status)} text-[10px] sm:text-xs`}>
+                            <Badge
+                              className={`${getStatusColor(order.status)} text-[10px] sm:text-xs`}
+                            >
                               {getStatusLabel(order.status)}
                             </Badge>
                           </div>
@@ -275,7 +332,9 @@ export function OrdersManagement({
                       {/* Cliente */}
                       <div className="pt-2 border-t">
                         <p className="text-xs text-muted-foreground">Cliente</p>
-                        <p className="font-medium text-xs sm:text-sm">{order.user.name}</p>
+                        <p className="font-medium text-xs sm:text-sm">
+                          {order.user.name}
+                        </p>
                         <p className="text-xs text-muted-foreground truncate">
                           {order.user.email}
                         </p>
@@ -283,15 +342,22 @@ export function OrdersManagement({
 
                       {/* Itens */}
                       <div className="pt-2 border-t">
-                        <p className="text-xs text-muted-foreground mb-1">Itens</p>
+                        <p className="text-xs text-muted-foreground mb-1">
+                          Itens
+                        </p>
                         <div className="space-y-0.5">
                           {order.items.slice(0, 3).map((item, idx) => (
-                            <div key={idx} className="text-xs flex justify-between">
+                            <div
+                              key={idx}
+                              className="text-xs flex justify-between"
+                            >
                               <span className="truncate flex-1">
                                 {item.quantity}x {item.product.name}
                               </span>
                               <span className="ml-2 text-muted-foreground">
-                                {formatCurrency(item.product.price * item.quantity)}
+                                {formatCurrency(
+                                  item.product.price * item.quantity
+                                )}
                               </span>
                             </div>
                           ))}
@@ -305,21 +371,44 @@ export function OrdersManagement({
 
                       {/* Ações */}
                       <div className="pt-2 border-t">
-                        <Select
-                          value={order.status}
-                          onValueChange={(value) => handleStatusChange(order.id, value)}
-                        >
-                          <SelectTrigger className="w-full text-xs sm:text-sm h-8 sm:h-9">
-                            <SelectValue placeholder="Alterar status" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="pending">Pendente</SelectItem>
-                            <SelectItem value="processing">Processando</SelectItem>
-                            <SelectItem value="shipped">Enviado</SelectItem>
-                            <SelectItem value="delivered">Entregue</SelectItem>
-                            <SelectItem value="cancelled">Cancelado</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOrderClick(order.id);
+                            }}
+                            className="flex items-center gap-1 px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded transition-colors"
+                          >
+                            <Eye className="h-3 w-3" />
+                            Ver detalhes
+                          </button>
+                          <Select
+                            value={order.status}
+                            onValueChange={(value) =>
+                              handleStatusChange(order.id, value)
+                            }
+                          >
+                            <SelectTrigger
+                              className="flex-1 text-xs sm:text-sm h-8 sm:h-9"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <SelectValue placeholder="Alterar status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="pending">Pendente</SelectItem>
+                              <SelectItem value="processing">
+                                Processando
+                              </SelectItem>
+                              <SelectItem value="shipped">Enviado</SelectItem>
+                              <SelectItem value="delivered">
+                                Entregue
+                              </SelectItem>
+                              <SelectItem value="cancelled">
+                                Cancelado
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
                     </div>
                   </CardContent>
@@ -329,6 +418,14 @@ export function OrdersManagement({
           </>
         )}
       </CardContent>
+      {/* Modal de detalhes do pedido */}
+      {selectedOrderId && (
+        <OrderDetailsModal
+          orderId={selectedOrderId}
+          isOpen={isModalOpen}
+          onCloseAction={handleCloseModal}
+        />
+      )}
     </Card>
   );
 }
