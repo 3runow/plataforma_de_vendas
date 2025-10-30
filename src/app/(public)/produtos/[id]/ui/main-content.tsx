@@ -11,6 +11,11 @@ import {
   AccordionTrigger,
   AccordionContent,
 } from "@/components/ui/accordion";
+import { useCart } from "@/contexts/cart-context";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { ShoppingCart } from "lucide-react";
+import type { SerializableProduct } from "../../../../../../types/types";
 
 type Address = import("./types").Address;
 
@@ -59,7 +64,6 @@ export default function MainContent({
   stock,
   productId,
 }: MainContentProps) {
-  // Características dummy por enquanto
   const characteristics = [
     { label: "Conteúdo da caixa", value: `${name} + manual` },
     { label: "Peças", value: "80 peças coloridas" },
@@ -67,7 +71,39 @@ export default function MainContent({
     { label: "Material", value: "Plástico ABS premium" },
   ];
 
+  // Carrinho: estado e helpers
+  const { addToCart, cartItems } = useCart();
+  const [quantity, setQuantity] = useState(1);
+  const [isAdding, setIsAdding] = useState(false);
+  const [added, setAdded] = useState(false);
+
   const isOutOfStock = stock === 0;
+  const max = stock ?? 1;
+  const productBase: SerializableProduct = {
+    id: productId,
+    name,
+    description,
+    price,
+    stock,
+    imageUrl: images[0] || null,
+    discount: discount || 0,
+    isNew: isNew || false,
+    isFeatured: isFeatured || false,
+    createdAt: "",
+    updatedAt: "",
+  };
+  const existingInCart =
+    cartItems.find((i) => i.productId === productId)?.quantity ?? 0;
+  const lowStock = !isOutOfStock && stock <= 5;
+
+  async function handleAddToCart() {
+    setIsAdding(true);
+    addToCart({ ...productBase }, quantity);
+    setIsAdding(false);
+    setAdded(true);
+    setTimeout(() => setAdded(false), 1500);
+    setQuantity(1);
+  }
 
   return (
     <main className="max-w-7xl mx-auto px-0 py-0">
@@ -102,7 +138,73 @@ export default function MainContent({
             />
           )}
 
-          {/* DeliveryCheck abaixo do bloco do carrinho */}
+          {/* Bloco de carrinho */}
+          <div className="flex items-center gap-3 mt-2 mb-1">
+            <label className="font-medium text-gray-700" htmlFor="qnt-input">
+              Qtd:
+            </label>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-9 w-9 p-0"
+              disabled={quantity <= 1}
+              onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+            >
+              -
+            </Button>
+            <input
+              id="qnt-input"
+              min={1}
+              max={max}
+              type="number"
+              value={quantity}
+              disabled={isOutOfStock}
+              onChange={(e) =>
+                setQuantity(Math.max(1, Math.min(max, Number(e.target.value))))
+              }
+              className="w-14 appearance-none border border-gray-300 rounded text-center text-sm px-2 py-1 focus:ring focus:border-blue-600"
+            />
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-9 w-9 p-0"
+              disabled={quantity >= max}
+              onClick={() => setQuantity((q) => Math.min(max, q + 1))}
+            >
+              +
+            </Button>
+            <Button
+              className="flex-1 ml-2"
+              onClick={handleAddToCart}
+              disabled={isOutOfStock || isAdding}
+            >
+              <ShoppingCart className="mr-2 h-4 w-4" />
+              {isAdding
+                ? "Adicionando..."
+                : isOutOfStock
+                  ? "Esgotado"
+                  : existingInCart > 0
+                    ? "Adicionar mais"
+                    : "Adicionar ao carrinho"}
+            </Button>
+            {added && (
+              <span className="ml-2 text-green-600 font-medium">
+                Adicionado!
+              </span>
+            )}
+          </div>
+          <div className="text-xs text-gray-500">
+            {existingInCart > 0 && (
+              <span>Já no carrinho: {existingInCart} • </span>
+            )}
+            {lowStock && (
+              <span className="text-orange-600 font-medium">
+                Últimas unidades
+              </span>
+            )}
+          </div>
+
+          {/* CEP abaixo do carrinho */}
           <DeliveryCheck
             cep={userSelections.cep || ""}
             address={userSelections.address}
@@ -110,7 +212,7 @@ export default function MainContent({
             onCheckDeliveryAction={onCheckDeliveryAction}
           />
 
-          {/* Accordion de características continua abaixo de DeliveryCheck */}
+          {/* Accordion de características */}
           <Accordion type="single" collapsible className="mt-4 w-full">
             <AccordionItem value="caracteristicas">
               <AccordionTrigger className="text-lg font-semibold text-gray-900 mb-0">
