@@ -91,7 +91,8 @@ function CheckoutForm({
         confirmParams: {
           return_url: `${window.location.origin}/checkout/confirmation?orderId=${orderId}`,
         },
-        redirect: "if_required",
+        // For boleto we must redirect to Stripe voucher page; for others, let Stripe decide
+        redirect: paymentMethod === "boleto" ? "always" : undefined,
       });
 
       if (error) {
@@ -202,6 +203,15 @@ export default function StripePayment({
     amount?: number;
     qr_code?: string;
     qr_code_text?: string;
+  } | null>(null);
+
+  const [boletoLoading, setBoletoLoading] = useState(false);
+  const [boletoPaymentIntentId, setBoletoPaymentIntentId] = useState<string>("");
+  const [boletoData, setBoletoData] = useState<{
+    barcode_number?: string;
+    pdf_url?: string;
+    expiration_date?: string;
+    instructions?: string;
   } | null>(null);
 
   const paymentMethods: PaymentMethodOption[] = [
@@ -469,8 +479,8 @@ export default function StripePayment({
           </div>
         )}
 
-        {/* Elemento de pagamento do Stripe - apenas para cartão de crédito */}
-        {selectedMethod === "credit_card" && options && (
+        {/* Elemento de pagamento do Stripe - usado para cartão e boleto */}
+        {(selectedMethod === "credit_card" || selectedMethod === "boleto") && options && (
           <Elements options={options} stripe={stripePromise}>
             <CheckoutForm
               amount={amount}
@@ -734,42 +744,68 @@ export default function StripePayment({
         )}
 
         {/* Botão de pagamento para Boleto */}
-        {selectedMethod === "boleto" && (
+        {/* Botão para iniciar pagamento com boleto */}
+        {selectedMethod === "boleto" && !clientSecret && (
           <Button
             type="button"
-            onClick={() => {
-              if (!paymentCompleted) {
-                setPaymentCompleted(true);
-                // Para Boleto, chamamos diretamente a função de sucesso
-                onPaymentSuccessAction({
-                  amount,
-                  paymentMethod: selectedMethod,
-                  status: "pending",
-                  payerName: payerNameInput,
-                  payerCpf: payerCpfInput,
-                });
+            onClick={async () => {
+              setLoading(true);
+              try {
+                const response = await fetch(
+                  "/api/stripe/create-payment-intent",
+                  {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      amount: Math.round(amount * 100), // centavos
+                      currency: "brl",
+                      paymentMethod: "boleto",
+                      payerEmail,
+                      payerName: payerNameInput,
+                      payerCpf: payerCpfInput,
+                      orderId: orderId,
+                    }),
+                  }
+                );
+
+                const data = await response.json();
+                if (data.clientSecret) {
+                  setClientSecret(data.clientSecret);
+
+                  // registra método/status pendente no pedido
+                  if (orderId && data.paymentIntentId) {
+                    try {
+                      await fetch("/api/order/update-payment", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          orderId,
+                          paymentId: data.paymentIntentId,
+                          paymentMethod: "boleto",
+                          paymentStatus: "pending",
+                        }),
+                      });
+                    } catch (_) {}
+                  }
+                } else {
+                  onPaymentErrorAction(data.error || "Erro ao criar pagamento");
+                }
+              } catch (error) {
+                onPaymentErrorAction(
+                  error instanceof Error ? error.message : "Erro ao processar pagamento"
+                );
+              } finally {
+                setLoading(false);
               }
             }}
-            disabled={paymentCompleted}
+            disabled={loading}
             className="w-full"
             size="lg"
           >
-            {paymentCompleted ? (
+            {loading ? (
               <div className="flex items-center justify-center">
-                <svg
-                  className="w-4 h-4 mr-2 text-green-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M5 13l4 4L19 7"
-                  ></path>
-                </svg>
-                Boleto Gerado
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Carregando...
               </div>
             ) : (
               `Gerar Boleto R$ ${amount.toFixed(2)}`

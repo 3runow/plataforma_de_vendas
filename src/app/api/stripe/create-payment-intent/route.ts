@@ -29,6 +29,28 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Dados incompletos" }, { status: 400 });
     }
 
+    // Boleto (REAL via Stripe Payment Element)
+    if (paymentMethod === "boleto") {
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: Math.round(amount),
+        currency, // "brl"
+        payment_method_types: ["boleto"],
+        metadata: {
+          user_id: user.id,
+          payer_email: payerEmail,
+          payer_name: payerName,
+          payer_cpf: payerCpf,
+          order_id: orderId?.toString() || "",
+          payment_method: paymentMethod,
+        },
+      });
+
+      return NextResponse.json({
+        clientSecret: paymentIntent.client_secret,
+        paymentIntentId: paymentIntent.id,
+      });
+    }
+
     // Configuração específica para PIX (simulado)
     if (paymentMethod === "pix") {
       // Para contas Stripe que não têm PIX habilitado, simulamos o comportamento
