@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { ShoppingCart, Heart } from "lucide-react";
 import { Card, CardContent, CardFooter } from "./ui/card";
 import { Button } from "./ui/button";
@@ -21,6 +22,8 @@ export default function ProductCard({
   const [quantity, setQuantity] = useState(1);
   const [isAdding, setIsAdding] = useState(false);
   const { addToFavorites, removeFromFavorites, isFavorite } = useFavorites();
+  const router = useRouter();
+  const productHref = `/produtos/${product.id}`;
 
   const isFavorited = isFavorite(product.id);
 
@@ -31,7 +34,8 @@ export default function ProductCard({
   const isLowStock = product.stock > 0 && product.stock <= 5;
   const isOutOfStock = product.stock === 0;
 
-  const handleAddToCart = async () => {
+  const handleAddToCart = async (e?: React.MouseEvent) => {
+    e?.stopPropagation();
     if (isOutOfStock || !onAddToCart) return;
 
     setIsAdding(true);
@@ -45,7 +49,9 @@ export default function ProductCard({
     }
   };
 
-  const handleToggleFavorite = () => {
+  const handleToggleFavorite = (e: React.MouseEvent) => {
+    // evita navegação quando clicar no coração (container é clicável)
+    e.stopPropagation();
     if (isFavorited) {
       removeFromFavorites(product.id);
     } else {
@@ -83,7 +89,12 @@ export default function ProductCard({
         }}
       >
         {/* Container da imagem estilo polaroid */}
-        <div className="relative aspect-square overflow-hidden bg-white m-4 mb-2 shadow-inner rounded-none">
+        <div
+          className="relative aspect-square overflow-hidden bg-white m-4 mb-2 shadow-inner rounded-none cursor-pointer"
+          onClick={() => router.push(productHref)}
+          role="button"
+          aria-label={`Ver detalhes de ${product.name}`}
+        >
           <div className="absolute top-2 left-2 z-10 flex flex-col gap-1">
             {product.isNew && (
               <Badge
@@ -147,7 +158,12 @@ export default function ProductCard({
 
         {/* Área de informações estilo polaroid (parte inferior da foto) */}
         <CardContent className="p-4 pt-2 bg-[#f5f1e8]">
-          <h3 className="font-semibold text-lg line-clamp-2 mb-2 text-gray-800">
+          <h3
+            className="font-semibold text-lg line-clamp-2 mb-2 text-gray-800 cursor-pointer hover:underline"
+            onClick={() => router.push(productHref)}
+            role="button"
+            aria-label={`Ver detalhes de ${product.name}`}
+          >
             {product.name}
           </h3>
           <p className="text-sm text-gray-600 line-clamp-2 mb-3">
@@ -180,7 +196,7 @@ export default function ProductCard({
           </div>
         </CardContent>
 
-        <CardFooter className="p-4 pt-0 flex gap-2 bg-[#f5f1e8]">
+        <CardFooter className="p-4 pt-0 flex gap-2 bg-[#f5f1e8]" onClick={(e) => e.stopPropagation()}>
           {!isOutOfStock && (
             <div className="flex items-center border rounded-md bg-white">
               <Button
