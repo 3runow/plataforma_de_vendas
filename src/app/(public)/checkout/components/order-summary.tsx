@@ -1,6 +1,5 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { CartItem } from "../../../../../types/types";
@@ -10,8 +9,6 @@ interface OrderSummaryProps {
   subtotal: number;
   shipping: number;
   total: number;
-  isLoading: boolean;
-  paymentProcessed: boolean;
 }
 
 export default function OrderSummary({
@@ -19,8 +16,6 @@ export default function OrderSummary({
   subtotal,
   shipping,
   total,
-  isLoading,
-  paymentProcessed,
 }: OrderSummaryProps) {
   return (
     <Card className="sticky top-4">
@@ -61,25 +56,7 @@ export default function OrderSummary({
           <span className="text-primary">R$ {total.toFixed(2)}</span>
         </div>
 
-        <Button
-          type="submit"
-          className="w-full"
-          size="lg"
-          disabled={isLoading || !paymentProcessed}
-        >
-          {isLoading ? (
-            <div className="flex items-center justify-center">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-              Processando...
-            </div>
-          ) : !paymentProcessed ? (
-            "Processe o pagamento primeiro"
-          ) : (
-            "Confirmar Pedido"
-          )}
-        </Button>
-
-        <p className="text-xs text-muted-foreground text-center">
+        <p className="text-xs text-muted-foreground text-center mt-4">
           Ao confirmar, você concorda com nossos termos e condições
         </p>
       </CardContent>

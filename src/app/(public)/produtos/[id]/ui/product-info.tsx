@@ -46,10 +46,17 @@ export default function ProductInfo({ name, price, description, isNew, isFeature
         )}
       </h1>
 
-      <div className="flex items-center space-x-2">
-        <span className="text-3xl font-bold text-blue-600">{formatCurrencyBRL(price)}</span>
-        {hasDiscount && (
-          <Badge variant="outline" className="bg-green-100 text-green-700">Em promoção</Badge>
+      <div className="flex items-center space-x-2 flex-wrap">
+        {hasDiscount ? (
+          <>
+            <span className="text-sm text-gray-500 line-through">{formatCurrencyBRL(price)}</span>
+            <span className="text-3xl font-bold text-blue-600">
+              {formatCurrencyBRL(price * (1 - (discount ?? 0) / 100))}
+            </span>
+            <Badge variant="outline" className="bg-green-100 text-green-700">Em promoção</Badge>
+          </>
+        ) : (
+          <span className="text-3xl font-bold text-blue-600">{formatCurrencyBRL(price)}</span>
         )}
       </div>
 

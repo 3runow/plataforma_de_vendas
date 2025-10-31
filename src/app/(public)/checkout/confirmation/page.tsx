@@ -18,6 +18,7 @@ interface OrderData {
   items: Array<{
     id: number;
     quantity: number;
+    price: number;
     product: {
       id: number;
       name: string;
@@ -391,7 +392,7 @@ function OrderConfirmationContent() {
                         </div>
                         <div className="text-right">
                           <p className="font-semibold">
-                            R$ {(item.product.price * item.quantity).toFixed(2)}
+                            R$ {(item.price * item.quantity).toFixed(2)}
                           </p>
                         </div>
                       </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useImperativeHandle, forwardRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -49,6 +49,10 @@ interface StripePaymentProps {
   onPaymentErrorAction: (error: string) => void;
 }
 
+export interface StripePaymentRef {
+  processPayment: () => Promise<void>;
+}
+
 interface CheckoutFormProps {
   amount: number;
   paymentMethod: "credit_card" | "pix" | "boleto";
@@ -56,6 +60,7 @@ interface CheckoutFormProps {
   paymentIntentId?: string | null;
   onPaymentSuccessAction: (paymentData: PaymentData) => void;
   onPaymentErrorAction: (error: string) => void;
+  onPaymentMethodChange?: (method: string) => void;
 }
 
 interface PaymentMethodOption {
@@ -65,6 +70,10 @@ interface PaymentMethodOption {
   description: string;
 }
 
+interface CheckoutFormPropsWithCallback extends CheckoutFormProps {
+  onPaymentMethodChange?: (method: string) => void;
+}
+
 function CheckoutForm({
   amount,
   paymentMethod,
@@ -72,7 +81,8 @@ function CheckoutForm({
   paymentIntentId,
   onPaymentSuccessAction,
   onPaymentErrorAction,
-}: CheckoutFormProps) {
+  onPaymentMethodChange,
+}: CheckoutFormPropsWithCallback) {
   const stripe = useStripe();
   const elements = useElements();
   const [loading, setLoading] = useState(false);
@@ -149,7 +159,14 @@ function CheckoutForm({
 
   return (
     <div className="space-y-4">
-      <PaymentElement />
+      <PaymentElement
+        onChange={(e) => {
+          const methodType = e.value?.type || "";
+          if (onPaymentMethodChange) {
+            onPaymentMethodChange(methodType);
+          }
+        }}
+      />
       <Button
         type="button"
         onClick={handleSubmit}
@@ -187,16 +204,20 @@ function CheckoutForm({
   );
 }
 
-export default function StripePayment({
-  amount,
-  paymentMethod,
-  payerEmail,
-  payerName,
-  payerCpf,
-  orderId,
-  onPaymentSuccessAction,
-  onPaymentErrorAction,
-}: StripePaymentProps) {
+const StripePayment = forwardRef<StripePaymentRef, StripePaymentProps>(
+  function StripePayment(
+    {
+      amount,
+      paymentMethod,
+      payerEmail,
+      payerName,
+      payerCpf,
+      orderId,
+      onPaymentSuccessAction,
+      onPaymentErrorAction,
+    },
+    ref
+  ) {
   const [clientSecret, setClientSecret] = useState<string>("");
   const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -205,6 +226,7 @@ export default function StripePayment({
   const [payerCpfInput, setPayerCpfInput] = useState(payerCpf);
   const [installments, setInstallments] = useState("1");
   const [paymentCompleted, setPaymentCompleted] = useState(false);
+  const [paymentElementMethod, setPaymentElementMethod] = useState<string>("");
   const [pixPaymentIntentId, setPixPaymentIntentId] = useState<string>("");
   const [pixQrCode, setPixQrCode] = useState<string>("");
   const [pixLoading, setPixLoading] = useState(false);
@@ -238,12 +260,6 @@ export default function StripePayment({
       icon: QrCode,
       description: "Pagamento instantâneo",
     },
-    {
-      id: "boleto",
-      name: "Boleto Bancário",
-      icon: Barcode,
-      description: "Vencimento em 3 dias úteis",
-    },
   ];
 
   const formatCPF = (value: string) => {
@@ -262,6 +278,213 @@ export default function StripePayment({
     { value: "6", label: "6x sem juros" },
     { value: "12", label: "12x com juros" },
   ];
+
+  // Função para processar pagamento (usada tanto internamente quanto externamente)
+  const processPayment = async () => {
+    if (selectedMethod === "credit_card") {
+      // Para cartão, criar payment intent se ainda não foi criado
+      if (!clientSecret) {
+        setLoading(true);
+        try {
+          const response = await fetch(
+            "/api/stripe/create-payment-intent",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                amount: Math.round(amount * 100),
+                currency: "brl",
+                paymentMethod: selectedMethod,
+                payerEmail,
+                payerName: payerNameInput,
+                payerCpf: payerCpfInput,
+                installments: parseInt(installments),
+                orderId: orderId,
+              }),
+            }
+          );
+
+          const data = await response.json();
+          if (data.clientSecret) {
+            setClientSecret(data.clientSecret);
+            if (data.paymentIntentId) {
+              setPaymentIntentId(data.paymentIntentId);
+            }
+          } else {
+            onPaymentErrorAction(data.error || "Erro ao criar pagamento");
+          }
+        } catch (error) {
+          onPaymentErrorAction(
+            error instanceof Error
+              ? error.message
+              : "Erro ao processar pagamento"
+          );
+        } finally {
+          setLoading(false);
+        }
+      }
+      // Se já tem clientSecret, o PaymentElement do Stripe já vai processar
+      // O usuário precisa preencher os dados do cartão e clicar no botão interno
+    } else if (selectedMethod === "pix") {
+      if (!pixQrCode && !pixLoading) {
+        setPixLoading(true);
+        try {
+          const response = await fetch(
+            "/api/stripe/create-payment-intent",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                amount: Math.round(amount * 100),
+                currency: "brl",
+                paymentMethod: selectedMethod,
+                payerEmail,
+                payerName: payerNameInput,
+                payerCpf: payerCpfInput,
+                orderId: orderId,
+              }),
+            }
+          );
+
+          const data = await response.json();
+          if (data.error) {
+            onPaymentErrorAction(
+              data.error || "Erro ao criar pagamento PIX"
+            );
+          } else if (data.pixData) {
+            setPixPaymentIntentId(data.paymentIntentId);
+            setPixQrCode(data.pixData.hosted_voucher_url || "");
+            setPixInstructions(data.pixData.instructions);
+            setPaymentCompleted(true);
+
+            if (data.isSimulated) {
+              console.log(
+                "⚠️ PIX Simulado - Para usar PIX real, habilite na conta Stripe"
+              );
+            }
+          } else {
+            onPaymentErrorAction("QR Code PIX não foi gerado");
+          }
+        } catch (error) {
+          onPaymentErrorAction(
+            error instanceof Error
+              ? error.message
+              : "Erro ao processar PIX"
+          );
+        } finally {
+          setPixLoading(false);
+        }
+      }
+    }
+  };
+
+  // Criar payment intent automaticamente quando método é selecionado
+  useEffect(() => {
+    const createPaymentIntent = async () => {
+      // Só cria se não existe ainda e se os dados básicos estão preenchidos
+      // Não precisa de orderId para criar o payment intent
+      if (
+        payerNameInput.trim() &&
+        payerCpfInput.replace(/\D/g, "").length === 11
+      ) {
+        if (selectedMethod === "credit_card" && !clientSecret && !loading) {
+          setLoading(true);
+          try {
+            const response = await fetch(
+              "/api/stripe/create-payment-intent",
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  amount: Math.round(amount * 100),
+                  currency: "brl",
+                  paymentMethod: selectedMethod,
+                  payerEmail,
+                  payerName: payerNameInput,
+                  payerCpf: payerCpfInput,
+                  installments: parseInt(installments),
+                  orderId: orderId,
+                }),
+              }
+            );
+
+            const data = await response.json();
+            if (data.clientSecret) {
+              setClientSecret(data.clientSecret);
+              if (data.paymentIntentId) {
+                setPaymentIntentId(data.paymentIntentId);
+              }
+            }
+          } catch (error) {
+            console.error("Erro ao criar payment intent:", error);
+          } finally {
+            setLoading(false);
+          }
+        } else if (selectedMethod === "pix" && !pixQrCode && !pixLoading) {
+          setPixLoading(true);
+          try {
+            const response = await fetch(
+              "/api/stripe/create-payment-intent",
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  amount: Math.round(amount * 100),
+                  currency: "brl",
+                  paymentMethod: selectedMethod,
+                  payerEmail,
+                  payerName: payerNameInput,
+                  payerCpf: payerCpfInput,
+                  orderId: orderId,
+                }),
+              }
+            );
+
+            const data = await response.json();
+            if (data.error) {
+              console.error("Erro ao criar PIX:", data.error);
+            } else if (data.pixData) {
+              setPixPaymentIntentId(data.paymentIntentId);
+              setPixQrCode(data.pixData.hosted_voucher_url || "");
+              setPixInstructions(data.pixData.instructions);
+              setPaymentCompleted(true);
+
+              if (data.isSimulated) {
+                console.log(
+                  "⚠️ PIX Simulado - Para usar PIX real, habilite na conta Stripe"
+                );
+              }
+            }
+          } catch (error) {
+            console.error("Erro ao criar PIX:", error);
+          } finally {
+            setPixLoading(false);
+          }
+        }
+      }
+    };
+
+    createPaymentIntent();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedMethod, payerNameInput, payerCpfInput, installments, amount, payerEmail]);
+
+  // Expor função para componente pai (apenas confirma pagamento se já existir intent)
+  useImperativeHandle(ref, () => ({
+    processPayment: async () => {
+      // Para cartão, se já tem clientSecret, o usuário precisa usar o botão interno
+      // Para PIX, já foi gerado automaticamente
+      if (selectedMethod === "credit_card") {
+        if (!clientSecret) {
+          // Se ainda não foi criado, criar agora
+          await processPayment();
+        }
+        // O usuário precisa preencher os dados e usar o botão interno do CheckoutForm
+      } else if (selectedMethod === "pix") {
+        // PIX já foi processado automaticamente
+        return;
+      }
+    },
+  }));
 
   // Polling para verificar status do pagamento PIX
   useEffect(() => {
@@ -360,7 +583,7 @@ export default function StripePayment({
         {/* Seleção do método de pagamento */}
         <div>
           <h3 className="text-lg font-semibold mb-4">Método de Pagamento</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {paymentMethods.map((method) => {
               const Icon = method.icon;
               return (
@@ -429,8 +652,10 @@ export default function StripePayment({
           </div>
         </div>
 
-        {/* Opções de parcelamento para cartão de crédito */}
-        {selectedMethod === "credit_card" && (
+        {/* Opções de parcelamento para cartão de crédito (não mostrar se boleto selecionado) */}
+        {selectedMethod === "credit_card" && 
+         paymentElementMethod !== "boleto" && 
+         paymentElementMethod !== "boleto_bancario" && (
           <div>
             <label className="block text-sm font-medium mb-2">
               Parcelamento
@@ -468,173 +693,46 @@ export default function StripePayment({
           </div>
         )}
 
-        {selectedMethod === "boleto" && (
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-            <div className="flex items-start gap-3">
-              <Barcode className="w-5 h-5 text-amber-600 mt-0.5" />
-              <div className="text-sm text-amber-800">
-                <p className="font-semibold mb-1">Informações importantes:</p>
-                <ul className="list-disc list-inside space-y-1">
-                  <li>O boleto vence em 3 dias úteis</li>
-                  <li>
-                    Após confirmar, você poderá imprimir ou copiar o código de
-                    barras
-                  </li>
-                  <li>
-                    O pedido só será processado após a confirmação do pagamento
-                  </li>
-                  <li>Confirmação em até 2 dias úteis</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        )}
 
-        {/* Elemento de pagamento do Stripe - usado para cartão e boleto */}
-        {(selectedMethod === "credit_card" || selectedMethod === "boleto") && options && (
-          <Elements options={options} stripe={stripePromise}>
-            <CheckoutForm
-              amount={amount}
-              paymentMethod={selectedMethod}
-              orderId={orderId}
-              paymentIntentId={paymentIntentId}
-              onPaymentSuccessAction={onPaymentSuccessAction}
-              onPaymentErrorAction={onPaymentErrorAction}
-            />
-          </Elements>
-        )}
-
-        {/* Botão para iniciar pagamento com cartão */}
-        {selectedMethod === "credit_card" && !clientSecret && (
-          <Button
-            type="button"
-            onClick={async () => {
-              setLoading(true);
-              try {
-                const response = await fetch(
-                  "/api/stripe/create-payment-intent",
-                  {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      amount: Math.round(amount * 100), // Convert to cents
-                      currency: "brl",
-                      paymentMethod: selectedMethod,
-                      payerEmail,
-                      payerName: payerNameInput,
-                      payerCpf: payerCpfInput,
-                      installments: parseInt(installments),
-                      orderId: orderId,
-                    }),
-                  }
-                );
-
-                const data = await response.json();
-                if (data.clientSecret) {
-                  setClientSecret(data.clientSecret);
-                  // Guardar o paymentIntentId se fornecido
-                  if (data.paymentIntentId) {
-                    setPaymentIntentId(data.paymentIntentId);
-                  }
-                } else {
-                  onPaymentErrorAction(data.error || "Erro ao criar pagamento");
-                }
-              } catch (error) {
-                onPaymentErrorAction(
-                  error instanceof Error
-                    ? error.message
-                    : "Erro ao processar pagamento"
-                );
-              } finally {
-                setLoading(false);
-              }
-            }}
-            disabled={loading}
-            className="w-full"
-            size="lg"
-          >
-            {loading ? (
-              <div className="flex items-center justify-center">
+        {/* Elemento de pagamento do Stripe - usado para cartão (permite escolher boleto dentro) */}
+        {selectedMethod === "credit_card" && (
+          <>
+            {loading && !clientSecret && (
+              <div className="flex items-center justify-center p-4">
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Carregando...
+                <span className="text-sm text-muted-foreground">
+                  Preparando formulário de pagamento...
+                </span>
               </div>
-            ) : (
-              `Pagar R$ ${amount.toFixed(2)}`
             )}
-          </Button>
+            {options && (
+              <Elements options={options} stripe={stripePromise}>
+                <CheckoutForm
+                  amount={amount}
+                  paymentMethod={selectedMethod}
+                  orderId={orderId}
+                  paymentIntentId={paymentIntentId}
+                  onPaymentSuccessAction={onPaymentSuccessAction}
+                  onPaymentErrorAction={onPaymentErrorAction}
+                  onPaymentMethodChange={(method) => setPaymentElementMethod(method)}
+                />
+              </Elements>
+            )}
+          </>
         )}
+
 
         {/* Seção de PIX */}
         {selectedMethod === "pix" && (
           <div className="space-y-4">
-            {!pixQrCode && !pixLoading && (
-              <Button
-                type="button"
-                onClick={async () => {
-                  setPixLoading(true);
-                  try {
-                    const response = await fetch(
-                      "/api/stripe/create-payment-intent",
-                      {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                          amount: Math.round(amount * 100), // Convert to cents
-                          currency: "brl",
-                          paymentMethod: selectedMethod,
-                          payerEmail,
-                          payerName: payerNameInput,
-                          payerCpf: payerCpfInput,
-                          orderId: orderId,
-                        }),
-                      }
-                    );
-
-                    const data = await response.json();
-                    if (data.error) {
-                      onPaymentErrorAction(
-                        data.error || "Erro ao criar pagamento PIX"
-                      );
-                    } else if (data.pixData) {
-                      setPixPaymentIntentId(data.paymentIntentId);
-                      setPixQrCode(data.pixData.hosted_voucher_url || "");
-                      setPixInstructions(data.pixData.instructions);
-                      setPaymentCompleted(true);
-
-                      // Se for simulado, mostra um toast informativo
-                      if (data.isSimulated) {
-                        console.log(
-                          "⚠️ PIX Simulado - Para usar PIX real, habilite na conta Stripe"
-                        );
-                      }
-                    } else {
-                      onPaymentErrorAction("QR Code PIX não foi gerado");
-                    }
-                  } catch (error) {
-                    onPaymentErrorAction(
-                      error instanceof Error
-                        ? error.message
-                        : "Erro ao processar PIX"
-                    );
-                  } finally {
-                    setPixLoading(false);
-                  }
-                }}
-                disabled={pixLoading}
-                className="w-full"
-                size="lg"
-              >
-                {pixLoading ? (
-                  <div className="flex items-center justify-center">
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Carregando...
-                  </div>
-                ) : (
-                  `Gerar PIX R$ ${amount.toFixed(2)}`
-                )}
-              </Button>
+            {pixLoading && !pixQrCode && (
+              <div className="flex items-center justify-center p-4">
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <span className="text-sm text-muted-foreground">
+                  Gerando QR Code PIX...
+                </span>
+              </div>
             )}
-
             {/* Display do QR Code PIX */}
             {pixQrCode && (
               <div className="bg-white border-2 border-primary rounded-lg p-6 text-center space-y-4">
@@ -759,76 +857,11 @@ export default function StripePayment({
           </div>
         )}
 
-        {/* Botão de pagamento para Boleto */}
-        {/* Botão para iniciar pagamento com boleto */}
-        {selectedMethod === "boleto" && !clientSecret && (
-          <Button
-            type="button"
-            onClick={async () => {
-              setLoading(true);
-              try {
-                const response = await fetch(
-                  "/api/stripe/create-payment-intent",
-                  {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      amount: Math.round(amount * 100), // centavos
-                      currency: "brl",
-                      paymentMethod: "boleto",
-                      payerEmail,
-                      payerName: payerNameInput,
-                      payerCpf: payerCpfInput,
-                      orderId: orderId,
-                    }),
-                  }
-                );
-
-                const data = await response.json();
-                if (data.clientSecret) {
-                  setClientSecret(data.clientSecret);
-
-                  // registra método/status pendente no pedido
-                  if (orderId && data.paymentIntentId) {
-                    try {
-                      await fetch("/api/order/update-payment", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                          orderId,
-                          paymentId: data.paymentIntentId,
-                          paymentMethod: "boleto",
-                          paymentStatus: "pending",
-                        }),
-                      });
-                    } catch (_) {}
-                  }
-                } else {
-                  onPaymentErrorAction(data.error || "Erro ao criar pagamento");
-                }
-              } catch (error) {
-                onPaymentErrorAction(
-                  error instanceof Error ? error.message : "Erro ao processar pagamento"
-                );
-              } finally {
-                setLoading(false);
-              }
-            }}
-            disabled={loading}
-            className="w-full"
-            size="lg"
-          >
-            {loading ? (
-              <div className="flex items-center justify-center">
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Carregando...
-              </div>
-            ) : (
-              `Gerar Boleto R$ ${amount.toFixed(2)}`
-            )}
-          </Button>
-        )}
       </div>
     </Card>
   );
-}
+});
+
+StripePayment.displayName = "StripePayment";
+
+export default StripePayment;

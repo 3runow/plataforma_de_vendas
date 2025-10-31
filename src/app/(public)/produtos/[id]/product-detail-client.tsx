@@ -59,7 +59,7 @@ export default function ProductDetailClient({ product }: Props) {
     <MainContent
       images={images}
       name={product.name}
-      price={product.discount ? product.price * (1 - product.discount / 100) : product.price}
+      price={product.price}
       description={product.description}
       sizes={[]}
       colors={[]}

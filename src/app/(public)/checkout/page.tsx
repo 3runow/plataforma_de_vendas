@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/contexts/cart-context";
 import { ChevronLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
+import type { StripePaymentRef } from "./components/stripe-payment";
 import {
   Accordion,
   AccordionContent,
@@ -45,6 +46,7 @@ export default function CheckoutPage() {
     useState<ShippingOption | null>(null);
   const [paymentProcessed, setPaymentProcessed] = useState(false);
   const [currentOrderId, setCurrentOrderId] = useState<number | null>(null);
+  const stripePaymentRef = useRef<StripePaymentRef>(null);
   const [showSaveAddressDialog, setShowSaveAddressDialog] = useState(false);
   const [savedAddresses, setSavedAddresses] = useState<
     {
@@ -758,6 +760,7 @@ export default function CheckoutPage() {
                   </AccordionTrigger>
                   <AccordionContent className="px-6 pb-6">
                     <StripePayment
+                      ref={stripePaymentRef}
                       amount={total}
                       paymentMethod={
                         paymentData.paymentMethod as
@@ -827,8 +830,6 @@ export default function CheckoutPage() {
                 subtotal={subtotal}
                 shipping={shippingPrice}
                 total={total}
-                isLoading={isLoading}
-                paymentProcessed={paymentProcessed}
               />
             </div>
           </div>
