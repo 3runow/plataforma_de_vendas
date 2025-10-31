@@ -13,6 +13,26 @@ export async function PUT(request: Request) {
 
     const { currentPassword, newPassword } = await request.json();
 
+    // Validação de senha mais forte
+    if (!newPassword || newPassword.length < 8) {
+      return NextResponse.json(
+        { error: "A senha deve ter no mínimo 8 caracteres" },
+        { status: 400 }
+      );
+    }
+
+    // Verificar complexidade da senha
+    const hasUpperCase = /[A-Z]/.test(newPassword);
+    const hasLowerCase = /[a-z]/.test(newPassword);
+    const hasNumber = /\d/.test(newPassword);
+
+    if (!hasUpperCase || !hasLowerCase || !hasNumber) {
+      return NextResponse.json(
+        { error: "A senha deve conter pelo menos uma letra maiúscula, uma minúscula e um número" },
+        { status: 400 }
+      );
+    }
+
     // busca a senha atual do usuário
     const userData = await prisma.user.findUnique({
       where: { id: user.id },

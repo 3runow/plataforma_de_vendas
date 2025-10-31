@@ -10,21 +10,18 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { orderId, paymentId, paymentMethod, paymentStatus } = body as {
-      orderId?: number;
-      paymentId?: string;
-      paymentMethod?: string;
-      paymentStatus?: string;
-    };
+    const { orderId, paymentId, paymentMethod, paymentStatus } = body;
 
-    if (!orderId) {
+    // Validar orderId
+    const orderIdNum = typeof orderId === 'string' ? parseInt(orderId) : orderId;
+    if (!orderIdNum || isNaN(orderIdNum) || orderIdNum <= 0) {
       return NextResponse.json(
-        { error: "Order ID é obrigatório" },
+        { error: "Order ID inválido" },
         { status: 400 }
       );
     }
 
-    const order = await prisma.order.findUnique({ where: { id: orderId } });
+    const order = await prisma.order.findUnique({ where: { id: orderIdNum } });
     if (!order) {
       return NextResponse.json(
         { error: "Pedido não encontrado" },
@@ -40,7 +37,7 @@ export async function POST(request: NextRequest) {
       paymentStatus === "approved" ? "processing" : order.status;
 
     const updated = await prisma.order.update({
-      where: { id: orderId },
+      where: { id: orderIdNum },
       data: {
         paymentId: paymentId ?? order.paymentId,
         paymentMethod: paymentMethod ?? order.paymentMethod,
@@ -52,10 +49,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, order: updated });
   } catch (error) {
     console.error("Erro ao atualizar pagamento do pedido:", error);
+    const isDevelopment = process.env.NODE_ENV === "development";
     return NextResponse.json(
       {
         error: "Erro ao atualizar pagamento",
-        details: error instanceof Error ? error.message : "Erro desconhecido",
+        ...(isDevelopment && {
+          details: error instanceof Error ? error.message : "Erro desconhecido",
+        }),
       },
       { status: 500 }
     );

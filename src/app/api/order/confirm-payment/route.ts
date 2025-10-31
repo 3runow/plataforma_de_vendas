@@ -12,16 +12,18 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { orderId, paymentId, paymentStatus } = body;
 
-    if (!orderId) {
+    // Validar orderId
+    const orderIdNum = typeof orderId === 'string' ? parseInt(orderId) : orderId;
+    if (!orderIdNum || isNaN(orderIdNum) || orderIdNum <= 0) {
       return NextResponse.json(
-        { error: "Order ID é obrigatório" },
+        { error: "Order ID inválido" },
         { status: 400 }
       );
     }
 
     // Busca o pedido com os itens
     const order = await prisma.order.findUnique({
-      where: { id: orderId },
+      where: { id: orderIdNum },
       include: {
         items: true,
       },
@@ -41,14 +43,14 @@ export async function POST(request: NextRequest) {
 
     console.log(
       "Confirmando pagamento para pedido:",
-      orderId,
+      orderIdNum,
       "usuário:",
       user.id
     );
 
     // Atualiza o status do pedido
     const updatedOrder = await prisma.order.update({
-      where: { id: orderId },
+      where: { id: orderIdNum },
       data: {
         paymentId: paymentId,
         paymentStatus: paymentStatus,

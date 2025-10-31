@@ -2,30 +2,34 @@ import { NextRequest, NextResponse } from "next/server";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import { existsSync } from "fs";
+import { verifyAuth } from "@/lib/auth";
+import { fileTypeFromBuffer } from "file-type";
 
 export async function POST(request: NextRequest) {
   try {
+    // Verificar autenticação
+    const user = await verifyAuth(request);
+    if (!user) {
+      return NextResponse.json(
+        { error: "Não autorizado" },
+        { status: 401 }
+      );
+    }
+
+    // Verificar se é admin
+    if (user.role !== "admin") {
+      return NextResponse.json(
+        { error: "Acesso negado. Apenas administradores podem fazer upload de arquivos." },
+        { status: 403 }
+      );
+    }
+
     const formData = await request.formData();
     const file = formData.get("file") as File;
 
     if (!file) {
       return NextResponse.json(
         { error: "Nenhum arquivo enviado" },
-        { status: 400 }
-      );
-    }
-
-    // Validar tipo de arquivo
-    const validTypes = [
-      "image/jpeg",
-      "image/jpg",
-      "image/png",
-      "image/webp",
-      "image/gif",
-    ];
-    if (!validTypes.includes(file.type)) {
-      return NextResponse.json(
-        { error: "Tipo de arquivo inválido. Use JPG, PNG, WEBP ou GIF" },
         { status: 400 }
       );
     }
@@ -41,6 +45,22 @@ export async function POST(request: NextRequest) {
 
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
+
+    // Validar tipo real do arquivo usando file-type
+    const fileType = await fileTypeFromBuffer(buffer);
+    const validMimeTypes = [
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "image/gif",
+    ];
+
+    if (!fileType || !validMimeTypes.includes(fileType.mime)) {
+      return NextResponse.json(
+        { error: "Tipo de arquivo inválido ou não permitido. Use JPG, PNG, WEBP ou GIF" },
+        { status: 400 }
+      );
+    }
 
     // Criar diretório se não existir
     const uploadDir = path.join(process.cwd(), "public", "uploads", "products");

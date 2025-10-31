@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useEffect, useState, Suspense, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import { CheckCircle, Package, Truck, CreditCard } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
+import { useCart } from "@/contexts/cart-context";
 
 interface OrderData {
   id: number;
@@ -37,8 +38,97 @@ interface OrderData {
 
 function OrderConfirmationContent() {
   const searchParams = useSearchParams();
+  const { clearCart } = useCart();
   const [order, setOrder] = useState<OrderData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [cartCleared, setCartCleared] = useState(false);
+  const [paymentVerified, setPaymentVerified] = useState(false);
+
+  // Declara as funções ANTES dos useEffects que as utilizam
+  const fetchOrder = useCallback(async (orderId: number) => {
+    try {
+      const response = await fetch(`/api/order/${orderId}`);
+      if (response.ok) {
+        const data = await response.json();
+        // Só atualiza se o order mudou ou se o status mudou para approved
+        if (!order || order.paymentStatus !== data.order?.paymentStatus || order.status !== data.order?.status) {
+          setOrder(data.order);
+          
+          // Se o pagamento foi aprovado, limpa o carrinho uma vez
+          if (data.order?.paymentStatus === "approved" && !cartCleared) {
+            try {
+              const cartResponse = await fetch("/api/cart/clear", {
+                method: "POST",
+              });
+              if (cartResponse.ok) {
+                console.log("🛒 Carrinho limpo no banco de dados (via polling)");
+              }
+              clearCart();
+              setCartCleared(true);
+              console.log("🛒 Carrinho limpo no frontend (localStorage via polling)");
+            } catch (error) {
+              console.error("Erro ao limpar carrinho:", error);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Erro ao buscar pedido:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [order, cartCleared, clearCart]);
+
+  const verifyAndUpdatePayment = useCallback(async (paymentIntentId: string, orderId: number) => {
+    // Evita verificar múltiplas vezes
+    if (paymentVerified) {
+      return;
+    }
+    
+    try {
+      console.log("🔍 Verificando status do pagamento:", paymentIntentId);
+      setPaymentVerified(true);
+      
+      const response = await fetch("/api/stripe/verify-and-update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          paymentIntentId,
+          orderId,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.order && data.order.paymentStatus === "approved") {
+          console.log("✅ Pagamento verificado e pedido atualizado");
+          setOrder(data.order);
+          
+          // Limpa o carrinho apenas uma vez quando o pagamento é confirmado
+          if (!cartCleared) {
+            try {
+              // Limpa o carrinho no banco de dados
+              const cartResponse = await fetch("/api/cart/clear", {
+                method: "POST",
+              });
+              if (cartResponse.ok) {
+                console.log("🛒 Carrinho limpo no banco de dados");
+              }
+              // Limpa o carrinho no localStorage e no contexto React
+              clearCart();
+              setCartCleared(true);
+              console.log("🛒 Carrinho limpo no frontend (localStorage)");
+            } catch (error) {
+              console.error("Erro ao limpar carrinho:", error);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Erro ao verificar pagamento:", error);
+      setPaymentVerified(false); // Permite tentar novamente em caso de erro
+    }
+  }, [clearCart, cartCleared, paymentVerified]);
 
   useEffect(() => {
     const orderId = searchParams.get("orderId");
@@ -47,21 +137,70 @@ function OrderConfirmationContent() {
     } else {
       setLoading(false);
     }
-  }, [searchParams]);
-
-  const fetchOrder = async (orderId: number) => {
-    try {
-      const response = await fetch(`/api/order/${orderId}`);
-      if (response.ok) {
-        const data = await response.json();
-        setOrder(data.order);
-      }
-    } catch (error) {
-      console.error("Erro ao buscar pedido:", error);
-    } finally {
-      setLoading(false);
+  }, [searchParams, fetchOrder]);
+  
+  // Verifica e atualiza o pagamento quando houver payment_intent e redirect_status=succeeded
+  useEffect(() => {
+    const orderId = searchParams.get("orderId");
+    const paymentIntent = searchParams.get("payment_intent");
+    const redirectStatus = searchParams.get("redirect_status");
+    
+    if (orderId && paymentIntent && redirectStatus === "succeeded") {
+      // Aguarda um pouco para garantir que o order foi carregado
+      const timer = setTimeout(() => {
+        verifyAndUpdatePayment(paymentIntent, parseInt(orderId));
+      }, 500);
+      
+      return () => clearTimeout(timer);
     }
-  };
+  }, [searchParams, verifyAndUpdatePayment]);
+
+  // Verifica periodicamente o status se houver payment_intent nos params e o pagamento ainda estiver pendente
+  useEffect(() => {
+    const orderId = searchParams.get("orderId");
+    const paymentIntent = searchParams.get("payment_intent");
+    
+    // Para o polling se o pagamento já foi aprovado
+    if (order && order.paymentStatus === "approved") {
+      return;
+    }
+    
+    // Não faz polling se já verificou o pagamento e foi aprovado
+    if (paymentVerified && order?.paymentStatus === "approved") {
+      return;
+    }
+    
+    // Não faz polling se não há payment_intent ou se já verificou
+    if (!paymentIntent || paymentVerified) {
+      return;
+    }
+    
+    if (order && orderId && order.paymentStatus !== "approved") {
+      // Aguarda um pouco para dar tempo do webhook processar, depois verifica periodicamente
+      const initialDelay = setTimeout(() => {
+        fetchOrder(parseInt(orderId));
+      }, 2000); // Primeira verificação após 2 segundos
+      
+      // Verifica periodicamente a cada 3 segundos, máximo 3 vezes (9 segundos)
+      let attempts = 0;
+      const maxAttempts = 3;
+      
+      const interval = setInterval(() => {
+        attempts++;
+        fetchOrder(parseInt(orderId));
+        
+        // Para após máximo de tentativas
+        if (attempts >= maxAttempts) {
+          clearInterval(interval);
+        }
+      }, 3000);
+      
+      return () => {
+        clearTimeout(initialDelay);
+        clearInterval(interval);
+      };
+    }
+  }, [order, searchParams, fetchOrder, paymentVerified]);
 
   const getStatusColor = (status: string) => {
     switch (status) {

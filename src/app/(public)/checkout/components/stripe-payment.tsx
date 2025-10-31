@@ -53,6 +53,7 @@ interface CheckoutFormProps {
   amount: number;
   paymentMethod: "credit_card" | "pix" | "boleto";
   orderId?: number;
+  paymentIntentId?: string | null;
   onPaymentSuccessAction: (paymentData: PaymentData) => void;
   onPaymentErrorAction: (error: string) => void;
 }
@@ -68,6 +69,7 @@ function CheckoutForm({
   amount,
   paymentMethod,
   orderId,
+  paymentIntentId,
   onPaymentSuccessAction,
   onPaymentErrorAction,
 }: CheckoutFormProps) {
@@ -103,20 +105,28 @@ function CheckoutForm({
         setPaymentCompleted(true);
 
         // Atualiza o pedido diretamente quando o pagamento é confirmado
-        try {
-          console.log("📦 Confirmando pedido com orderId:", orderId);
-          await fetch("/api/order/confirm-payment", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              orderId: orderId,
-              paymentId: "stripe_payment_confirmed",
-              paymentStatus: "approved",
-            }),
-          });
-          console.log("✅ Pedido confirmado com sucesso");
-        } catch (err) {
-          console.error("❌ Erro ao confirmar pagamento:", err);
+        // Usa o paymentIntentId real se disponível, caso contrário tenta extrair do clientSecret
+        const finalPaymentId = paymentIntentId || 
+          (typeof window !== 'undefined' && window.location.search.includes('payment_intent=') 
+            ? new URLSearchParams(window.location.search).get('payment_intent') 
+            : null);
+        
+        if (orderId && finalPaymentId) {
+          try {
+            console.log("📦 Confirmando pedido com orderId:", orderId, "paymentIntentId:", finalPaymentId);
+            await fetch("/api/order/confirm-payment", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                orderId: orderId,
+                paymentId: finalPaymentId,
+                paymentStatus: "approved",
+              }),
+            });
+            console.log("✅ Pedido confirmado com sucesso");
+          } catch (err) {
+            console.error("❌ Erro ao confirmar pagamento:", err);
+          }
         }
 
         console.log("🔄 Chamando onPaymentSuccessAction com orderId:", orderId);
@@ -188,6 +198,7 @@ export default function StripePayment({
   onPaymentErrorAction,
 }: StripePaymentProps) {
   const [clientSecret, setClientSecret] = useState<string>("");
+  const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState(paymentMethod);
   const [payerNameInput, setPayerNameInput] = useState(payerName);
@@ -486,6 +497,7 @@ export default function StripePayment({
               amount={amount}
               paymentMethod={selectedMethod}
               orderId={orderId}
+              paymentIntentId={paymentIntentId}
               onPaymentSuccessAction={onPaymentSuccessAction}
               onPaymentErrorAction={onPaymentErrorAction}
             />
@@ -520,6 +532,10 @@ export default function StripePayment({
                 const data = await response.json();
                 if (data.clientSecret) {
                   setClientSecret(data.clientSecret);
+                  // Guardar o paymentIntentId se fornecido
+                  if (data.paymentIntentId) {
+                    setPaymentIntentId(data.paymentIntentId);
+                  }
                 } else {
                   onPaymentErrorAction(data.error || "Erro ao criar pagamento");
                 }

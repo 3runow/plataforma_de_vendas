@@ -13,9 +13,11 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { orderId } = body;
 
-    if (!orderId) {
+    // Validar orderId
+    const orderIdNum = typeof orderId === 'string' ? parseInt(orderId) : orderId;
+    if (!orderIdNum || isNaN(orderIdNum) || orderIdNum <= 0) {
       return NextResponse.json(
-        { error: "ID do pedido é obrigatório" },
+        { error: "ID do pedido inválido" },
         { status: 400 }
       );
     }
@@ -23,7 +25,7 @@ export async function POST(request: NextRequest) {
     // Buscar o pedido
     const order = await prisma.order.findFirst({
       where: {
-        id: orderId,
+        id: orderIdNum,
         userId: user.id,
       },
       include: {
@@ -44,7 +46,7 @@ export async function POST(request: NextRequest) {
 
     // Atualizar status do pedido para "processing"
     const updatedOrder = await prisma.order.update({
-      where: { id: orderId },
+      where: { id: orderIdNum },
       data: {
         status: "processing",
         paymentStatus: "approved",
@@ -89,10 +91,13 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Erro ao processar pedido:", error);
+    const isDevelopment = process.env.NODE_ENV === "development";
     return NextResponse.json(
       {
         error: "Erro ao processar pedido",
-        details: error instanceof Error ? error.message : "Erro desconhecido",
+        ...(isDevelopment && {
+          details: error instanceof Error ? error.message : "Erro desconhecido",
+        }),
       },
       { status: 500 }
     );

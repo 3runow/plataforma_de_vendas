@@ -1,9 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { verifyAuth } from "@/lib/auth";
+import { z } from "zod";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
+const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
+if (!STRIPE_SECRET_KEY) {
+  throw new Error("STRIPE_SECRET_KEY não configurado nas variáveis de ambiente. Configure a variável STRIPE_SECRET_KEY no arquivo .env");
+}
+
+const stripe = new Stripe(STRIPE_SECRET_KEY, {
   apiVersion: "2025-02-24.acacia",
+});
+
+const paymentIntentSchema = z.object({
+  amount: z.number().positive().max(999999.99),
+  currency: z.enum(["brl"]).default("brl"),
+  paymentMethod: z.enum(["boleto", "pix", "card", "credit_card"]),
+  payerEmail: z.string().email().max(255),
+  payerName: z.string().min(2).max(100).optional(),
+  payerCpf: z.string().regex(/^[\d.-]+$/).optional().transform((val) => 
+    val ? val.replace(/\D/g, "") : undefined
+  ).refine((val) => !val || val.length === 11, {
+    message: "CPF deve conter 11 dígitos"
+  }),
+  installments: z.number().int().positive().max(12).optional(),
+  orderId: z.union([z.number().int().positive(), z.string()]).optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -15,19 +36,39 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
+    
+    // Validar dados com Zod
+    const validationResult = paymentIntentSchema.safeParse(body);
+    if (!validationResult.success) {
+      return NextResponse.json(
+        { 
+          error: "Dados inválidos",
+          details: validationResult.error.issues.map(issue => ({
+            path: issue.path.join('.'),
+            message: issue.message
+          }))
+        },
+        { status: 400 }
+      );
+    }
+
     const {
       amount,
-      currency = "brl",
-      paymentMethod,
+      currency,
+      paymentMethod: rawPaymentMethod,
       payerEmail,
       payerName,
       payerCpf,
       orderId,
-    } = body;
-
-    if (!amount || !payerEmail) {
-      return NextResponse.json({ error: "Dados incompletos" }, { status: 400 });
-    }
+    } = validationResult.data;
+    
+    // Normalizar paymentMethod: "credit_card" -> "card"
+    const paymentMethod = rawPaymentMethod === "credit_card" ? "card" : rawPaymentMethod;
+    
+    // CPF já está limpo pelo transform do Zod (apenas dígitos ou undefined)
+    const cleanedCpf = payerCpf || "";
+    
+    const orderIdString = orderId ? String(orderId) : "";
 
     // Boleto (REAL via Stripe Payment Element)
     if (paymentMethod === "boleto") {
@@ -36,11 +77,11 @@ export async function POST(request: NextRequest) {
         currency, // "brl"
         payment_method_types: ["boleto"],
         metadata: {
-          user_id: user.id,
+          user_id: String(user.id),
           payer_email: payerEmail,
-          payer_name: payerName,
-          payer_cpf: payerCpf,
-          order_id: orderId?.toString() || "",
+          payer_name: payerName || "",
+          payer_cpf: cleanedCpf || "",
+          order_id: orderIdString,
           payment_method: paymentMethod,
         },
       });
@@ -63,11 +104,11 @@ export async function POST(request: NextRequest) {
           enabled: true,
         },
         metadata: {
-          user_id: user.id,
+          user_id: String(user.id),
           payer_email: payerEmail,
-          payer_name: payerName,
-          payer_cpf: payerCpf,
-          order_id: orderId?.toString() || "",
+          payer_name: payerName || "",
+          payer_cpf: cleanedCpf || "",
+          order_id: orderIdString,
           payment_method: paymentMethod,
         },
       });
@@ -78,7 +119,7 @@ export async function POST(request: NextRequest) {
         instructions: {
           amount: Math.round(amount),
           qr_code: `PIX_SIMULADO_${paymentIntent.id}`,
-          qr_code_text: `PIX Simulado - Pedido ${orderId}`,
+          qr_code_text: `PIX Simulado - Pedido ${orderIdString}`,
         },
       };
 
@@ -100,8 +141,8 @@ export async function POST(request: NextRequest) {
       metadata: {
         user_id: user.id,
         payer_email: payerEmail,
-        payer_name: payerName,
-        payer_cpf: payerCpf,
+        payer_name: payerName || "",
+        payer_cpf: cleanedCpf || "",
         order_id: orderId?.toString() || "",
         payment_method: paymentMethod,
       },
@@ -113,10 +154,13 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Erro ao criar payment intent:", error);
+    const isDevelopment = process.env.NODE_ENV === "development";
     return NextResponse.json(
       {
         error: "Erro ao criar pagamento",
-        details: error instanceof Error ? error.message : "Erro desconhecido",
+        ...(isDevelopment && {
+          details: error instanceof Error ? error.message : "Erro desconhecido",
+        }),
       },
       { status: 500 }
     );

@@ -1,6 +1,37 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyAuth } from "@/lib/auth";
+import { z } from "zod";
+
+const orderItemSchema = z.object({
+  productId: z.number().int().positive(),
+  quantity: z.number().int().positive().max(999),
+  price: z.number().positive().max(999999.99),
+});
+
+const addressSchema = z.object({
+  id: z.number().int().positive().optional(),
+  recipientName: z.string().min(2).max(100).optional(),
+  name: z.string().min(1).max(100).optional(),
+  cep: z.string().regex(/^\d{8}$/),
+  street: z.string().min(1).max(200),
+  number: z.string().min(1).max(20),
+  complement: z.string().max(100).optional().nullable(),
+  neighborhood: z.string().min(1).max(100),
+  city: z.string().min(1).max(100),
+  state: z.string().length(2).regex(/^[A-Z]{2}$/),
+});
+
+const orderCreateSchema = z.object({
+  address: addressSchema,
+  items: z.array(orderItemSchema).min(1),
+  shipping: z.object({
+    company: z.string().optional().nullable(),
+    price: z.number().nonnegative().optional().nullable(),
+    deliveryTime: z.number().int().nonnegative().optional().nullable(),
+  }).optional().nullable(),
+  total: z.number().positive().max(999999.99),
+});
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,7 +41,23 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { address, items, shipping, total } = body;
+    
+    // Validar dados com Zod
+    const validationResult = orderCreateSchema.safeParse(body);
+    if (!validationResult.success) {
+      return NextResponse.json(
+        { 
+          error: "Dados inválidos",
+          details: validationResult.error.issues.map(issue => ({
+            path: issue.path.join('.'),
+            message: issue.message
+          }))
+        },
+        { status: 400 }
+      );
+    }
+
+    const { address, items, shipping, total } = validationResult.data;
 
     // Verifica se já existe um endereço idêntico para evitar duplicatas
     let addressId = address.id;
@@ -141,8 +188,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, order });
   } catch (error) {
     console.error("Erro ao criar pedido:", error);
+    const isDevelopment = process.env.NODE_ENV === "development";
     return NextResponse.json(
-      { error: "Erro ao criar pedido" },
+      {
+        error: "Erro ao criar pedido",
+        ...(isDevelopment && {
+          details: error instanceof Error ? error.message : "Erro desconhecido",
+        }),
+      },
       { status: 500 }
     );
   }

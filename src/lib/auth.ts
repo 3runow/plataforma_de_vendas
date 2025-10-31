@@ -1,6 +1,12 @@
 import { cookies } from "next/headers";
 
-const JWT_SECRET = process.env.JWT_SECRET || "supersecret";
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error("JWT_SECRET não configurado nas variáveis de ambiente. Configure a variável JWT_SECRET no arquivo .env");
+}
+
+// Garantir ao TypeScript que JWT_SECRET é string (já foi verificado acima)
+const JWT_SECRET_KEY: string = JWT_SECRET;
 
 function base64UrlToBase64(input: string) {
   let b64 = input.replace(/-/g, "+").replace(/_/g, "/");
@@ -54,7 +60,7 @@ export async function getUser() {
       return null;
     }
 
-    const payload = await verifyHS256(token, JWT_SECRET);
+    const payload = await verifyHS256(token, JWT_SECRET_KEY);
     return payload as {
       id: number;
       userId?: string;
@@ -94,7 +100,7 @@ export async function verifyAuth(request: Request) {
       return null;
     }
 
-    const payload = await verifyHS256(token, JWT_SECRET);
+    const payload = await verifyHS256(token, JWT_SECRET_KEY);
     return payload as {
       id: number;
       userId?: string;

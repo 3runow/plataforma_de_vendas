@@ -1,6 +1,20 @@
 import { NextResponse } from "next/server";
 import { getUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { z } from "zod";
+
+const addressUpdateSchema = z.object({
+  name: z.string().min(1).max(100).optional().nullable(),
+  recipientName: z.string().min(2).max(100),
+  cep: z.string().regex(/^\d{8}$/),
+  street: z.string().min(1).max(200),
+  number: z.string().min(1).max(20),
+  complement: z.string().max(100).optional().nullable(),
+  neighborhood: z.string().min(1).max(100),
+  city: z.string().min(1).max(100),
+  state: z.string().length(2).regex(/^[A-Z]{2}$/),
+  isDefault: z.boolean().optional(),
+});
 
 export async function PUT(
   request: Request,
@@ -15,6 +29,13 @@ export async function PUT(
 
     const { id } = await params;
     const addressId = parseInt(id);
+    
+    if (isNaN(addressId)) {
+      return NextResponse.json(
+        { error: "ID do endereço inválido" },
+        { status: 400 }
+      );
+    }
 
     // verifica se o endereço pertence ao usuário
     const existingAddress = await prisma.address.findFirst({
@@ -31,7 +52,24 @@ export async function PUT(
       );
     }
 
-    const data = await request.json();
+    const body = await request.json();
+    
+    // Validar dados com Zod
+    const validationResult = addressUpdateSchema.safeParse(body);
+    if (!validationResult.success) {
+      return NextResponse.json(
+        { 
+          error: "Dados inválidos",
+          details: validationResult.error.issues.map(issue => ({
+            path: issue.path.join('.'),
+            message: issue.message
+          }))
+        },
+        { status: 400 }
+      );
+    }
+
+    const data = validationResult.data;
 
     // se for definido como padrão, remover o padrão dos outros endereços
     if (data.isDefault) {
@@ -88,6 +126,13 @@ export async function DELETE(
 
     const { id } = await params;
     const addressId = parseInt(id);
+    
+    if (isNaN(addressId)) {
+      return NextResponse.json(
+        { error: "ID do endereço inválido" },
+        { status: 400 }
+      );
+    }
 
     // verifica se o endereço pertence ao usuário
     const existingAddress = await prisma.address.findFirst({

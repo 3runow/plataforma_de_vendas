@@ -5,7 +5,10 @@ import jwt from "jsonwebtoken";
 import * as cookie from "cookie";
 import { prisma } from "../src/lib/prisma";
 
-const JWT_SECRET = process.env.JWT_SECRET || "supersecret"; // colocar no .env
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error("JWT_SECRET não configurado nas variáveis de ambiente. Configure a variável JWT_SECRET no arquivo .env");
+}
 
 const app = new Elysia()
   // retorna JSON consistente para erros não tratados
@@ -20,9 +23,13 @@ const app = new Elysia()
   // registro
   .post("/api/register", async ({ body, set }) => {
     const schema = z.object({
-      name: z.string().min(2),
-      email: z.string().email(),
-      password: z.string().min(6),
+      name: z.string().min(2).max(100),
+      email: z.string().email().max(255),
+      password: z.string()
+        .min(8)
+        .regex(/[A-Z]/, "Senha deve conter pelo menos uma letra maiúscula")
+        .regex(/[a-z]/, "Senha deve conter pelo menos uma letra minúscula")
+        .regex(/\d/, "Senha deve conter pelo menos um número"),
     });
 
     const parsed = schema.safeParse(body);
@@ -55,8 +62,8 @@ const app = new Elysia()
   // login
   .post("/api/login", async ({ body, set }) => {
     const schema = z.object({
-      email: z.string().email(),
-      password: z.string().min(6),
+      email: z.string().email().max(255),
+      password: z.string().min(1),
     });
 
     const parsed = schema.safeParse(body);
@@ -91,7 +98,7 @@ const app = new Elysia()
       set.headers["Set-Cookie"] = cookie.serialize("token", token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
+        sameSite: "strict",
         path: "/",
         maxAge: 60 * 60 * 24 * 7,
       });
@@ -111,7 +118,7 @@ const app = new Elysia()
     set.headers["Set-Cookie"] = cookie.serialize("token", "", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      sameSite: "strict",
       path: "/",
       maxAge: 0, // Expira imediatamente
     });
@@ -224,10 +231,14 @@ const app = new Elysia()
       console.error("Erro detalhado ao criar produto:", error);
       console.error("Stack trace:", error.stack);
       set.status = 500;
+      // Não expor detalhes do erro em produção
+      const isDevelopment = process.env.NODE_ENV === "development";
       return {
         error: "Erro ao criar produto",
-        message: error.message,
-        details: error.toString(),
+        ...(isDevelopment && {
+          message: error.message,
+          details: error.toString(),
+        }),
       };
     }
   })
@@ -277,8 +288,14 @@ const app = new Elysia()
 
       console.log("Atualizando produto com dados:", parsed.data);
 
+      const productId = parseInt(params.id);
+      if (isNaN(productId)) {
+        set.status = 400;
+        return { error: "ID do produto inválido" };
+      }
+
       const product = await prisma.product.update({
-        where: { id: parseInt(params.id) },
+        where: { id: productId },
         data: parsed.data,
       });
 
@@ -313,8 +330,14 @@ const app = new Elysia()
         return { error: "Acesso negado. Apenas administradores." };
       }
 
+      const productId = parseInt(params.id);
+      if (isNaN(productId)) {
+        set.status = 400;
+        return { error: "ID do produto inválido" };
+      }
+
       await prisma.product.delete({
-        where: { id: parseInt(params.id) },
+        where: { id: productId },
       });
 
       return { message: "Produto deletado com sucesso" };
@@ -367,8 +390,14 @@ const app = new Elysia()
         };
       }
 
+      const orderId = parseInt(params.id);
+      if (isNaN(orderId)) {
+        set.status = 400;
+        return { error: "ID do pedido inválido" };
+      }
+
       const order = await prisma.order.update({
-        where: { id: parseInt(params.id) },
+        where: { id: orderId },
         data: { status: parsed.data.status },
       });
 
@@ -416,8 +445,14 @@ const app = new Elysia()
         };
       }
 
+      const userId = parseInt(params.id);
+      if (isNaN(userId)) {
+        set.status = 400;
+        return { error: "ID do usuário inválido" };
+      }
+
       const updatedUser = await prisma.user.update({
-        where: { id: parseInt(params.id) },
+        where: { id: userId },
         data: parsed.data,
       });
 
@@ -452,8 +487,14 @@ const app = new Elysia()
         return { error: "Acesso negado. Apenas administradores." };
       }
 
+      const userId = parseInt(params.id);
+      if (isNaN(userId)) {
+        set.status = 400;
+        return { error: "ID do usuário inválido" };
+      }
+
       await prisma.user.delete({
-        where: { id: parseInt(params.id) },
+        where: { id: userId },
       });
 
       return { message: "Usuário deletado com sucesso" };

@@ -33,8 +33,21 @@ export async function POST(request: NextRequest) {
 
     // Agrupar itens por produto para evitar duplicatas
     const groupedItems = cartItems.reduce(
-      (acc: Record<number, { productId: number; quantity: number }>, item: { productId: string; quantity: number }) => {
-        const productId = parseInt(item.productId);
+      (acc: Record<number, { productId: number; quantity: number }>, item: { productId: string | number; quantity: number }) => {
+        const productId = typeof item.productId === 'string' ? parseInt(item.productId) : item.productId;
+        
+        // Validar productId
+        if (isNaN(productId) || productId <= 0) {
+          console.warn(`ProductId inválido ignorado: ${item.productId}`);
+          return acc;
+        }
+        
+        // Validar quantity
+        if (!item.quantity || item.quantity <= 0 || item.quantity > 999) {
+          console.warn(`Quantidade inválida ignorada: ${item.quantity}`);
+          return acc;
+        }
+        
         if (acc[productId]) {
           acc[productId].quantity += item.quantity;
         } else {

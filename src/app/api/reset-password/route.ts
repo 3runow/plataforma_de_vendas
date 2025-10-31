@@ -13,9 +13,22 @@ export async function POST(request: Request) {
       );
     }
 
-    if (password.length < 6) {
+    // Validação de senha mais forte
+    if (password.length < 8) {
       return NextResponse.json(
-        { error: "A senha deve ter no mínimo 6 caracteres" },
+        { error: "A senha deve ter no mínimo 8 caracteres" },
+        { status: 400 }
+      );
+    }
+
+    // Verificar complexidade da senha
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasLowerCase = /[a-z]/.test(password);
+    const hasNumber = /\d/.test(password);
+
+    if (!hasUpperCase || !hasLowerCase || !hasNumber) {
+      return NextResponse.json(
+        { error: "A senha deve conter pelo menos uma letra maiúscula, uma minúscula e um número" },
         { status: 400 }
       );
     }

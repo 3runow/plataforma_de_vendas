@@ -46,7 +46,10 @@ export default async function Dashboard() {
   }
 
   try {
-    const JWT_SECRET = process.env.JWT_SECRET || "supersecret";
+    const JWT_SECRET = process.env.JWT_SECRET;
+    if (!JWT_SECRET) {
+      throw new Error("JWT_SECRET não configurado nas variáveis de ambiente");
+    }
     const decoded = jwt.verify(token as string, JWT_SECRET) as {
       id: number;
       email: string;

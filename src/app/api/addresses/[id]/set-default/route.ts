@@ -16,6 +16,14 @@ export async function PUT(
     const { id } = await params;
     const addressId = parseInt(id);
 
+    // Validar addressId
+    if (isNaN(addressId) || addressId <= 0) {
+      return NextResponse.json(
+        { error: "ID do endereço inválido" },
+        { status: 400 }
+      );
+    }
+
     // verifica se o endereço pertence ao usuário
     const existingAddress = await prisma.address.findFirst({
       where: {

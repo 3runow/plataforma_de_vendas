@@ -1,6 +1,14 @@
 import { NextResponse } from "next/server";
 import { getUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { z } from "zod";
+
+const userUpdateSchema = z.object({
+  name: z.string().min(2).max(100),
+  email: z.string().email().max(255),
+  cpf: z.string().regex(/^\d{11}$/).optional().nullable(),
+  phone: z.string().regex(/^\d{10,11}$/).optional().nullable(),
+});
 
 export async function PUT(request: Request) {
   try {
@@ -10,7 +18,24 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
 
-    const { name, email, cpf, phone } = await request.json();
+    const body = await request.json();
+    
+    // Validar dados com Zod
+    const validationResult = userUpdateSchema.safeParse(body);
+    if (!validationResult.success) {
+      return NextResponse.json(
+        { 
+          error: "Dados inválidos",
+          details: validationResult.error.issues.map(issue => ({
+            path: issue.path.join('.'),
+            message: issue.message
+          }))
+        },
+        { status: 400 }
+      );
+    }
+
+    const { name, email, cpf, phone } = validationResult.data;
 
     // verifica se o email já está em uso por outro usuário
     if (email !== user.email) {

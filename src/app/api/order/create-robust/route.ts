@@ -131,10 +131,13 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Erro ao criar pedido robusto:", error);
+    const isDevelopment = process.env.NODE_ENV === "development";
     return NextResponse.json(
       {
         error: "Erro ao criar pedido",
-        details: error instanceof Error ? error.message : "Erro desconhecido",
+        ...(isDevelopment && {
+          details: error instanceof Error ? error.message : "Erro desconhecido",
+        }),
       },
       { status: 500 }
     );
