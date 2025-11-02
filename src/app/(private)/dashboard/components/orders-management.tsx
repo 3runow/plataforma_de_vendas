@@ -26,6 +26,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { ShoppingCart, Eye } from "lucide-react";
 import { OrderDetailsModal } from "./order-details-modal";
+import { OrdersFilter } from "./orders-filter";
 
 interface Order {
   id: number;
@@ -148,8 +149,8 @@ export function OrdersManagement({
 
   return (
     <Card>
-      <CardHeader className="px-3 py-3 sm:px-6 sm:py-6">
-        <div className="flex flex-col gap-3">
+      <CardHeader className="px-3 py-4 sm:px-6 sm:py-6">
+        <div className="flex flex-col gap-4">
           <div>
             <CardTitle className="flex items-center gap-2 text-sm sm:text-base md:text-lg mb-1">
               <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -159,19 +160,14 @@ export function OrdersManagement({
               Visualize e gerencie todos os pedidos da plataforma
             </CardDescription>
           </div>
-          <Select value={filterStatus} onValueChange={setFilterStatus}>
-            <SelectTrigger className="w-full sm:w-[180px] text-xs sm:text-sm h-8 sm:h-10">
-              <SelectValue placeholder="Filtrar por status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
-              <SelectItem value="pending">Pendente</SelectItem>
-              <SelectItem value="processing">Processando</SelectItem>
-              <SelectItem value="shipped">Enviado</SelectItem>
-              <SelectItem value="delivered">Entregue</SelectItem>
-              <SelectItem value="cancelled">Cancelado</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex items-center justify-between gap-3">
+            <OrdersFilter value={filterStatus} onValueChange={setFilterStatus} />
+            {filterStatus !== "all" && (
+              <div className="text-xs sm:text-sm text-muted-foreground">
+                {filteredOrders.length} pedido{filteredOrders.length !== 1 ? "s" : ""} encontrado{filteredOrders.length !== 1 ? "s" : ""}
+              </div>
+            )}
+          </div>
         </div>
       </CardHeader>
       <CardContent className="p-0">

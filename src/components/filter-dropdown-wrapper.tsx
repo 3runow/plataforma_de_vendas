@@ -2,7 +2,6 @@
 
 import FilterDropdown from "./filter-dropdown";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect } from "react";
 
 export default function FilterDropdownWrapper() {
   const router = useRouter();

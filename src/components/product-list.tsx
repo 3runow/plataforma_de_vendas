@@ -12,17 +12,22 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import { ProductsFilter } from "./products-filter";
 
 interface ProductListProps {
   products: SerializableProduct[];
   onAddToCart?: (product: SerializableProduct, quantity: number) => void;
   itemsPerPage?: number;
+  selectedFilters?: string[];
+  onFilterChange?: (filters: string[]) => void;
 }
 
 export default function ProductList({
   products,
   onAddToCart,
   itemsPerPage = 8,
+  selectedFilters = [],
+  onFilterChange,
 }: ProductListProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [isMobile, setIsMobile] = useState(false);
@@ -100,14 +105,33 @@ export default function ProductList({
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <>
       <div className="mb-8">
-        <h2 className="text-3xl font-bold mb-2">Nossos Produtos</h2>
-        <p className="text-gray-600">Encontre os melhores produtos para você</p>
-        <p className="text-sm text-gray-500 mt-2">
-          Mostrando {startIndex + 1}-{Math.min(endIndex, products.length)} de{" "}
-          {products.length} produtos
-        </p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+          <div>
+            <h2 className="text-3xl font-bold mb-2">Nossos Produtos</h2>
+            <p className="text-gray-600">Encontre os melhores produtos para você</p>
+          </div>
+          {onFilterChange && (
+            <div className="flex items-center gap-3">
+              <ProductsFilter
+                selectedFilters={selectedFilters}
+                onFilterChange={onFilterChange}
+              />
+            </div>
+          )}
+        </div>
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-gray-500">
+            Mostrando {startIndex + 1}-{Math.min(endIndex, products.length)} de{" "}
+            {products.length} produtos
+          </p>
+          {selectedFilters.length > 0 && (
+            <p className="text-sm text-gray-600">
+              {selectedFilters.length} filtro{selectedFilters.length > 1 ? "s" : ""} ativo{selectedFilters.length > 1 ? "s" : ""}
+            </p>
+          )}
+        </div>
       </div>
 
       {products.length === 0 ? (
@@ -185,6 +209,6 @@ export default function ProductList({
           )}
         </>
       )}
-    </div>
+    </>
   );
 }

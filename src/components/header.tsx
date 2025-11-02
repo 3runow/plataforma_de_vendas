@@ -2,7 +2,6 @@ import { Fragment } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import ContactModal from "./contact-modal";
-import FilterDropdownWrapper from "./filter-dropdown-wrapper";
 import { isAuthenticated } from "@/lib/auth";
 import UserDropdown from "./user-dropdown";
 import LoginButtonWrapper from "./login-button-wrapper";
@@ -51,8 +50,6 @@ export default async function Header() {
           ))}
           <div className="h-6 w-px bg-zinc-400/30"></div>
           <ContactModal />
-          <div className="h-6 w-px bg-zinc-400/30"></div>
-          <FilterDropdownWrapper />
         </nav>
 
         <div className="flex items-center gap-2 md:gap-4 ml-auto">

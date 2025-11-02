@@ -1,15 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import ProductList from "./product-list";
 import { SerializableProduct } from "../../types/types";
 import { useCart } from "@/contexts/cart-context";
 import { useToast } from "@/hooks/use-toast";
-import { Button } from "./ui/button";
 
 export default function ProductsSection() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [products, setProducts] = useState<SerializableProduct[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<SerializableProduct[]>([]);
   const [loading, setLoading] = useState(true);
@@ -203,6 +203,18 @@ export default function ProductsSection() {
   const filtersParam = searchParams.get("filters");
   const activeFilters = filtersParam ? filtersParam.split(",") : [];
 
+  const handleFilterChange = (filters: string[]) => {
+    const params = new URLSearchParams(searchParams.toString());
+    
+    if (filters.length > 0) {
+      params.set("filters", filters.join(","));
+    } else {
+      params.delete("filters");
+    }
+
+    router.push(`/?${params.toString()}`);
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       {filteredProducts.length === 0 && activeFilters.length > 0 ? (
@@ -216,12 +228,12 @@ export default function ProductsSection() {
         </div>
       ) : (
         <>
-          {activeFilters.length > 0 && (
-            <div className="mb-4 text-sm text-gray-600">
-              {filteredProducts.length} produto{filteredProducts.length !== 1 ? "s" : ""} encontrado{filteredProducts.length !== 1 ? "s" : ""}
-            </div>
-          )}
-          <ProductList products={filteredProducts} onAddToCart={handleAddToCart} />
+          <ProductList 
+            products={filteredProducts} 
+            onAddToCart={handleAddToCart}
+            selectedFilters={activeFilters}
+            onFilterChange={handleFilterChange}
+          />
         </>
       )}
     </div>
