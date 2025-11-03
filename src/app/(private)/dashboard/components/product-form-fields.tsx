@@ -7,22 +7,24 @@ import { ProductFormData } from "../../../../../types/types";
 
 interface ProductFormFieldsProps {
   formData: ProductFormData;
-  imagePreview: string | null;
+  imagePreviews: string[];
   onFormChange: (field: string, value: string | boolean) => void;
   onPriceChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onClearImage: () => void;
-  onUrlChange?: (url: string) => void;
+  onClearImage: (index?: number) => void;
+  onUrlsChange?: (urls: string[]) => void;
+  onReorder?: (newOrder: string[]) => void;
 }
 
 export function ProductFormFields({
   formData,
-  imagePreview,
+  imagePreviews,
   onFormChange,
   onPriceChange,
   onImageChange,
   onClearImage,
-  onUrlChange,
+  onUrlsChange,
+  onReorder,
 }: ProductFormFieldsProps) {
   return (
     <>
@@ -47,10 +49,11 @@ export function ProductFormFields({
       </div>
 
       <ImageUpload
-        imagePreview={imagePreview}
+        imagePreviews={imagePreviews}
         onImageChange={onImageChange}
         onClearImage={onClearImage}
-        onUrlChange={onUrlChange}
+        onUrlsChange={onUrlsChange}
+        onReorder={onReorder}
       />
 
       <div className="grid grid-cols-2 gap-4">

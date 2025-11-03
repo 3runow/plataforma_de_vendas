@@ -5,6 +5,7 @@ export interface Product {
   price: number;
   stock: number;
   imageUrl?: string | null;
+  imageUrls?: string[] | null;
   discount?: number | null;
   isNew?: boolean;
   isFeatured?: boolean;
@@ -20,6 +21,7 @@ export interface SerializableProduct {
   price: number;
   stock: number;
   imageUrl?: string | null;
+  imageUrls?: string[] | null;
   discount?: number | null;
   isNew?: boolean;
   isFeatured?: boolean;
@@ -33,6 +35,7 @@ export interface ProductFormData {
   price: string;
   stock: string;
   imageUrl: string;
+  imageUrls?: string[];
   discount?: string;
   isNew?: boolean;
   isFeatured?: boolean;

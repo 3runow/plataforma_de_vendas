@@ -11,6 +11,7 @@ const productSchema = z.object({
   price: z.number().positive().max(999999.99),
   stock: z.number().int().min(0).max(999999),
   imageUrl: z.string().url().optional().nullable(),
+  imageUrls: z.array(z.string().url()).optional().nullable(),
   discount: z.number().min(0).max(100).optional(),
   isNew: z.boolean().optional(),
   isFeatured: z.boolean().optional(),
@@ -23,7 +24,7 @@ export async function GET() {
         createdAt: "desc",
       },
     });
-    
+
     return NextResponse.json(products);
   } catch (error) {
     console.error("Erro ao buscar produtos:", error);
@@ -39,16 +40,15 @@ export async function POST(request: NextRequest) {
     // Verificar autenticação
     const user = await verifyAuth(request);
     if (!user) {
-      return NextResponse.json(
-        { error: "Não autorizado" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
 
     // Verificar se é admin
     if (user.role !== "admin") {
       return NextResponse.json(
-        { error: "Acesso negado. Apenas administradores podem criar produtos." },
+        {
+          error: "Acesso negado. Apenas administradores podem criar produtos.",
+        },
         { status: 403 }
       );
     }
@@ -59,19 +59,28 @@ export async function POST(request: NextRequest) {
     const validationResult = productSchema.safeParse(body);
     if (!validationResult.success) {
       return NextResponse.json(
-        { 
+        {
           error: "Dados inválidos",
-          details: validationResult.error.issues.map(issue => ({
-            path: issue.path.join('.'),
-            message: issue.message
-          }))
+          details: validationResult.error.issues.map((issue) => ({
+            path: issue.path.join("."),
+            message: issue.message,
+          })),
         },
         { status: 400 }
       );
     }
 
+    // Limpar dados antes de criar produto
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const productData: any = { ...validationResult.data };
+
+    // Converter null em undefined para imageUrls (Prisma não aceita null para arrays)
+    if (productData.imageUrls === null) {
+      delete productData.imageUrls;
+    }
+
     const product = await prisma.product.create({
-      data: validationResult.data,
+      data: productData,
     });
 
     return NextResponse.json({

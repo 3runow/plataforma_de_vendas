@@ -47,11 +47,11 @@ export function ProductTableRow({
       <TableCell>
         <div className="flex flex-col gap-1">
           <span>{formatCurrency(product.price)}</span>
-          {product.discount && product.discount > 0 && (
+          {product.discount && product.discount > 0 ? (
             <Badge variant="destructive" className="w-fit">
               -{product.discount}% OFF
             </Badge>
-          )}
+          ) : null}
         </div>
       </TableCell>
       <TableCell>

@@ -42,7 +42,7 @@ export default async function Dashboard() {
   const token = cookieStore.get("token")?.value;
 
   if (!token) {
-    redirect("/login");
+    redirect("/");
   }
 
   try {
@@ -57,7 +57,7 @@ export default async function Dashboard() {
 
     const user = await prisma.user.findUnique({ where: { id: decoded.id } });
 
-    if (!user) return redirect("/login");
+    if (!user) return redirect("/");
 
     // Verifica se o usuário é admin
     if (user.role !== "admin") {
@@ -389,6 +389,6 @@ export default async function Dashboard() {
       </div>
     );
   } catch {
-    redirect("/login");
+    redirect("/");
   }
 }

@@ -8,12 +8,13 @@ export function useProductForm() {
     price: "",
     stock: "",
     imageUrl: "",
+    imageUrls: [],
     discount: "",
     isNew: false,
     isFeatured: false,
   });
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
 
   const formatPriceInput = (value: string) => {
@@ -39,57 +40,90 @@ export function useProductForm() {
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setImageFile(file);
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    setImageFiles((prev) => [...prev, ...files]);
+    files.forEach((file) => {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setImagePreview(reader.result as string);
+        setImagePreviews((prev) => [...prev, String(reader.result)]);
       };
       reader.readAsDataURL(file);
-    }
+    });
   };
 
-  const uploadImage = async (): Promise<string | null> => {
-    if (!imageFile) return null;
-
+  const uploadImages = async (): Promise<string[]> => {
+    if (imageFiles.length === 0) return [];
     setIsUploading(true);
     try {
-      const formDataUpload = new FormData();
-      formDataUpload.append("file", imageFile);
-
-      const response = await fetch("/api/upload", {
-        method: "POST",
-        body: formDataUpload,
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        return data.url;
-      } else {
-        const error = await response.json();
-        alert(error.error || "Erro ao fazer upload da imagem");
-        return null;
+      const results: string[] = [];
+      for (const file of imageFiles) {
+        const formDataUpload = new FormData();
+        formDataUpload.append("file", file);
+        const response = await fetch("/api/upload", {
+          method: "POST",
+          body: formDataUpload,
+        });
+        if (response.ok) {
+          const data = await response.json();
+          results.push(data.url);
+        } else {
+          const error = await response.json();
+          alert(error.error || "Erro ao fazer upload da imagem");
+        }
       }
+      return results;
     } catch (error) {
       console.error("Erro no upload:", error);
       alert("Erro ao fazer upload da imagem");
-      return null;
+      return [];
     } finally {
       setIsUploading(false);
     }
   };
 
-  const clearImageSelection = () => {
-    setImageFile(null);
-    setImagePreview(null);
-    setFormData({ ...formData, imageUrl: "" });
+  const clearImageSelection = (index?: number) => {
+    if (typeof index === "number") {
+      // Remover da lista de arquivos
+      setImageFiles((prev) => prev.filter((_, i) => i !== index));
+
+      // Pegar a URL que será removida
+      const urlToRemove = imagePreviews[index];
+
+      // Remover do preview
+      setImagePreviews((prev) => prev.filter((_, i) => i !== index));
+
+      // Remover do formData.imageUrls
+      setFormData((prev) => ({
+        ...prev,
+        imageUrls: (prev.imageUrls || []).filter((url) => url !== urlToRemove),
+        // Se a URL removida era a principal, definir a primeira URL restante como principal
+        imageUrl:
+          prev.imageUrl === urlToRemove
+            ? (prev.imageUrls || []).filter((url) => url !== urlToRemove)[0] ||
+              ""
+            : prev.imageUrl,
+      }));
+      return;
+    }
+    setImageFiles([]);
+    setImagePreviews([]);
+    setFormData({ ...formData, imageUrl: "", imageUrls: [] });
   };
 
-  const handleUrlChange = (url: string) => {
-    setImagePreview(url);
-    setImageFile(null); // Limpa o arquivo se uma URL for usada
-    setFormData({ ...formData, imageUrl: url });
+  const handleUrlsChange = (urls: string[]) => {
+    const sanitized = urls.map((u) => u.trim()).filter((u) => u.length > 0);
+    setFormData({
+      ...formData,
+      imageUrls: sanitized,
+      imageUrl: sanitized[0] || formData.imageUrl,
+    });
+    // add urls to previews for visual feedback
+    setImagePreviews((prev) => {
+      const existing = new Set(prev);
+      const toAdd = sanitized.filter((u) => !existing.has(u));
+      return [...prev, ...toAdd];
+    });
   };
 
   const resetForm = () => {
@@ -99,12 +133,13 @@ export function useProductForm() {
       price: "",
       stock: "",
       imageUrl: "",
+      imageUrls: [],
       discount: "",
       isNew: false,
       isFeatured: false,
     });
-    setImageFile(null);
-    setImagePreview(null);
+    setImageFiles([]);
+    setImagePreviews([]);
   };
 
   const loadProductData = (product: Product) => {
@@ -117,6 +152,7 @@ export function useProductForm() {
       }),
       stock: product.stock.toString(),
       imageUrl: product.imageUrl || "",
+      imageUrls: product.imageUrls || [],
       discount:
         product.discount && product.discount > 0
           ? product.discount.toString()
@@ -124,26 +160,40 @@ export function useProductForm() {
       isNew: product.isNew || false,
       isFeatured: product.isFeatured || false,
     });
-    setImagePreview(product.imageUrl || null);
-    setImageFile(null);
+    const previews = [
+      ...(product.imageUrls || []),
+      ...(product.imageUrl ? [product.imageUrl] : []),
+    ];
+    setImagePreviews(previews);
+    setImageFiles([]);
   };
 
   const handleFormChange = (field: string, value: string | boolean) => {
     setFormData({ ...formData, [field]: value });
   };
 
+  const handleReorder = (newOrder: string[]) => {
+    setImagePreviews(newOrder);
+    setFormData((prev) => ({
+      ...prev,
+      imageUrls: newOrder,
+      imageUrl: newOrder[0] || prev.imageUrl,
+    }));
+  };
+
   return {
     formData,
-    imageFile,
-    imagePreview,
+    imageFiles,
+    imagePreviews,
     isUploading,
     handlePriceChange,
     handleImageChange,
-    uploadImage,
+    uploadImages,
     clearImageSelection,
-    handleUrlChange,
+    handleUrlsChange,
     resetForm,
     loadProductData,
     handleFormChange,
+    handleReorder,
   };
 }

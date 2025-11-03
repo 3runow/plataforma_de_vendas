@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -291,9 +292,11 @@ export function OrderDetailsModal({
                           className="flex items-center gap-3 p-3 border rounded-lg"
                         >
                           {item.product.imageUrl && (
-                            <img
+                            <Image
                               src={item.product.imageUrl}
                               alt={item.product.name}
+                              width={64}
+                              height={64}
                               className="w-16 h-16 object-cover rounded border"
                             />
                           )}

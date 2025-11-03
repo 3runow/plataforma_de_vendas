@@ -15,14 +15,15 @@ interface ProductFormDialogProps {
   title: string;
   description: string;
   formData: ProductFormData;
-  imagePreview: string | null;
+  imagePreviews: string[];
   isUploading: boolean;
   onSubmit: (e: React.FormEvent) => void;
   onFormChange: (field: string, value: string | boolean) => void;
   onPriceChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onClearImage: () => void;
-  onUrlChange?: (url: string) => void;
+  onClearImage: (index?: number) => void;
+  onUrlsChange?: (urls: string[]) => void;
+  onReorder?: (newOrder: string[]) => void;
   submitButtonText: string;
 }
 
@@ -32,19 +33,20 @@ export function ProductFormDialog({
   title,
   description,
   formData,
-  imagePreview,
+  imagePreviews,
   isUploading,
   onSubmit,
   onFormChange,
   onPriceChange,
   onImageChange,
   onClearImage,
-  onUrlChange,
+  onUrlsChange,
+  onReorder,
   submitButtonText,
 }: ProductFormDialogProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
@@ -52,12 +54,13 @@ export function ProductFormDialog({
         <form onSubmit={onSubmit} className="space-y-4">
           <ProductFormFields
             formData={formData}
-            imagePreview={imagePreview}
+            imagePreviews={imagePreviews}
             onFormChange={onFormChange}
             onPriceChange={onPriceChange}
             onImageChange={onImageChange}
             onClearImage={onClearImage}
-            onUrlChange={onUrlChange}
+            onUrlsChange={onUrlsChange}
+            onReorder={onReorder}
           />
           <Button type="submit" className="w-full" disabled={isUploading}>
             {isUploading ? "Enviando..." : submitButtonText}

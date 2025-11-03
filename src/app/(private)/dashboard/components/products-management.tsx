@@ -9,9 +9,10 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, ListChecks } from "lucide-react";
 import { ProductsTable } from "./products-table";
 import { ProductFormDialog } from "./product-form-dialog";
+import { BulkEditDialog } from "./bulk-edit-dialog";
 import { useProductForm } from "./use-product-form";
 import { Product } from "../../../../../types/types";
 import { useRouter } from "next/navigation";
@@ -29,42 +30,41 @@ export function ProductsManagement({
   const [products, setProducts] = useState(initialProducts);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isBulkEditDialogOpen, setIsBulkEditDialogOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   const {
     formData,
-    imageFile,
-    imagePreview,
+    imagePreviews,
     isUploading,
     handlePriceChange,
     handleImageChange,
-    uploadImage,
+    uploadImages,
     clearImageSelection,
-    handleUrlChange,
+    handleUrlsChange,
     resetForm,
     loadProductData,
     handleFormChange,
+    handleReorder,
   } = useProductForm();
 
   const handleAddProduct = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
-      let imageUrl = formData.imageUrl;
-
-      if (imageFile) {
-        const uploadedUrl = await uploadImage();
-        if (uploadedUrl) {
-          imageUrl = uploadedUrl;
-        }
-      }
+      const uploadedUrls = await uploadImages();
+      const allUrls = [...(formData.imageUrls || []), ...uploadedUrls].filter(
+        Boolean
+      );
+      const imageUrl = allUrls[0] || formData.imageUrl || undefined;
 
       const productData = {
         name: formData.name,
         description: formData.description,
         price: parseFloat(formData.price.replace(/\./g, "").replace(",", ".")),
         stock: parseInt(formData.stock),
-        imageUrl: imageUrl || undefined,
+        imageUrl,
+        imageUrls: allUrls.length > 0 ? allUrls : undefined,
         discount:
           formData.discount && formData.discount !== ""
             ? parseFloat(formData.discount)
@@ -97,7 +97,10 @@ export function ProductsManagement({
           if (Array.isArray(updatedProducts)) {
             setProducts(updatedProducts);
           } else {
-            console.error("/api/products retornou dados inesperados:", updatedProducts);
+            console.error(
+              "/api/products retornou dados inesperados:",
+              updatedProducts
+            );
           }
         } else {
           const err = await resp.json().catch(() => ({}));
@@ -129,21 +132,29 @@ export function ProductsManagement({
     if (!selectedProduct) return;
 
     try {
-      let imageUrl = formData.imageUrl;
+      const uploadedUrls = await uploadImages();
 
-      if (imageFile) {
-        const uploadedUrl = await uploadImage();
-        if (uploadedUrl) {
-          imageUrl = uploadedUrl;
-        }
-      }
+      // Manter a imagem principal atual se existir
+      const currentMainImage = selectedProduct.imageUrl || formData.imageUrl;
+
+      // Combinar URLs existentes com as novas
+      const existingUrls =
+        formData.imageUrls || selectedProduct.imageUrls || [];
+      const allUrls = [...existingUrls, ...uploadedUrls].filter(Boolean);
+
+      // Se há imagem principal, garantir que ela esteja no array de URLs também
+      const finalImageUrls =
+        currentMainImage && !allUrls.includes(currentMainImage)
+          ? [currentMainImage, ...allUrls]
+          : allUrls;
 
       const productData = {
         name: formData.name,
         description: formData.description,
         price: parseFloat(formData.price.replace(/\./g, "").replace(",", ".")),
         stock: parseInt(formData.stock),
-        imageUrl: imageUrl || undefined,
+        imageUrl: currentMainImage, // Mantém a imagem principal
+        imageUrls: finalImageUrls.length > 0 ? finalImageUrls : undefined,
         discount:
           formData.discount && formData.discount !== ""
             ? parseFloat(formData.discount)
@@ -177,7 +188,10 @@ export function ProductsManagement({
           if (Array.isArray(updatedProducts)) {
             setProducts(updatedProducts);
           } else {
-            console.error("/api/products retornou dados inesperados:", updatedProducts);
+            console.error(
+              "/api/products retornou dados inesperados:",
+              updatedProducts
+            );
           }
         } else {
           const err = await resp.json().catch(() => ({}));
@@ -186,11 +200,19 @@ export function ProductsManagement({
         router.refresh();
       } else {
         const error = await response.json();
+        console.error("Erro ao editar produto:", error);
         toast({
           title: "Erro ao editar produto",
-          description: error.error || "Ocorreu um erro ao editar o produto.",
+          description: error.details
+            ? error.details
+                .map(
+                  (d: { path: string; message: string }) =>
+                    `${d.path}: ${d.message}`
+                )
+                .join(", ")
+            : error.error || "Ocorreu um erro ao editar o produto.",
           variant: "destructive",
-          duration: 3000,
+          duration: 5000,
         });
       }
     } catch (error) {
@@ -245,6 +267,18 @@ export function ProductsManagement({
     setIsEditDialogOpen(true);
   };
 
+  const handleBulkUpdate = async () => {
+    // Buscar produtos atualizados
+    const resp = await fetch("/api/products");
+    if (resp.ok) {
+      const updatedProducts = await resp.json();
+      if (Array.isArray(updatedProducts)) {
+        setProducts(updatedProducts);
+      }
+    }
+    router.refresh();
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -257,13 +291,23 @@ export function ProductsManagement({
               Adicione, edite ou remova produtos do catálogo
             </CardDescription>
           </div>
-          <Button
-            onClick={() => setIsAddDialogOpen(true)}
-            className="w-full sm:w-auto"
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Adicionar Produto
-          </Button>
+          <div className="flex gap-2 flex-col sm:flex-row">
+            <Button
+              variant="outline"
+              onClick={() => setIsBulkEditDialogOpen(true)}
+              className="w-full sm:w-auto"
+            >
+              <ListChecks className="mr-2 h-4 w-4" />
+              Editar em Massa
+            </Button>
+            <Button
+              onClick={() => setIsAddDialogOpen(true)}
+              className="w-full sm:w-auto"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Adicionar Produto
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="p-0 sm:p-6">
@@ -281,14 +325,15 @@ export function ProductsManagement({
           title="Adicionar Novo Produto"
           description="Preencha os dados do novo produto"
           formData={formData}
-          imagePreview={imagePreview}
+          imagePreviews={imagePreviews}
           isUploading={isUploading}
           onSubmit={handleAddProduct}
           onFormChange={handleFormChange}
           onPriceChange={handlePriceChange}
           onImageChange={handleImageChange}
           onClearImage={clearImageSelection}
-          onUrlChange={handleUrlChange}
+          onUrlsChange={handleUrlsChange}
+          onReorder={handleReorder}
           submitButtonText="Adicionar"
         />
 
@@ -298,15 +343,23 @@ export function ProductsManagement({
           title="Editar Produto"
           description="Atualize os dados do produto"
           formData={formData}
-          imagePreview={imagePreview}
+          imagePreviews={imagePreviews}
           isUploading={isUploading}
           onSubmit={handleEditProduct}
           onFormChange={handleFormChange}
           onPriceChange={handlePriceChange}
           onImageChange={handleImageChange}
           onClearImage={clearImageSelection}
-          onUrlChange={handleUrlChange}
+          onUrlsChange={handleUrlsChange}
+          onReorder={handleReorder}
           submitButtonText="Salvar Alterações"
+        />
+
+        <BulkEditDialog
+          isOpen={isBulkEditDialogOpen}
+          onOpenChange={setIsBulkEditDialogOpen}
+          products={products}
+          onUpdate={handleBulkUpdate}
         />
       </CardContent>
     </Card>

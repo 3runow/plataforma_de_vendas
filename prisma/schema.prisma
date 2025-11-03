@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -14,37 +8,37 @@ datasource db {
 }
 
 model User {
-  id               Int       @id @default(autoincrement())
+  id               Int        @id @default(autoincrement())
   name             String
-  email            String    @unique
+  email            String     @unique
   password         String
-  cpf              String?   @unique // CPF do usuário
-  phone            String?   // Telefone de contato
-  role             String    @default("customer") // valores possíveis: "customer", "admin"
-  resetToken       String?   // Token para recuperação de senha
-  resetTokenExpiry DateTime? // Expiração do token de recuperação
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
-  orders           Order[]
+  createdAt        DateTime   @default(now())
+  role             String     @default("customer")
+  updatedAt        DateTime   @updatedAt
+  cpf              String?    @unique
+  phone            String?
+  resetToken       String?
+  resetTokenExpiry DateTime?
   addresses        Address[]
   cartItems        CartItem[]
+  orders           Order[]
 }
 
 model Address {
   id            Int      @id @default(autoincrement())
   userId        Int
-  name          String?  // Nome customizado do endereço (ex: "Casa", "Trabalho")
-  recipientName String   // Nome do destinatário
-  cep           String   // CEP
-  street        String   // Rua/Avenida
-  number        String   // Número
-  complement    String?  // Complemento (opcional)
-  neighborhood  String   // Bairro
-  city          String   // Cidade
-  state         String   // Estado (UF)
-  isDefault     Boolean  @default(false) // Endereço padrão
+  recipientName String
+  cep           String
+  street        String
+  number        String
+  complement    String?
+  neighborhood  String
+  city          String
+  state         String
+  isDefault     Boolean  @default(false)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+  name          String?
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   orders        Order[]
 }
@@ -55,40 +49,36 @@ model Product {
   description String
   price       Float
   stock       Int         @default(0)
-  imageUrl    String?     // URL da imagem do produto
-  discount    Float?      @default(0) // Percentual de desconto (0-100)
-  isNew       Boolean     @default(false) // Produto novo/lançamento
-  isFeatured  Boolean     @default(false) // Produto em destaque
+  imageUrl    String?
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
-  items       OrderItem[]
+  discount    Float?      @default(0)
+  isFeatured  Boolean     @default(false)
+  isNew       Boolean     @default(false)
+  imageUrls   String[]    @default([])
+  orderItems  OrderItem[]
   cartItems   CartItem[]
 }
 
 model Order {
-  id                    Int         @id @default(autoincrement())
-  userId                Int
-  addressId             Int         // Endereço de entrega
-  total                 Float
-  status                String      @default("pending") // pending, processing, shipped, delivered, cancelled
-  
-  // Campos de pagamento (Mercado Pago)
-  paymentId             String?     // ID do pagamento no Mercado Pago
-  paymentStatus         String?     // Status do pagamento
-  paymentMethod         String?     // Método de pagamento (credit_card, pix, boleto, etc)
-  
-  // Campos de frete (Melhor Envio)
-  shippingService       String?     // Serviço de entrega escolhido
-  shippingPrice         Float?      // Preço do frete
-  shippingDeliveryTime  Int?        // Prazo de entrega em dias
-  shippingTrackingCode  String?     // Código de rastreio
-  melhorEnvioOrderId    String?     // ID do pedido no Melhor Envio
-  
-  createdAt             DateTime    @default(now())
-  updatedAt             DateTime    @updatedAt
-  user                  User        @relation(fields: [userId], references: [id])
-  address               Address     @relation(fields: [addressId], references: [id])
-  items                 OrderItem[]
+  id                   Int         @id @default(autoincrement())
+  userId               Int
+  total                Float
+  createdAt            DateTime    @default(now())
+  updatedAt            DateTime    @updatedAt
+  addressId            Int
+  status               String      @default("pending")
+  melhorEnvioOrderId   String?
+  paymentId            String?
+  paymentMethod        String?
+  paymentStatus        String?
+  shippingDeliveryTime Int?
+  shippingPrice        Float?
+  shippingService      String?
+  shippingTrackingCode String?
+  address              Address     @relation(fields: [addressId], references: [id])
+  user                 User        @relation(fields: [userId], references: [id])
+  items                OrderItem[]
 }
 
 model OrderItem {
@@ -96,13 +86,13 @@ model OrderItem {
   orderId   Int
   productId Int
   quantity  Int
-  price     Float   @default(0) // Preço do produto no momento da compra
+  price     Float   @default(0)
   order     Order   @relation(fields: [orderId], references: [id])
   product   Product @relation(fields: [productId], references: [id])
 }
 
 model CartItem {
-  id        Int     @id @default(autoincrement())
+  id        Int      @id @default(autoincrement())
   userId    Int
   productId Int
   quantity  Int

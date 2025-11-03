@@ -258,8 +258,7 @@ export default function Footer() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex flex-col md:flex-row items-center justify-between gap-2 text-zinc-300">
             <p className="text-xs text-center md:text-left">
-              © {currentYear} BRICKS - Todos os direitos reservados | CNPJ:
-              00.000.000/0001-00
+              © {currentYear} FWR VENDAS LTDA — CNPJ 51.597.963/0001-55
             </p>
             <p className="text-xs text-center md:text-right">
               Site desenvolvido por{" "}

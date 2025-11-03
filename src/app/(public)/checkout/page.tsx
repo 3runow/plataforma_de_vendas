@@ -40,6 +40,7 @@ export default function CheckoutPage() {
   const router = useRouter();
   const { cartItems, getTotalPrice, clearCart } = useCart();
   const { toast } = useToast();
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isLoading, setIsLoading] = useState(false);
   const [openSection, setOpenSection] = useState<string>("personal-data");
   const [selectedShipping, setSelectedShipping] =

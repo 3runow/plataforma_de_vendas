@@ -52,20 +52,33 @@ export default function Sobre() {
           </CardHeader>
           <CardContent className="text-sm sm:text-base text-gray-700 space-y-3 sm:space-y-4">
             <p>
-              A Loja Bricks nasceu da paixão por blocos de construção e pela
-              alegria de criar. Sabemos que esses brinquedos são mais do que
-              simples peças de plástico - são memórias, criatividade e diversão
-              em cada encaixe.
+              Com mais de três anos de atuação no e-commerce, a Bricks nasceu
+              do desejo de transformar criatividade em algo concreto — bloco
+              por bloco. Agora, damos um novo passo com o lançamento do nosso
+              site oficial, pensado para oferecer uma experiência de compra
+              completa, segura e inspiradora.
             </p>
             <p>
-              Trazemos para você uma seleção especial de sets inspirados nos
-              personagens mais queridos da Disney, Pixar, Pokémon e muito mais.
-              Cada produto é cuidadosamente selecionado para garantir qualidade
-              e autenticidade.
+              Trabalhamos com nanoblocos de montar que estimulam a imaginação e
+              o raciocínio lógico de crianças e adultos. Além da diversão,
+              nossos kits promovem desenvolvimento cognitivo, coordenação motora
+              e foco — cada montagem é um exercício de aprendizado e
+              realização.
             </p>
             <p>
-              Nossa missão é proporcionar alegria e momentos especiais para
-              colecionadores, crianças e fãs de todas as idades.
+              Nossa coleção é inspirada em personagens e universos icônicos do
+              mundo geek, unindo nostalgia, cultura pop e design inteligente.
+              Cada kit é uma oportunidade de montar, colecionar e expressar sua
+              paixão com criatividade.
+            </p>
+            <p>
+              Na Bricks, prezamos por qualidade, confiança e um atendimento
+              dedicado. Selecionamos produtos a dedo, oferecemos entregas
+              rápidas e garantimos uma jornada de compra simples e segura.
+            </p>
+            <p>
+              Aqui, imaginação e desenvolvimento se constroem juntos — peça por
+              peça.
             </p>
           </CardContent>
         </Card>

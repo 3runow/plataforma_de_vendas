@@ -10,6 +10,7 @@ type Product = {
   price: number;
   stock: number;
   imageUrl?: string | null;
+  imageUrls?: string[] | null;
   discount?: number | null;
   isNew?: boolean;
   isFeatured?: boolean;
@@ -32,8 +33,11 @@ interface Props {
 
 export default function ProductDetailClient({ product }: Props) {
   const images = useMemo(() => {
-    return product.imageUrl ? [product.imageUrl] : ["/placeholder.png"];
-  }, [product.imageUrl]);
+    const urls = (product.imageUrls && product.imageUrls.length > 0)
+      ? product.imageUrls
+      : (product.imageUrl ? [product.imageUrl] : []);
+    return urls.length > 0 ? urls : ["/placeholder.png"];
+  }, [product.imageUrl, product.imageUrls]);
 
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [selectedSize, setSelectedSize] = useState<string | undefined>(

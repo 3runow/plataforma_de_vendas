@@ -41,19 +41,23 @@ export default function ImageGallery({
       </div>
 
       {images.length > 1 && (
-        <div className="flex justify-center space-x-2 overflow-x-auto pb-2">
+        <div className="flex justify-center space-x-2 overflow-x-auto pb-2 pt-1">
           {images.map((image, index) => (
             <button
               key={index}
               onClick={() => onImageSelectAction(index)}
-              className={`relative shrink-0 w-20 h-20 rounded-md overflow-hidden ${
+              className={`relative shrink-0 w-20 h-20 rounded-md ${
                 selectedImageIndex === index
                   ? "ring-2 ring-blue-500 ring-offset-2"
                   : "ring-1 ring-gray-200"
               }`}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={image} alt={`Thumbnail ${index + 1}`} className="w-full h-full object-contain bg-white p-1" />
+              <img
+                src={image}
+                alt={`Thumbnail ${index + 1}`}
+                className="w-full h-full object-contain bg-white p-1 rounded-md"
+              />
             </button>
           ))}
         </div>
@@ -61,5 +65,3 @@ export default function ImageGallery({
     </div>
   );
 }
-
-
