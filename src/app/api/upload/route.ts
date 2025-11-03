@@ -1,25 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
-import { existsSync } from "fs";
 import { verifyAuth } from "@/lib/auth";
 import { fileTypeFromBuffer } from "file-type";
+import { cloudinary } from "@/lib/cloudinary";
 
 export async function POST(request: NextRequest) {
   try {
     // Verificar autenticação
     const user = await verifyAuth(request);
     if (!user) {
-      return NextResponse.json(
-        { error: "Não autorizado" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
 
     // Verificar se é admin
     if (user.role !== "admin") {
       return NextResponse.json(
-        { error: "Acesso negado. Apenas administradores podem fazer upload de arquivos." },
+        {
+          error:
+            "Acesso negado. Apenas administradores podem fazer upload de arquivos.",
+        },
         { status: 403 }
       );
     }
@@ -57,33 +55,32 @@ export async function POST(request: NextRequest) {
 
     if (!fileType || !validMimeTypes.includes(fileType.mime)) {
       return NextResponse.json(
-        { error: "Tipo de arquivo inválido ou não permitido. Use JPG, PNG, WEBP ou GIF" },
+        {
+          error:
+            "Tipo de arquivo inválido ou não permitido. Use JPG, PNG, WEBP ou GIF",
+        },
         { status: 400 }
       );
     }
 
-    // Criar diretório se não existir
-    const uploadDir = path.join(process.cwd(), "public", "uploads", "products");
-    if (!existsSync(uploadDir)) {
-      await mkdir(uploadDir, { recursive: true });
-    }
+    // Converter buffer para base64
+    const base64Image = `data:${fileType.mime};base64,${buffer.toString("base64")}`;
 
-    // Gerar nome único para o arquivo
-    const timestamp = Date.now();
-    const originalName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
-    const fileName = `${timestamp}-${originalName}`;
-    const filePath = path.join(uploadDir, fileName);
-
-    // Salvar arquivo
-    await writeFile(filePath, buffer);
-
-    // Retornar URL pública
-    const publicUrl = `/uploads/products/${fileName}`;
+    // Upload para Cloudinary
+    const uploadResult = await cloudinary.uploader.upload(base64Image, {
+      folder: "produtos",
+      resource_type: "image",
+      transformation: [
+        { width: 1000, height: 1000, crop: "limit" },
+        { quality: "auto" },
+        { fetch_format: "auto" },
+      ],
+    });
 
     return NextResponse.json({
       success: true,
-      url: publicUrl,
-      fileName,
+      url: uploadResult.secure_url,
+      publicId: uploadResult.public_id,
     });
   } catch (error) {
     console.error("Erro no upload:", error);
