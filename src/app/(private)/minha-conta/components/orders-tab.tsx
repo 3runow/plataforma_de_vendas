@@ -162,7 +162,7 @@ export default function OrdersTab({ userId }: OrdersTabProps) {
                               className="flex items-center gap-2 sm:gap-4 p-2 bg-gray-50 rounded"
                             >
                               {item.product.imageUrl && (
-                                <div className="relative w-12 h-12 sm:w-16 sm:h-16 flex-shrink-0">
+                                <div className="relative w-12 h-12 sm:w-16 sm:h-16 shrink-0">
                                   <Image
                                     src={item.product.imageUrl}
                                     alt={item.product.name}
@@ -179,7 +179,7 @@ export default function OrdersTab({ userId }: OrdersTabProps) {
                                   Qtd: {item.quantity}
                                 </p>
                               </div>
-                              <p className="font-semibold text-sm sm:text-base flex-shrink-0">
+                              <p className="font-semibold text-sm sm:text-base shrink-0">
                                 R${" "}
                                 {(item.product.price * item.quantity).toFixed(
                                   2
@@ -199,7 +199,7 @@ export default function OrdersTab({ userId }: OrdersTabProps) {
                           <p className="font-medium text-sm sm:text-base">
                             {order.address.recipientName}
                           </p>
-                          <p className="text-xs sm:text-sm text-gray-600 break-words">
+                          <p className="text-xs sm:text-sm text-gray-600 wrap-break-word">
                             {order.address.street}, {order.address.number}
                           </p>
                           <p className="text-xs sm:text-sm text-gray-600">

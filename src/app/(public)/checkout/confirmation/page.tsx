@@ -427,7 +427,7 @@ function OrderConfirmationContent() {
               <CardContent>
                 <div className="space-y-3">
                   <div className="flex items-start gap-3">
-                    <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center shrink-0 mt-0.5">
                       <span className="text-xs font-bold text-blue-600">1</span>
                     </div>
                     <div>
@@ -438,7 +438,7 @@ function OrderConfirmationContent() {
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
-                    <div className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <div className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center shrink-0 mt-0.5">
                       <span className="text-xs font-bold text-gray-600">2</span>
                     </div>
                     <div>
@@ -449,7 +449,7 @@ function OrderConfirmationContent() {
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
-                    <div className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <div className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center shrink-0 mt-0.5">
                       <span className="text-xs font-bold text-gray-600">3</span>
                     </div>
                     <div>

@@ -12,6 +12,7 @@ import { OrdersManagement } from "./components/orders-management";
 import { UsersManagement } from "./components/users-management";
 import StockManagement from "./components/stock-management";
 import StockAlerts from "./components/stock-alerts";
+import CouponsTab from "./components/coupons-tab";
 import { AlertTriangle, Home } from "lucide-react";
 import { Product } from "../../../../types/types";
 
@@ -255,7 +256,7 @@ export default async function Dashboard() {
     });
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-50 to-gray-100 p-2 sm:p-4 md:p-8">
+      <div className="min-h-screen bg-linear-to-br from-gray-50 via-gray-50 to-gray-100 p-2 sm:p-4 md:p-8">
         <div className="max-w-7xl mx-auto">
           <div className="mb-6 sm:mb-8">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
@@ -289,8 +290,8 @@ export default async function Dashboard() {
               </Link>
             </div>
             {lowStockCount > 0 && (
-              <div className="mt-4 p-3 sm:p-4 bg-gradient-to-r from-orange-50 to-yellow-50 border border-orange-200 rounded-lg flex items-start gap-3 shadow-sm">
-                <AlertTriangle className="h-5 w-5 text-orange-600 flex-shrink-0 mt-0.5" />
+              <div className="mt-4 p-3 sm:p-4 bg-linear-to-r from-orange-50 to-yellow-50 border border-orange-200 rounded-lg flex items-start gap-3 shadow-sm">
+                <AlertTriangle className="h-5 w-5 text-orange-600 shrink-0 mt-0.5" />
                 <div>
                   <p className="text-xs sm:text-sm text-orange-900 font-medium">
                     <strong>Atenção:</strong> {lowStockCount} produto
@@ -307,7 +308,7 @@ export default async function Dashboard() {
           </div>
 
           <Tabs defaultValue="overview" className="space-y-4 sm:space-y-6">
-            <TabsList className="grid w-full grid-cols-5 bg-white shadow-sm p-1 rounded-lg h-auto">
+            <TabsList className="grid w-full grid-cols-6 bg-white shadow-sm p-1 rounded-lg h-auto">
               <TabsTrigger
                 value="overview"
                 className="data-[state=active]:bg-purple-600 data-[state=active]:text-white transition-all text-xs sm:text-sm py-2 sm:py-2.5"
@@ -348,6 +349,12 @@ export default async function Dashboard() {
                 <span className="hidden sm:inline">Usuários</span>
                 <span className="sm:hidden">Users</span>
               </TabsTrigger>
+              <TabsTrigger
+                value="coupons"
+                className="data-[state=active]:bg-purple-600 data-[state=active]:text-white transition-all text-xs sm:text-sm py-2 sm:py-2.5"
+              >
+                Cupons
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" className="space-y-4 sm:space-y-6">
@@ -383,6 +390,10 @@ export default async function Dashboard() {
 
             <TabsContent value="users" className="space-y-4 sm:space-y-6">
               <UsersManagement users={users} />
+            </TabsContent>
+
+            <TabsContent value="coupons" className="space-y-4 sm:space-y-6">
+              <CouponsTab />
             </TabsContent>
           </Tabs>
         </div>

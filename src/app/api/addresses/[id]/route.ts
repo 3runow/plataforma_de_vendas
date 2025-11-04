@@ -90,7 +90,6 @@ export async function PUT(
     const address = await prisma.address.update({
       where: { id: addressId },
       data: {
-        name: data.name || null,
         recipientName: data.recipientName,
         cep: data.cep,
         street: data.street,

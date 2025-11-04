@@ -28,7 +28,7 @@ export default function StockAlerts({ products }: StockAlertsProps) {
         <Card className="border-red-200 bg-red-50">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base sm:text-lg text-red-700">
-              <PackageX className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+              <PackageX className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
               <span className="truncate">
                 Produtos Esgotados ({criticalStock.length})
               </span>
@@ -51,7 +51,7 @@ export default function StockAlerts({ products }: StockAlertsProps) {
                   </div>
                   <Badge
                     variant="destructive"
-                    className="ml-2 text-xs flex-shrink-0"
+                    className="ml-2 text-xs shrink-0"
                   >
                     ESGOTADO
                   </Badge>
@@ -72,7 +72,7 @@ export default function StockAlerts({ products }: StockAlertsProps) {
         <Card className="border-orange-200 bg-orange-50">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base sm:text-lg text-orange-700">
-              <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+              <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
               <span className="truncate">
                 Estoque Baixo ({lowStock.length})
               </span>
@@ -95,7 +95,7 @@ export default function StockAlerts({ products }: StockAlertsProps) {
                   </div>
                   <Badge
                     variant="secondary"
-                    className="ml-2 bg-orange-500 text-white hover:bg-orange-600 text-xs flex-shrink-0"
+                    className="ml-2 bg-orange-500 text-white hover:bg-orange-600 text-xs shrink-0"
                   >
                     {product.stock} un.
                   </Badge>

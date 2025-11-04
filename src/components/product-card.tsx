@@ -71,7 +71,7 @@ export default function ProductCard({
         const idx = product.id % 3;
         return (
           <div
-            className={`absolute -top-2 left-1/2 -translate-x-1/2 w-20 h-6 bg-gradient-to-b from-sky-200 to-sky-300 rounded-sm shadow-md z-20 opacity-80 ${variants[idx].rotate}`}
+            className={`absolute -top-2 left-1/2 -translate-x-1/2 w-20 h-6 bg-linear-to-b from-sky-200 to-sky-300 rounded-sm shadow-md z-20 opacity-80 ${variants[idx].rotate}`}
             style={{
               background:
                 "linear-gradient(135deg, rgba(186, 230, 253, 0.9) 0%, rgba(125, 211, 252, 0.85) 100%)",

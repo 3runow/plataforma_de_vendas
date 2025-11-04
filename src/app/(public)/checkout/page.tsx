@@ -18,6 +18,7 @@ import AddressForm from "./components/address-form";
 import OrderSummary from "./components/order-summary";
 import ShippingSelector from "./components/shipping-selector";
 import StripePayment from "./components/stripe-payment";
+import CouponInput from "./components/coupon-input";
 import {
   Dialog,
   DialogContent,
@@ -74,9 +75,18 @@ export default function CheckoutPage() {
     address: false,
   });
 
+  // Estado do cupom
+  const [appliedCoupon, setAppliedCoupon] = useState<{
+    code: string;
+    discount: number;
+  } | null>(null);
+
   const subtotal = getTotalPrice();
   const shippingPrice = selectedShipping?.price || 0;
-  const total = subtotal + shippingPrice;
+  const couponDiscount = appliedCoupon
+    ? (subtotal * appliedCoupon.discount) / 100
+    : 0;
+  const total = subtotal + shippingPrice - couponDiscount;
 
   // Formulário de dados pessoais
   const [formData, setFormData] = useState({
@@ -235,7 +245,8 @@ export default function CheckoutPage() {
               price: item.price,
             })),
             shipping: selectedShipping,
-            total: getTotalPrice() + (selectedShipping?.price || 0),
+            total: total,
+            couponCode: appliedCoupon?.code,
           }),
         });
 
@@ -402,6 +413,14 @@ export default function CheckoutPage() {
       });
     }
     setShowSaveAddressDialog(false);
+  };
+
+  const handleApplyCoupon = (code: string, discount: number) => {
+    setAppliedCoupon({ code, discount });
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
   };
 
   const handleSavePersonalData = async () => {
@@ -831,6 +850,13 @@ export default function CheckoutPage() {
                 subtotal={subtotal}
                 shipping={shippingPrice}
                 total={total}
+                couponDiscount={couponDiscount}
+                appliedCoupon={appliedCoupon}
+              />
+              <CouponInput
+                onApplyCoupon={handleApplyCoupon}
+                onRemoveCoupon={handleRemoveCoupon}
+                appliedCoupon={appliedCoupon}
               />
             </div>
           </div>

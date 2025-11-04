@@ -80,7 +80,7 @@ export function ProductsTable({
               <CardContent className="p-4">
                 <div className="flex gap-4">
                   {/* Imagem */}
-                  <div className="flex-shrink-0">
+                  <div className="shrink-0">
                     {product.imageUrl ? (
                       <div className="relative w-20 h-20 sm:w-24 sm:h-24">
                         <Image
@@ -108,7 +108,7 @@ export function ProductsTable({
                           ID: {product.id}
                         </p>
                       </div>
-                      <div className="flex gap-1 flex-shrink-0">
+                      <div className="flex gap-1 shrink-0">
                         <Button
                           variant="outline"
                           size="icon"

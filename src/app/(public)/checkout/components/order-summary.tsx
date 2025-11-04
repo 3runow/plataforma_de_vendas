@@ -9,6 +9,8 @@ interface OrderSummaryProps {
   subtotal: number;
   shipping: number;
   total: number;
+  couponDiscount?: number;
+  appliedCoupon?: { code: string; discount: number } | null;
 }
 
 export default function OrderSummary({
@@ -16,6 +18,8 @@ export default function OrderSummary({
   subtotal,
   shipping,
   total,
+  couponDiscount = 0,
+  appliedCoupon,
 }: OrderSummaryProps) {
   return (
     <Card className="sticky top-4">
@@ -47,6 +51,12 @@ export default function OrderSummary({
             <span className="text-muted-foreground">Frete</span>
             <span className="font-medium">R$ {shipping.toFixed(2)}</span>
           </div>
+          {appliedCoupon && couponDiscount > 0 && (
+            <div className="flex justify-between text-green-600">
+              <span>Desconto ({appliedCoupon.code})</span>
+              <span className="font-medium">- R$ {couponDiscount.toFixed(2)}</span>
+            </div>
+          )}
         </div>
 
         <Separator />

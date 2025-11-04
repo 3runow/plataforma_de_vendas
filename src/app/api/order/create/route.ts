@@ -31,6 +31,7 @@ const orderCreateSchema = z.object({
     deliveryTime: z.number().int().nonnegative().optional().nullable(),
   }).optional().nullable(),
   total: z.number().positive().max(999999.99),
+  couponCode: z.string().optional().nullable(),
 });
 
 export async function POST(request: NextRequest) {
@@ -57,7 +58,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { address, items, shipping, total } = validationResult.data;
+    const { address, items, shipping, total, couponCode } = validationResult.data;
+
+    // Se houver cupom, incrementa o contador de uso
+    if (couponCode) {
+      await prisma.coupon.updateMany({
+        where: {
+          code: couponCode,
+          isActive: true,
+        },
+        data: {
+          usedCount: {
+            increment: 1,
+          },
+        },
+      });
+    }
 
     // Verifica se já existe um endereço idêntico para evitar duplicatas
     let addressId = address.id;

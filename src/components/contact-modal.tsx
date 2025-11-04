@@ -101,11 +101,11 @@ export default function ContactModal() {
 
           <div className="space-y-3 sm:space-y-4 mb-4">
             <div className="flex items-center gap-3 text-xs sm:text-sm">
-              <Mail className="h-4 w-4 text-[#022044] flex-shrink-0" />
+              <Mail className="h-4 w-4 text-[#022044] shrink-0" />
               <span className="break-all">devlucasbarros@gmail.com</span>
             </div>
             <div className="flex items-center gap-3 text-xs sm:text-sm">
-              <WhatsAppLogo className="h-4 w-4 flex-shrink-0" />
+              <WhatsAppLogo className="h-4 w-4 shrink-0" />
               <a
                 href="https://wa.me/5513996222102"
                 target="_blank"
