@@ -12,7 +12,7 @@ import { OrdersManagement } from "./components/orders-management";
 import { UsersManagement } from "./components/users-management";
 import StockManagement from "./components/stock-management";
 import StockAlerts from "./components/stock-alerts";
-import CouponsTab from "./components/coupons-tab";
+import { CouponsManagement } from "./components/coupons-management";
 import { AlertTriangle, Home } from "lucide-react";
 import { Product } from "../../../../types/types";
 
@@ -66,7 +66,7 @@ export default async function Dashboard() {
     }
 
     // Busca dados para o dashboard
-    const [products, orders, users, recentOrders] = await Promise.all([
+    const [products, orders, users, recentOrders, coupons] = await Promise.all([
       prisma.product.findMany({
         orderBy: { createdAt: "desc" },
       }),
@@ -104,11 +104,22 @@ export default async function Dashboard() {
         },
         orderBy: { createdAt: "desc" },
       }),
+      prisma.coupon.findMany({
+        orderBy: { createdAt: "desc" },
+      }),
     ]);
+
+    // Converte as datas dos cupons para strings
+    const formattedCoupons = coupons.map((coupon) => ({
+      ...coupon,
+      expiresAt: coupon.expiresAt ? coupon.expiresAt.toISOString() : null,
+      createdAt: coupon.createdAt.toISOString(),
+      updatedAt: coupon.updatedAt.toISOString(),
+    }));
 
     // Conta produtos com estoque baixo
     const lowStockCount = products.filter((p: Product) => p.stock < 10).length;
-    const lowStockProducts = products.filter((p:Product) => p.stock < 10);
+    const lowStockProducts = products.filter((p: Product) => p.stock < 10);
 
     // Calcula métricas
     const totalRevenue = (orders as OrderWithRelations[])
@@ -393,7 +404,7 @@ export default async function Dashboard() {
             </TabsContent>
 
             <TabsContent value="coupons" className="space-y-4 sm:space-y-6">
-              <CouponsTab />
+              <CouponsManagement coupons={formattedCoupons} />
             </TabsContent>
           </Tabs>
         </div>
