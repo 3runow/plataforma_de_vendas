@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
       }
     );
 
-    console.log("Resposta do Melhor Envio:", response.data);
+    console.log("Resposta da cotação do Melhor Envio:", response.data);
 
     // Validar resposta
     if (!response.data || !Array.isArray(response.data)) {

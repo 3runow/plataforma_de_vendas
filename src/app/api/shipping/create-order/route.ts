@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
       }
     );
 
-    console.log("Resposta do Melhor Envio:", response.data);
+    console.log("Resposta do Criar do Melhor Envio:", response.data);
 
     // Atualizar pedido com dados do frete
     await prisma.order.update({
