@@ -852,11 +852,8 @@ export default function CheckoutPage() {
                 total={total}
                 couponDiscount={couponDiscount}
                 appliedCoupon={appliedCoupon}
-              />
-              <CouponInput
-                onApplyCoupon={handleApplyCoupon}
-                onRemoveCoupon={handleRemoveCoupon}
-                appliedCoupon={appliedCoupon}
+                onApplyCouponAction={handleApplyCoupon}
+                onRemoveCouponAction={handleRemoveCoupon}
               />
             </div>
           </div>

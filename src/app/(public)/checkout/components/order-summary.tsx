@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { CartItem } from "../../../../../types/types";
+import CouponInput from "./coupon-input";
 
 interface OrderSummaryProps {
   cartItems: CartItem[];
@@ -11,6 +12,8 @@ interface OrderSummaryProps {
   total: number;
   couponDiscount?: number;
   appliedCoupon?: { code: string; discount: number } | null;
+  onApplyCouponAction: (code: string, discount: number) => void;
+  onRemoveCouponAction: () => void;
 }
 
 export default function OrderSummary({
@@ -19,7 +22,9 @@ export default function OrderSummary({
   shipping,
   total,
   couponDiscount = 0,
-  appliedCoupon,
+  appliedCoupon = null,
+  onApplyCouponAction,
+  onRemoveCouponAction,
 }: OrderSummaryProps) {
   return (
     <Card className="sticky top-4">
@@ -54,7 +59,9 @@ export default function OrderSummary({
           {appliedCoupon && couponDiscount > 0 && (
             <div className="flex justify-between text-green-600">
               <span>Desconto ({appliedCoupon.code})</span>
-              <span className="font-medium">- R$ {couponDiscount.toFixed(2)}</span>
+              <span className="font-medium">
+                - R$ {couponDiscount.toFixed(2)}
+              </span>
             </div>
           )}
         </div>
@@ -66,7 +73,16 @@ export default function OrderSummary({
           <span className="text-primary">R$ {total.toFixed(2)}</span>
         </div>
 
-        <p className="text-xs text-muted-foreground text-center mt-4">
+        <Separator />
+
+        {/* Campo de Cupom */}
+        <CouponInput
+          onApplyCouponAction={onApplyCouponAction}
+          onRemoveCouponAction={onRemoveCouponAction}
+          appliedCoupon={appliedCoupon}
+        />
+
+        <p className="text-xs text-muted-foreground text-center pt-2">
           Ao confirmar, você concorda com nossos termos e condições
         </p>
       </CardContent>

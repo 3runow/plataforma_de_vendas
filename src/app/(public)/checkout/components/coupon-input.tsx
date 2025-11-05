@@ -1,77 +1,90 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Tag, X } from 'lucide-react';
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Tag, X } from "lucide-react";
+
+const couponSchema = z.object({
+  code: z
+    .string()
+    .min(1, "Digite um código de cupom")
+    .min(3, "O código deve ter no mínimo 3 caracteres")
+    .max(20, "O código deve ter no máximo 20 caracteres")
+    .regex(/^[A-Za-z0-9]+$/, "Use apenas letras e números")
+    .transform((val) => val.toUpperCase()),
+});
+
+type CouponFormData = z.infer<typeof couponSchema>;
 
 interface CouponInputProps {
-  onApplyCoupon: (code: string, discount: number) => void;
-  onRemoveCoupon: () => void;
+  onApplyCouponAction: (code: string, discount: number) => void;
+  onRemoveCouponAction: () => void;
   appliedCoupon: { code: string; discount: number } | null;
 }
 
 export default function CouponInput({
-  onApplyCoupon,
-  onRemoveCoupon,
+  onApplyCouponAction,
+  onRemoveCouponAction,
   appliedCoupon,
 }: CouponInputProps) {
-  const [couponCode, setCouponCode] = useState('');
   const [isValidating, setIsValidating] = useState(false);
-  const [error, setError] = useState('');
+  const [apiError, setApiError] = useState("");
 
-  const handleApplyCoupon = async () => {
-    if (!couponCode.trim()) {
-      setError('Digite um código de cupom');
-      return;
-    }
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<CouponFormData>({
+    resolver: zodResolver(couponSchema),
+  });
 
+  const onSubmit = async (data: CouponFormData) => {
     setIsValidating(true);
-    setError('');
+    setApiError("");
 
     try {
-      const response = await fetch('/api/coupons/validate', {
-        method: 'POST',
+      const response = await fetch("/api/coupons/validate", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ code: couponCode.toUpperCase() }),
+        body: JSON.stringify({ code: data.code }),
       });
 
-      const data = await response.json();
+      const result = await response.json();
 
       if (response.ok) {
-        onApplyCoupon(data.code, data.discount);
-        setCouponCode('');
-        setError('');
+        onApplyCouponAction(result.code, result.discount);
+        reset();
+        setApiError("");
       } else {
-        setError(data.error || 'Cupom inválido');
+        setApiError(result.error || "Cupom inválido");
       }
     } catch (err) {
-      console.error('Erro ao validar cupom:', err);
-      setError('Erro ao validar cupom');
+      console.error("Erro ao validar cupom:", err);
+      setApiError("Erro ao validar cupom");
     } finally {
       setIsValidating(false);
     }
   };
 
   const handleRemoveCoupon = () => {
-    onRemoveCoupon();
-    setCouponCode('');
-    setError('');
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleApplyCoupon();
-    }
+    onRemoveCouponAction();
+    reset();
+    setApiError("");
   };
 
   if (appliedCoupon) {
     return (
-      <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+      <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Tag className="h-5 w-5 text-green-600" />
+            <Tag className="h-4 w-4 text-green-600" />
             <div>
               <p className="text-sm font-semibold text-green-900">
                 Cupom aplicado: {appliedCoupon.code}
@@ -95,36 +108,40 @@ export default function CouponInput({
   }
 
   return (
-    <div className="mt-4">
+    <div>
       <label className="block text-sm font-medium mb-2 text-gray-700">
         Cupom de Desconto
       </label>
-      <div className="flex gap-2">
+      <div className="flex gap-2 items-center">
         <div className="flex-1 relative">
-          <Tag className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <input
+          <Tag className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 z-10" />
+          <Input
             type="text"
-            value={couponCode}
-            onChange={(e) => {
-              setCouponCode(e.target.value.toUpperCase());
-              setError('');
-            }}
-            onKeyPress={handleKeyPress}
+            {...register("code")}
             placeholder="Digite o código do cupom"
-            className="w-full pl-10 pr-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+            className="h-10 pl-10 text-white"
             disabled={isValidating}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                handleSubmit(onSubmit)();
+              }
+            }}
           />
         </div>
         <Button
-          onClick={handleApplyCoupon}
-          disabled={isValidating || !couponCode.trim()}
-          className="bg-purple-600 hover:bg-purple-700"
+          type="button"
+          onClick={handleSubmit(onSubmit)}
+          disabled={isValidating}
+          className="h-10 bg-[#022044] hover:bg-[#033363] text-white"
         >
-          {isValidating ? 'Validando...' : 'Aplicar'}
+          {isValidating ? "Validando..." : "Aplicar"}
         </Button>
       </div>
-      {error && (
-        <p className="mt-2 text-sm text-red-600">{error}</p>
+      {(errors.code || apiError) && (
+        <p className="mt-2 text-sm text-red-600">
+          {errors.code?.message || apiError}
+        </p>
       )}
     </div>
   );
