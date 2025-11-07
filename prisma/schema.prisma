@@ -79,6 +79,7 @@ model Order {
   address              Address     @relation(fields: [addressId], references: [id])
   user                 User        @relation(fields: [userId], references: [id])
   items                OrderItem[]
+  shipment             Shipment?
 }
 
 model OrderItem {
@@ -112,4 +113,66 @@ model Coupon {
   usedCount   Int       @default(0)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+}
+
+model Shipment {
+  id                  Int       @id @default(autoincrement())
+  orderId             Int       @unique
+  melhorEnvioId       String?   @unique
+  protocol            String?
+  serviceId           Int?
+  serviceName         String?
+  carrier             String?
+  price               Float?
+  discount            Float?    @default(0)
+  finalPrice          Float?
+  deliveryTime        Int?
+  trackingCode        String?
+  status              String    @default("pending")
+  labelUrl            String?
+  labelPrintUrl       String?
+  paid                Boolean   @default(false)
+  paidAt              DateTime?
+  posted              Boolean   @default(false)
+  postedAt            DateTime?
+  delivered           Boolean   @default(false)
+  deliveredAt         DateTime?
+  canceled            Boolean   @default(false)
+  canceledAt          DateTime?
+  error               String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  order               Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  trackingEvents      TrackingEvent[]
+}
+
+model TrackingEvent {
+  id          Int       @id @default(autoincrement())
+  shipmentId  Int
+  status      String
+  message     String
+  location    String?
+  date        DateTime
+  createdAt   DateTime  @default(now())
+  shipment    Shipment  @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+}
+
+model ShippingQuote {
+  id              Int       @id @default(autoincrement())
+  sessionId       String
+  serviceId       Int
+  serviceName     String
+  carrier         String
+  price           Float
+  discount        Float     @default(0)
+  finalPrice      Float
+  deliveryTime    Int
+  dimensions      Json
+  weight          Float
+  fromZipCode     String
+  toZipCode       String
+  insurance       Boolean   @default(false)
+  insuranceValue  Float?
+  createdAt       DateTime  @default(now())
+  expiresAt       DateTime
 }
