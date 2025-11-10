@@ -14,6 +14,7 @@ import StockManagement from "./components/stock-management";
 import StockAlerts from "./components/stock-alerts";
 import { CouponsManagement } from "./components/coupons-management";
 import { ShippingManagement } from "./components/shipping-management";
+import { ReturnsManagement } from "./components/returns-management";
 import { AlertTriangle, Home } from "lucide-react";
 import { Product } from "../../../../types/types";
 
@@ -322,7 +323,7 @@ export default async function Dashboard() {
           </div>
 
           <Tabs defaultValue="overview" className="space-y-4 sm:space-y-6">
-            <TabsList className="grid w-full grid-cols-7 bg-white shadow-sm p-1 rounded-lg h-auto">
+            <TabsList className="grid w-full grid-cols-8 bg-white shadow-sm p-1 rounded-lg h-auto">
               <TabsTrigger
                 value="overview"
                 className="data-[state=active]:bg-purple-600 data-[state=active]:text-white transition-all text-xs sm:text-sm py-2 sm:py-2.5"
@@ -361,6 +362,13 @@ export default async function Dashboard() {
                 className="data-[state=active]:bg-purple-600 data-[state=active]:text-white transition-all text-xs sm:text-sm py-2 sm:py-2.5"
               >
                 Envios
+              </TabsTrigger>
+              <TabsTrigger
+                value="returns"
+                className="data-[state=active]:bg-purple-600 data-[state=active]:text-white transition-all text-xs sm:text-sm py-2 sm:py-2.5"
+              >
+                <span className="hidden sm:inline">Devoluções</span>
+                <span className="sm:hidden">Devol</span>
               </TabsTrigger>
               <TabsTrigger
                 value="users"
@@ -410,6 +418,10 @@ export default async function Dashboard() {
 
             <TabsContent value="shipping" className="space-y-4 sm:space-y-6">
               <ShippingManagement orders={orders} />
+            </TabsContent>
+
+            <TabsContent value="returns" className="space-y-4 sm:space-y-6">
+              <ReturnsManagement orders={orders} />
             </TabsContent>
 
             <TabsContent value="users" className="space-y-4 sm:space-y-6">
