@@ -71,6 +71,11 @@ export function ProductsManagement({
             : 0,
         isNew: formData.isNew || false,
         isFeatured: formData.isFeatured || false,
+        pieces:
+          formData.pieces && formData.pieces !== ""
+            ? parseInt(formData.pieces)
+            : undefined,
+        dimensions: formData.dimensions || undefined,
       };
 
       console.log("Adicionando produto com dados:", productData);
@@ -161,6 +166,11 @@ export function ProductsManagement({
             : 0,
         isNew: formData.isNew || false,
         isFeatured: formData.isFeatured || false,
+        pieces:
+          formData.pieces && formData.pieces !== ""
+            ? parseInt(formData.pieces)
+            : undefined,
+        dimensions: formData.dimensions || undefined,
       };
 
       console.log("Enviando dados do produto:", productData);

@@ -7,7 +7,9 @@ import { prisma } from "../src/lib/prisma";
 
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
-  throw new Error("JWT_SECRET não configurado nas variáveis de ambiente. Configure a variável JWT_SECRET no arquivo .env");
+  throw new Error(
+    "JWT_SECRET não configurado nas variáveis de ambiente. Configure a variável JWT_SECRET no arquivo .env"
+  );
 }
 
 const app = new Elysia()
@@ -25,7 +27,8 @@ const app = new Elysia()
     const schema = z.object({
       name: z.string().min(2).max(100),
       email: z.string().email().max(255),
-      password: z.string()
+      password: z
+        .string()
         .min(8)
         .regex(/[A-Z]/, "Senha deve conter pelo menos uma letra maiúscula")
         .regex(/[a-z]/, "Senha deve conter pelo menos uma letra minúscula")
@@ -138,8 +141,19 @@ const app = new Elysia()
         id: number;
         email: string;
         name: string;
+        role?: string;
       };
-      const user = await prisma.user.findUnique({ where: { id: decoded.id } });
+      const user = await prisma.user.findUnique({
+        where: { id: decoded.id },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
       return { user };
     } catch {
       return { error: "Token inválido." };

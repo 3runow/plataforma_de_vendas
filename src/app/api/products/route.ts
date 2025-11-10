@@ -15,6 +15,8 @@ const productSchema = z.object({
   discount: z.number().min(0).max(100).optional(),
   isNew: z.boolean().optional(),
   isFeatured: z.boolean().optional(),
+  pieces: z.number().int().min(1).optional().nullable(),
+  dimensions: z.string().max(255).optional().nullable(),
 });
 
 export async function GET() {

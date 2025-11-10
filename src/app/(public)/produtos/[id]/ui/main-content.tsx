@@ -43,6 +43,8 @@ interface MainContentProps {
   discount?: number | null;
   stock: number;
   productId: number;
+  pieces?: number | null;
+  dimensions?: string | null;
 }
 
 export default function MainContent({
@@ -63,11 +65,19 @@ export default function MainContent({
   discount,
   stock,
   productId,
+  pieces,
+  dimensions,
 }: MainContentProps) {
   const characteristics = [
     { label: "Conteúdo da caixa", value: `${name} + manual` },
-    { label: "Peças", value: "80 peças coloridas" },
-    { label: "Dimensões", value: "5,8 x 3,6 x 5,8cm (LxPxA)" },
+    {
+      label: "Peças",
+      value: pieces ? `${pieces} peças coloridas` : "80 peças coloridas",
+    },
+    {
+      label: "Dimensões",
+      value: dimensions || "5,8 x 3,6 x 5,8cm (LxPxA)",
+    },
     { label: "Material", value: "Plástico ABS premium" },
   ];
 

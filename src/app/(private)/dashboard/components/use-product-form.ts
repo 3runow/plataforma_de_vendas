@@ -12,6 +12,8 @@ export function useProductForm() {
     discount: "",
     isNew: false,
     isFeatured: false,
+    pieces: "",
+    dimensions: "",
   });
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
@@ -137,6 +139,8 @@ export function useProductForm() {
       discount: "",
       isNew: false,
       isFeatured: false,
+      pieces: "",
+      dimensions: "",
     });
     setImageFiles([]);
     setImagePreviews([]);
@@ -159,6 +163,8 @@ export function useProductForm() {
           : "",
       isNew: product.isNew || false,
       isFeatured: product.isFeatured || false,
+      pieces: product.pieces ? product.pieces.toString() : "",
+      dimensions: product.dimensions || "",
     });
     const previews = [
       ...(product.imageUrls || []),

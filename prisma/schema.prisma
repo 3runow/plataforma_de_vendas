@@ -56,6 +56,8 @@ model Product {
   isFeatured  Boolean     @default(false)
   isNew       Boolean     @default(false)
   imageUrls   String[]    @default([])
+  pieces      Int?
+  dimensions  String?     @default("5,8 x 3,6 x 5,8cm (LxPxA)")
   orderItems  OrderItem[]
   cartItems   CartItem[]
 }

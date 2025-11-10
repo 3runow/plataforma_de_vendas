@@ -3,7 +3,9 @@ import type { NextRequest } from "next/server";
 
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
-  throw new Error("JWT_SECRET não configurado nas variáveis de ambiente. Configure a variável JWT_SECRET no arquivo .env");
+  throw new Error(
+    "JWT_SECRET não configurado nas variáveis de ambiente. Configure a variável JWT_SECRET no arquivo .env"
+  );
 }
 
 // Garantir ao TypeScript que JWT_SECRET é string (já foi verificado acima)
