@@ -80,6 +80,34 @@ export function ProductFormFields({
         </div>
       </div>
 
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="pieces">Número de Peças</Label>
+          <Input
+            id="pieces"
+            type="number"
+            min="1"
+            value={formData.pieces || ""}
+            onChange={(e) => onFormChange("pieces", e.target.value)}
+            placeholder="Ex: 176"
+          />
+          <p className="text-xs text-gray-500">
+            Quantidade de peças do produto
+          </p>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="dimensions">Dimensões</Label>
+          <Input
+            id="dimensions"
+            type="text"
+            value={formData.dimensions || ""}
+            onChange={(e) => onFormChange("dimensions", e.target.value)}
+            placeholder="5,8 x 3,6 x 5,8cm (LxPxA)"
+          />
+          <p className="text-xs text-gray-500">Tamanho do produto montado</p>
+        </div>
+      </div>
+
       <div className="space-y-2">
         <Label htmlFor="discount">Desconto (%)</Label>
         <Input

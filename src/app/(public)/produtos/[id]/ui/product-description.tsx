@@ -5,6 +5,9 @@ import * as React from "react";
 
 interface Props {
   description: string;
+  name?: string;
+  pieces?: number | null;
+  dimensions?: string | null;
 }
 
 interface Characteristic {
@@ -13,22 +16,27 @@ interface Characteristic {
   value: string;
 }
 
-export default function ProductDescription({ description }: Props) {
+export default function ProductDescription({
+  description,
+  name = "Bricks Tigrão",
+  pieces,
+  dimensions,
+}: Props) {
   const characteristics: Characteristic[] = [
     {
       icon: <Box className="w-8 h-8 text-blue-600" />,
       label: "Conteúdo da caixa",
-      value: "Bricks Tigrão + manual",
+      value: `${name} + manual`,
     },
     {
       icon: <Layers className="w-8 h-8 text-lime-700" />,
       label: "Peças",
-      value: "80 peças coloridas",
+      value: pieces ? `${pieces} peças coloridas` : "80 peças coloridas",
     },
     {
       icon: <Ruler className="w-8 h-8 text-pink-600" />,
       label: "Dimensões",
-      value: "5,8 x 3,6 x 5,8cm (LxPxA)",
+      value: dimensions || "5,8 x 3,6 x 5,8cm (LxPxA)",
     },
     {
       icon: <Palette className="w-8 h-8 text-orange-600" />,

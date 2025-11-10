@@ -56,6 +56,7 @@ export default async function Dashboard() {
     const decoded = jwt.verify(token as string, JWT_SECRET) as {
       id: number;
       email: string;
+      role?: string;
     };
 
     const user = await prisma.user.findUnique({ where: { id: decoded.id } });

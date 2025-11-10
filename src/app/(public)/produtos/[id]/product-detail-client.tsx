@@ -14,6 +14,8 @@ type Product = {
   discount?: number | null;
   isNew?: boolean;
   isFeatured?: boolean;
+  pieces?: number | null;
+  dimensions?: string | null;
 };
 
 type Address = {
@@ -33,9 +35,12 @@ interface Props {
 
 export default function ProductDetailClient({ product }: Props) {
   const images = useMemo(() => {
-    const urls = (product.imageUrls && product.imageUrls.length > 0)
-      ? product.imageUrls
-      : (product.imageUrl ? [product.imageUrl] : []);
+    const urls =
+      product.imageUrls && product.imageUrls.length > 0
+        ? product.imageUrls
+        : product.imageUrl
+          ? [product.imageUrl]
+          : [];
     return urls.length > 0 ? urls : ["/placeholder.png"];
   }, [product.imageUrl, product.imageUrls]);
 
@@ -72,6 +77,8 @@ export default function ProductDetailClient({ product }: Props) {
       discount={product.discount}
       stock={product.stock}
       productId={product.id}
+      pieces={product.pieces}
+      dimensions={product.dimensions}
       userSelections={{
         selectedImageIndex,
         selectedSize,

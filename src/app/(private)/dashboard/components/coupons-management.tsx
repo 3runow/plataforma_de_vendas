@@ -325,7 +325,7 @@ export function CouponsManagement({
             <CardTitle className="text-xs sm:text-sm font-medium">
               Total de Cupons
             </CardTitle>
-            <Ticket className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+            <Ticket className="h-3 w-3 sm:h-4 sm:w-4 text-purple-500" />
           </CardHeader>
           <CardContent>
             <div className="text-xl sm:text-2xl font-bold">
@@ -342,7 +342,7 @@ export function CouponsManagement({
             <CardTitle className="text-xs sm:text-sm font-medium">
               Usos Totais
             </CardTitle>
-            <Users className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+            <Users className="h-3 w-3 sm:h-4 sm:w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
             <div className="text-xl sm:text-2xl font-bold">{totalUsage}</div>
@@ -355,7 +355,7 @@ export function CouponsManagement({
             <CardTitle className="text-xs sm:text-sm font-medium">
               Desconto Médio
             </CardTitle>
-            <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+            <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-green-500" />
           </CardHeader>
           <CardContent>
             <div className="text-xl sm:text-2xl font-bold">
@@ -376,7 +376,7 @@ export function CouponsManagement({
             <CardTitle className="text-xs sm:text-sm font-medium">
               Próximo Expirando
             </CardTitle>
-            <Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+            <Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-orange-500" />
           </CardHeader>
           <CardContent>
             <div className="text-xs sm:text-sm font-bold">
