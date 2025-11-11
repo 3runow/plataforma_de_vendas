@@ -1,11 +1,27 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { RotateCcw, Package, CheckCircle2, XCircle, Clock, User, MapPin, Calendar } from 'lucide-react';
+import { useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  RotateCcw,
+  Package,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  User,
+  MapPin,
+  Calendar,
+  type LucideIcon,
+} from "lucide-react";
 
 interface Order {
   id: number;
@@ -42,42 +58,75 @@ interface ReturnsManagementProps {
   orders: Order[];
 }
 
-const returnStatusMap: Record<string, { label: string; color: string; icon: any }> = {
-  return_requested: { label: 'Solicitado', color: 'bg-yellow-500', icon: Clock },
-  return_approved: { label: 'Aprovado', color: 'bg-blue-500', icon: CheckCircle2 },
-  return_label_generated: { label: 'Etiqueta Gerada', color: 'bg-purple-500', icon: Package },
-  return_in_transit: { label: 'Em Trânsito', color: 'bg-orange-500', icon: RotateCcw },
-  return_received: { label: 'Recebido', color: 'bg-green-500', icon: CheckCircle2 },
-  return_rejected: { label: 'Rejeitado', color: 'bg-red-500', icon: XCircle },
+const returnStatusMap: Record<
+  string,
+  { label: string; color: string; icon: LucideIcon }
+> = {
+  return_requested: {
+    label: "Solicitado",
+    color: "bg-yellow-500",
+    icon: Clock,
+  },
+  return_approved: {
+    label: "Aprovado",
+    color: "bg-blue-500",
+    icon: CheckCircle2,
+  },
+  return_label_generated: {
+    label: "Etiqueta Gerada",
+    color: "bg-purple-500",
+    icon: Package,
+  },
+  return_in_transit: {
+    label: "Em Trânsito",
+    color: "bg-orange-500",
+    icon: RotateCcw,
+  },
+  return_received: {
+    label: "Recebido",
+    color: "bg-green-500",
+    icon: CheckCircle2,
+  },
+  return_rejected: { label: "Rejeitado", color: "bg-red-500", icon: XCircle },
 };
 
 export function ReturnsManagement({ orders }: ReturnsManagementProps) {
-  const [activeTab, setActiveTab] = useState('requested');
+  const [activeTab, setActiveTab] = useState("requested");
   const [isLoading, setIsLoading] = useState(false);
   const [ordersState, setOrdersState] = useState(orders);
 
   // Filtrar pedidos por status de devolução
-  const returnRequested = ordersState.filter(order => order.status === 'return_requested');
-  const returnApproved = ordersState.filter(order => order.status === 'return_approved');
-  const returnInTransit = ordersState.filter(order => order.status === 'return_in_transit');
-  const returnCompleted = ordersState.filter(order => order.status === 'return_received');
-  const returnRejected = ordersState.filter(order => order.status === 'return_rejected');
+  const returnRequested = ordersState.filter(
+    (order) => order.status === "return_requested"
+  );
+  const returnApproved = ordersState.filter(
+    (order) => order.status === "return_approved"
+  );
+  const returnInTransit = ordersState.filter(
+    (order) => order.status === "return_in_transit"
+  );
+  const returnCompleted = ordersState.filter(
+    (order) => order.status === "return_received"
+  );
+  const returnRejected = ordersState.filter(
+    (order) => order.status === "return_rejected"
+  );
 
-  const allReturns = ordersState.filter(order => 
-    order.status.startsWith('return_')
+  const allReturns = ordersState.filter((order) =>
+    order.status.startsWith("return_")
   );
 
   const handleApproveReturn = async (orderId: number) => {
-    if (!confirm('Deseja aprovar esta solicitação de devolução?')) {
+    if (!confirm("Deseja aprovar esta solicitação de devolução?")) {
       return;
     }
 
     setIsLoading(true);
     try {
-      const response = await fetch('/api/admin/returns/approve', {
-        method: 'POST',
+      const response = await fetch("/api/admin/returns/approve", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ orderId }),
       });
@@ -85,35 +134,39 @@ export function ReturnsManagement({ orders }: ReturnsManagementProps) {
       const data = await response.json();
 
       if (response.ok) {
-        alert('Devolução aprovada com sucesso! O cliente será notificado.');
+        alert("Devolução aprovada com sucesso! O cliente será notificado.");
         // Atualiza o estado local
-        setOrdersState(ordersState.map(order => 
-          order.id === orderId ? { ...order, status: 'return_approved' } : order
-        ));
+        setOrdersState(
+          ordersState.map((order) =>
+            order.id === orderId
+              ? { ...order, status: "return_approved" }
+              : order
+          )
+        );
       } else {
-        alert(data.error || 'Erro ao aprovar devolução');
+        alert(data.error || "Erro ao aprovar devolução");
       }
     } catch (error) {
-      console.error('Erro ao aprovar devolução:', error);
-      alert('Erro ao processar aprovação');
+      console.error("Erro ao aprovar devolução:", error);
+      alert("Erro ao processar aprovação");
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleRejectReturn = async (orderId: number) => {
-    const reason = prompt('Motivo da rejeição:');
-    if (!reason || reason.trim() === '') {
-      alert('É necessário informar o motivo da rejeição');
+    const reason = prompt("Motivo da rejeição:");
+    if (!reason || reason.trim() === "") {
+      alert("É necessário informar o motivo da rejeição");
       return;
     }
 
     setIsLoading(true);
     try {
-      const response = await fetch('/api/admin/returns/reject', {
-        method: 'POST',
+      const response = await fetch("/api/admin/returns/reject", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ orderId, reason }),
       });
@@ -121,33 +174,37 @@ export function ReturnsManagement({ orders }: ReturnsManagementProps) {
       const data = await response.json();
 
       if (response.ok) {
-        alert('Devolução rejeitada. O cliente será notificado sobre o motivo.');
+        alert("Devolução rejeitada. O cliente será notificado sobre o motivo.");
         // Atualiza o estado local
-        setOrdersState(ordersState.map(order => 
-          order.id === orderId ? { ...order, status: 'return_rejected' } : order
-        ));
+        setOrdersState(
+          ordersState.map((order) =>
+            order.id === orderId
+              ? { ...order, status: "return_rejected" }
+              : order
+          )
+        );
       } else {
-        alert(data.error || 'Erro ao rejeitar devolução');
+        alert(data.error || "Erro ao rejeitar devolução");
       }
     } catch (error) {
-      console.error('Erro ao rejeitar devolução:', error);
-      alert('Erro ao processar rejeição');
+      console.error("Erro ao rejeitar devolução:", error);
+      alert("Erro ao processar rejeição");
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleGenerateLabel = async (orderId: number) => {
-    if (!confirm('Deseja gerar a etiqueta de coleta para esta devolução?')) {
+    if (!confirm("Deseja gerar a etiqueta de coleta para esta devolução?")) {
       return;
     }
 
     setIsLoading(true);
     try {
-      const response = await fetch('/api/admin/returns/generate-label', {
-        method: 'POST',
+      const response = await fetch("/api/admin/returns/generate-label", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ orderId }),
       });
@@ -155,43 +212,54 @@ export function ReturnsManagement({ orders }: ReturnsManagementProps) {
       const data = await response.json();
 
       if (response.ok) {
-        alert(`Etiqueta gerada com sucesso!\n\nCódigo de rastreio: ${data.trackingCode}\n\nA etiqueta será aberta em uma nova aba.`);
-        
+        alert(
+          `Etiqueta gerada com sucesso!\n\nCódigo de rastreio: ${data.trackingCode}\n\nA etiqueta será aberta em uma nova aba.`
+        );
+
         // Abrir etiqueta em nova aba
         if (data.labelUrl) {
-          window.open(data.labelUrl, '_blank');
+          window.open(data.labelUrl, "_blank");
         }
-        
+
         // Atualiza o estado local
-        setOrdersState(ordersState.map(order => 
-          order.id === orderId 
-            ? { ...order, status: 'return_label_generated', shippingTrackingCode: data.trackingCode } 
-            : order
-        ));
+        setOrdersState(
+          ordersState.map((order) =>
+            order.id === orderId
+              ? {
+                  ...order,
+                  status: "return_label_generated",
+                  shippingTrackingCode: data.trackingCode,
+                }
+              : order
+          )
+        );
       } else {
-        alert(data.error || 'Erro ao gerar etiqueta de devolução');
+        alert(data.error || "Erro ao gerar etiqueta de devolução");
         if (data.details) {
-          console.error('Detalhes do erro:', data.details);
+          console.error("Detalhes do erro:", data.details);
         }
       }
     } catch (error) {
-      console.error('Erro ao gerar etiqueta:', error);
-      alert('Erro ao processar geração de etiqueta');
+      console.error("Erro ao gerar etiqueta:", error);
+      alert("Erro ao processar geração de etiqueta");
     } finally {
       setIsLoading(false);
     }
   };
 
   const renderReturnCard = (order: Order) => {
-    const statusInfo = returnStatusMap[order.status] || { 
-      label: order.status, 
-      color: 'bg-gray-500',
-      icon: Package 
+    const statusInfo = returnStatusMap[order.status] || {
+      label: order.status,
+      color: "bg-gray-500",
+      icon: Package,
     };
     const StatusIcon = statusInfo.icon;
 
     return (
-      <Card key={order.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+      <Card
+        key={order.id}
+        className="overflow-hidden hover:shadow-lg transition-shadow"
+      >
         <div className="bg-linear-to-r from-orange-50 to-red-50 px-6 py-4 border-b">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -202,15 +270,17 @@ export function ReturnsManagement({ orders }: ReturnsManagementProps) {
                 <h3 className="font-semibold text-lg">Pedido #{order.id}</h3>
                 <p className="text-sm text-gray-600 flex items-center gap-2">
                   <Calendar className="h-4 w-4" />
-                  {new Date(order.createdAt).toLocaleDateString('pt-BR', {
-                    day: '2-digit',
-                    month: 'long',
-                    year: 'numeric'
+                  {new Date(order.createdAt).toLocaleDateString("pt-BR", {
+                    day: "2-digit",
+                    month: "long",
+                    year: "numeric",
                   })}
                 </p>
               </div>
             </div>
-            <Badge className={`${statusInfo.color} flex items-center gap-2 px-3 py-1`}>
+            <Badge
+              className={`${statusInfo.color} flex items-center gap-2 px-3 py-1`}
+            >
               <StatusIcon className="h-4 w-4" />
               {statusInfo.label}
             </Badge>
@@ -223,7 +293,9 @@ export function ReturnsManagement({ orders }: ReturnsManagementProps) {
             <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg">
               <User className="h-5 w-5 text-gray-600 mt-0.5" />
               <div className="flex-1">
-                <h4 className="font-semibold text-sm text-gray-700 mb-1">Cliente</h4>
+                <h4 className="font-semibold text-sm text-gray-700 mb-1">
+                  Cliente
+                </h4>
                 <p className="font-medium">{order.user.name}</p>
                 <p className="text-sm text-gray-600">{order.user.email}</p>
               </div>
@@ -234,15 +306,20 @@ export function ReturnsManagement({ orders }: ReturnsManagementProps) {
               <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg">
                 <MapPin className="h-5 w-5 text-gray-600 mt-0.5" />
                 <div className="flex-1">
-                  <h4 className="font-semibold text-sm text-gray-700 mb-1">Endereço de Coleta</h4>
+                  <h4 className="font-semibold text-sm text-gray-700 mb-1">
+                    Endereço de Coleta
+                  </h4>
                   <p className="font-medium">{order.address.recipientName}</p>
                   <p className="text-sm text-gray-600">
                     {order.address.street}, {order.address.number}
                   </p>
                   <p className="text-sm text-gray-600">
-                    {order.address.neighborhood} - {order.address.city}/{order.address.state}
+                    {order.address.neighborhood} - {order.address.city}/
+                    {order.address.state}
                   </p>
-                  <p className="text-sm text-gray-600">CEP: {order.address.cep}</p>
+                  <p className="text-sm text-gray-600">
+                    CEP: {order.address.cep}
+                  </p>
                 </div>
               </div>
             )}
@@ -256,18 +333,26 @@ export function ReturnsManagement({ orders }: ReturnsManagementProps) {
                 </h4>
                 <div className="space-y-2">
                   {order.items.map((item) => (
-                    <div key={item.id} className="flex items-center justify-between p-3 bg-white border rounded-lg">
+                    <div
+                      key={item.id}
+                      className="flex items-center justify-between p-3 bg-white border rounded-lg"
+                    >
                       <div className="flex items-center gap-3">
                         {item.product.imageUrl && (
-                          <img 
-                            src={item.product.imageUrl} 
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={item.product.imageUrl}
                             alt={item.product.name}
                             className="w-12 h-12 object-cover rounded"
                           />
                         )}
                         <div>
-                          <p className="font-medium text-sm">{item.product.name}</p>
-                          <p className="text-xs text-gray-600">Quantidade: {item.quantity}</p>
+                          <p className="font-medium text-sm">
+                            {item.product.name}
+                          </p>
+                          <p className="text-xs text-gray-600">
+                            Quantidade: {item.quantity}
+                          </p>
                         </div>
                       </div>
                       <p className="font-semibold text-sm">
@@ -281,14 +366,16 @@ export function ReturnsManagement({ orders }: ReturnsManagementProps) {
 
             {/* Valor Total */}
             <div className="flex items-center justify-between p-4 bg-linear-to-r from-orange-50 to-red-50 rounded-lg border-2 border-orange-200">
-              <span className="font-semibold text-gray-700">Valor da Devolução</span>
+              <span className="font-semibold text-gray-700">
+                Valor da Devolução
+              </span>
               <span className="text-2xl font-bold text-orange-600">
                 R$ {order.total.toFixed(2)}
               </span>
             </div>
 
             {/* Ações */}
-            {order.status === 'return_requested' && (
+            {order.status === "return_requested" && (
               <div className="flex gap-3">
                 <Button
                   onClick={() => handleApproveReturn(order.id)}
@@ -296,7 +383,7 @@ export function ReturnsManagement({ orders }: ReturnsManagementProps) {
                   className="flex-1 bg-green-600 hover:bg-green-700"
                 >
                   <CheckCircle2 className="h-4 w-4 mr-2" />
-                  {isLoading ? 'Processando...' : 'Aprovar Devolução'}
+                  {isLoading ? "Processando..." : "Aprovar Devolução"}
                 </Button>
                 <Button
                   onClick={() => handleRejectReturn(order.id)}
@@ -305,19 +392,19 @@ export function ReturnsManagement({ orders }: ReturnsManagementProps) {
                   className="flex-1"
                 >
                   <XCircle className="h-4 w-4 mr-2" />
-                  {isLoading ? 'Processando...' : 'Rejeitar'}
+                  {isLoading ? "Processando..." : "Rejeitar"}
                 </Button>
               </div>
             )}
 
-            {order.status === 'return_approved' && (
+            {order.status === "return_approved" && (
               <Button
                 onClick={() => handleGenerateLabel(order.id)}
                 disabled={isLoading}
                 className="w-full bg-purple-600 hover:bg-purple-700"
               >
                 <Package className="h-4 w-4 mr-2" />
-                {isLoading ? 'Gerando...' : 'Gerar Etiqueta de Coleta'}
+                {isLoading ? "Gerando..." : "Gerar Etiqueta de Coleta"}
               </Button>
             )}
 
@@ -347,7 +434,9 @@ export function ReturnsManagement({ orders }: ReturnsManagementProps) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-yellow-600">{returnRequested.length}</div>
+            <div className="text-3xl font-bold text-yellow-600">
+              {returnRequested.length}
+            </div>
             <p className="text-xs text-gray-500 mt-1">Aguardando análise</p>
           </CardContent>
         </Card>
@@ -360,7 +449,9 @@ export function ReturnsManagement({ orders }: ReturnsManagementProps) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-blue-600">{returnApproved.length}</div>
+            <div className="text-3xl font-bold text-blue-600">
+              {returnApproved.length}
+            </div>
             <p className="text-xs text-gray-500 mt-1">Gerar etiquetas</p>
           </CardContent>
         </Card>
@@ -373,7 +464,9 @@ export function ReturnsManagement({ orders }: ReturnsManagementProps) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-orange-600">{returnInTransit.length}</div>
+            <div className="text-3xl font-bold text-orange-600">
+              {returnInTransit.length}
+            </div>
             <p className="text-xs text-gray-500 mt-1">Retornando</p>
           </CardContent>
         </Card>
@@ -386,7 +479,9 @@ export function ReturnsManagement({ orders }: ReturnsManagementProps) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-green-600">{returnCompleted.length}</div>
+            <div className="text-3xl font-bold text-green-600">
+              {returnCompleted.length}
+            </div>
             <p className="text-xs text-gray-500 mt-1">Recebidas</p>
           </CardContent>
         </Card>
@@ -399,7 +494,9 @@ export function ReturnsManagement({ orders }: ReturnsManagementProps) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-red-600">{returnRejected.length}</div>
+            <div className="text-3xl font-bold text-red-600">
+              {returnRejected.length}
+            </div>
             <p className="text-xs text-gray-500 mt-1">Não aprovadas</p>
           </CardContent>
         </Card>
@@ -419,7 +516,10 @@ export function ReturnsManagement({ orders }: ReturnsManagementProps) {
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid grid-cols-5 mb-6">
-              <TabsTrigger value="requested" className="flex items-center gap-2">
+              <TabsTrigger
+                value="requested"
+                className="flex items-center gap-2"
+              >
                 <Clock className="h-4 w-4" />
                 Solicitadas
                 {returnRequested.length > 0 && (
@@ -432,11 +532,17 @@ export function ReturnsManagement({ orders }: ReturnsManagementProps) {
                 <CheckCircle2 className="h-4 w-4" />
                 Aprovadas
               </TabsTrigger>
-              <TabsTrigger value="in-transit" className="flex items-center gap-2">
+              <TabsTrigger
+                value="in-transit"
+                className="flex items-center gap-2"
+              >
                 <RotateCcw className="h-4 w-4" />
                 Em Trânsito
               </TabsTrigger>
-              <TabsTrigger value="completed" className="flex items-center gap-2">
+              <TabsTrigger
+                value="completed"
+                className="flex items-center gap-2"
+              >
                 <Package className="h-4 w-4" />
                 Concluídas
               </TabsTrigger>
@@ -452,8 +558,12 @@ export function ReturnsManagement({ orders }: ReturnsManagementProps) {
               {returnRequested.length === 0 ? (
                 <div className="text-center py-12 text-gray-500">
                   <Clock className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                  <p className="text-lg font-medium">Nenhuma devolução solicitada</p>
-                  <p className="text-sm">Não há solicitações de devolução aguardando análise</p>
+                  <p className="text-lg font-medium">
+                    Nenhuma devolução solicitada
+                  </p>
+                  <p className="text-sm">
+                    Não há solicitações de devolução aguardando análise
+                  </p>
                 </div>
               ) : (
                 <div className="grid gap-4">
@@ -466,8 +576,12 @@ export function ReturnsManagement({ orders }: ReturnsManagementProps) {
               {returnApproved.length === 0 ? (
                 <div className="text-center py-12 text-gray-500">
                   <CheckCircle2 className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                  <p className="text-lg font-medium">Nenhuma devolução aprovada</p>
-                  <p className="text-sm">Não há devoluções aprovadas no momento</p>
+                  <p className="text-lg font-medium">
+                    Nenhuma devolução aprovada
+                  </p>
+                  <p className="text-sm">
+                    Não há devoluções aprovadas no momento
+                  </p>
                 </div>
               ) : (
                 <div className="grid gap-4">
@@ -480,8 +594,12 @@ export function ReturnsManagement({ orders }: ReturnsManagementProps) {
               {returnInTransit.length === 0 ? (
                 <div className="text-center py-12 text-gray-500">
                   <RotateCcw className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                  <p className="text-lg font-medium">Nenhuma devolução em trânsito</p>
-                  <p className="text-sm">Não há devoluções retornando no momento</p>
+                  <p className="text-lg font-medium">
+                    Nenhuma devolução em trânsito
+                  </p>
+                  <p className="text-sm">
+                    Não há devoluções retornando no momento
+                  </p>
                 </div>
               ) : (
                 <div className="grid gap-4">
@@ -494,7 +612,9 @@ export function ReturnsManagement({ orders }: ReturnsManagementProps) {
               {returnCompleted.length === 0 ? (
                 <div className="text-center py-12 text-gray-500">
                   <Package className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                  <p className="text-lg font-medium">Nenhuma devolução concluída</p>
+                  <p className="text-lg font-medium">
+                    Nenhuma devolução concluída
+                  </p>
                   <p className="text-sm">Não há devoluções recebidas ainda</p>
                 </div>
               ) : (
@@ -508,8 +628,12 @@ export function ReturnsManagement({ orders }: ReturnsManagementProps) {
               {allReturns.length === 0 ? (
                 <div className="text-center py-12 text-gray-500">
                   <RotateCcw className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                  <p className="text-lg font-medium">Nenhuma devolução registrada</p>
-                  <p className="text-sm">Não há solicitações de devolução no sistema</p>
+                  <p className="text-lg font-medium">
+                    Nenhuma devolução registrada
+                  </p>
+                  <p className="text-sm">
+                    Não há solicitações de devolução no sistema
+                  </p>
                 </div>
               ) : (
                 <div className="grid gap-4">

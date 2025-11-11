@@ -1,23 +1,19 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getMelhorEnvioService } from '@/lib/melhor-envio';
-import { prisma } from '@/lib/prisma';
+import { NextRequest, NextResponse } from "next/server";
+import { getMelhorEnvioService } from "@/lib/melhor-envio";
 
 interface TrackParams {
-  params: {
+  params: Promise<{
     code: string;
-  };
+  }>;
 }
 
-export async function GET(
-  request: NextRequest,
-  { params }: TrackParams
-) {
+export async function GET(request: NextRequest, context: TrackParams) {
   try {
-    const { code } = params;
+    const { code } = await context.params;
 
     if (!code) {
       return NextResponse.json(
-        { error: 'Código de rastreio é obrigatório' },
+        { error: "Código de rastreio é obrigatório" },
         { status: 400 }
       );
     }
@@ -68,11 +64,9 @@ export async function GET(
       },
     });
   } catch (error: unknown) {
-    console.error('Erro ao rastrear envio:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Erro ao rastrear envio';
-    return NextResponse.json(
-      { error: errorMessage },
-      { status: 500 }
-    );
+    console.error("Erro ao rastrear envio:", error);
+    const errorMessage =
+      error instanceof Error ? error.message : "Erro ao rastrear envio";
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

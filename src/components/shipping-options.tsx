@@ -1,11 +1,17 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { Truck, Package, Clock } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
+import { useState, useEffect, useCallback } from "react";
+import { Truck, Package, Clock } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 
 interface ShippingOption {
   id: number;
@@ -27,68 +33,72 @@ interface ShippingOptionsProps {
     quantity: number;
   }>;
   toZipCode: string;
-  onSelect: (option: ShippingOption) => void;
+  onSelectAction: (option: ShippingOption) => void;
 }
 
-export function ShippingOptions({ products, toZipCode, onSelect }: ShippingOptionsProps) {
+export function ShippingOptions({
+  products,
+  toZipCode,
+  onSelectAction,
+}: ShippingOptionsProps) {
   const [options, setOptions] = useState<ShippingOption[]>([]);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (products.length > 0 && toZipCode) {
-      calculateShipping();
-    }
-  }, [products, toZipCode]);
-
-  const calculateShipping = async () => {
+  const calculateShipping = useCallback(async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const response = await fetch('/api/shipping/calculate', {
-        method: 'POST',
+      const response = await fetch("/api/shipping/calculate", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           products,
-          toZipCode: toZipCode.replace(/\D/g, ''),
+          toZipCode: toZipCode.replace(/\D/g, ""),
         }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Erro ao calcular frete');
+        throw new Error(data.error || "Erro ao calcular frete");
       }
 
       setOptions(data.options);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao calcular frete');
+      setError(err instanceof Error ? err.message : "Erro ao calcular frete");
     } finally {
       setLoading(false);
     }
-  };
+  }, [products, toZipCode]);
+
+  useEffect(() => {
+    if (products.length > 0 && toZipCode) {
+      calculateShipping();
+    }
+  }, [calculateShipping, products.length, toZipCode]);
 
   const handleSelect = () => {
     const option = options.find((opt) => opt.id === selectedOption);
     if (option) {
-      onSelect(option);
+      onSelectAction(option);
     }
   };
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
     }).format(value);
   };
 
   const formatDeliveryTime = (days: number) => {
-    if (days === 0) return 'Hoje';
-    if (days === 1) return 'Amanhã';
+    if (days === 0) return "Hoje";
+    if (days === 1) return "Amanhã";
     return `${days} dias úteis`;
   };
 
@@ -124,7 +134,11 @@ export function ShippingOptions({ products, toZipCode, onSelect }: ShippingOptio
           <div className="rounded-md bg-red-50 p-4 text-red-800">
             <p className="font-medium">Erro ao calcular frete</p>
             <p className="text-sm">{error}</p>
-            <Button onClick={calculateShipping} variant="outline" className="mt-4">
+            <Button
+              onClick={calculateShipping}
+              variant="outline"
+              className="mt-4"
+            >
               Tentar Novamente
             </Button>
           </div>
@@ -163,7 +177,7 @@ export function ShippingOptions({ products, toZipCode, onSelect }: ShippingOptio
       <CardContent>
         <RadioGroup
           value={selectedOption?.toString()}
-          onValueChange={(value) => setSelectedOption(Number(value))}
+          onValueChange={(value: string) => setSelectedOption(Number(value))}
         >
           <div className="space-y-3">
             {options.map((option) => (
@@ -171,18 +185,22 @@ export function ShippingOptions({ products, toZipCode, onSelect }: ShippingOptio
                 key={option.id}
                 className={`flex items-center space-x-3 rounded-lg border p-4 transition-colors ${
                   selectedOption === option.id
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300'
+                    ? "border-blue-500 bg-blue-50"
+                    : "border-gray-200 hover:border-gray-300"
                 }`}
               >
-                <RadioGroupItem value={option.id.toString()} id={`option-${option.id}`} />
+                <RadioGroupItem
+                  value={option.id.toString()}
+                  id={`option-${option.id}`}
+                />
                 <Label
                   htmlFor={`option-${option.id}`}
                   className="flex flex-1 cursor-pointer items-center justify-between"
                 >
                   <div className="flex items-center gap-3">
                     {/* Logo da transportadora */}
-                    <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded">
+                    <div className="h-12 w-12 shrink-0 overflow-hidden rounded">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={option.logo}
                         alt={option.company}
@@ -196,9 +214,11 @@ export function ShippingOptions({ products, toZipCode, onSelect }: ShippingOptio
                       <div className="mt-1 flex items-center gap-1 text-sm text-gray-600">
                         <Clock className="h-4 w-4" />
                         <span>{formatDeliveryTime(option.deliveryTime)}</span>
-                        {option.deliveryRange.min !== option.deliveryRange.max && (
+                        {option.deliveryRange.min !==
+                          option.deliveryRange.max && (
                           <span className="text-xs text-gray-400">
-                            ({option.deliveryRange.min} a {option.deliveryRange.max} dias)
+                            ({option.deliveryRange.min} a{" "}
+                            {option.deliveryRange.max} dias)
                           </span>
                         )}
                       </div>

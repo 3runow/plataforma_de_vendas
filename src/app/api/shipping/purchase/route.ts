@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getMelhorEnvioService } from '@/lib/melhor-envio';
-import { prisma } from '@/lib/prisma';
+import { NextRequest, NextResponse } from "next/server";
+import { getMelhorEnvioService } from "@/lib/melhor-envio";
+import { prisma } from "@/lib/prisma";
 
 interface PurchaseShippingRequest {
   orderId: number;
@@ -10,10 +10,15 @@ interface PurchaseShippingRequest {
 
 export async function POST(request: NextRequest) {
   let requestBody: PurchaseShippingRequest | null = null;
-  
+
   try {
     requestBody = await request.json();
-    const { orderId, serviceId, volumeId } = requestBody;
+
+    if (!requestBody) {
+      return NextResponse.json({ error: "Dados inválidos" }, { status: 400 });
+    }
+
+    const { orderId, serviceId } = requestBody;
 
     // Buscar pedido
     const order = await prisma.order.findUnique({
@@ -31,7 +36,7 @@ export async function POST(request: NextRequest) {
 
     if (!order) {
       return NextResponse.json(
-        { error: 'Pedido não encontrado' },
+        { error: "Pedido não encontrado" },
         { status: 404 }
       );
     }
@@ -43,7 +48,7 @@ export async function POST(request: NextRequest) {
 
     if (existingShipment) {
       return NextResponse.json(
-        { error: 'Envio já foi criado para este pedido' },
+        { error: "Envio já foi criado para este pedido" },
         { status: 400 }
       );
     }
@@ -51,11 +56,11 @@ export async function POST(request: NextRequest) {
     const melhorEnvio = getMelhorEnvioService();
 
     // CEP da loja
-    const storeZipCode = process.env.STORE_ZIP_CODE || '01310100';
+    const storeZipCode = process.env.STORE_ZIP_CODE || "01310100";
 
     // Calcular valor total para seguro
     const totalValue = order.items.reduce((acc, item) => {
-      return acc + (item.price * item.quantity);
+      return acc + item.price * item.quantity;
     }, 0);
 
     // Preparar produtos no formato da API Melhor Envio
@@ -73,23 +78,23 @@ export async function POST(request: NextRequest) {
     const shippingData = {
       serviceId,
       from: {
-        postal_code: storeZipCode.replace(/\D/g, ''),
-        name: process.env.STORE_NAME || 'Loja',
-        phone: process.env.STORE_PHONE || '1140004000',
-        email: process.env.STORE_EMAIL || 'contato@loja.com',
-        document: process.env.STORE_CNPJ || '00000000000000',
-        address: process.env.STORE_ADDRESS || 'Endereço',
-        number: process.env.STORE_NUMBER || '100',
-        district: process.env.STORE_DISTRICT || 'Centro',
-        city: process.env.STORE_CITY || 'São Paulo',
-        state_abbr: process.env.STORE_STATE || 'SP',
+        postal_code: storeZipCode.replace(/\D/g, ""),
+        name: process.env.STORE_NAME || "Loja",
+        phone: process.env.STORE_PHONE || "1140004000",
+        email: process.env.STORE_EMAIL || "contato@loja.com",
+        document: process.env.STORE_CNPJ || "00000000000000",
+        address: process.env.STORE_ADDRESS || "Endereço",
+        number: process.env.STORE_NUMBER || "100",
+        district: process.env.STORE_DISTRICT || "Centro",
+        city: process.env.STORE_CITY || "São Paulo",
+        state_abbr: process.env.STORE_STATE || "SP",
       },
       to: {
-        postal_code: order.address.cep.replace(/\D/g, ''),
+        postal_code: order.address.cep.replace(/\D/g, ""),
         name: order.address.recipientName,
-        phone: order.user.phone || '1140004000',
+        phone: order.user.phone || "1140004000",
         email: order.user.email,
-        document: order.user.cpf?.replace(/\D/g, '') || '00000000000',
+        document: order.user.cpf?.replace(/\D/g, "") || "00000000000",
         address: order.address.street,
         number: order.address.number,
         district: order.address.neighborhood,
@@ -116,7 +121,7 @@ export async function POST(request: NextRequest) {
         serviceId,
         trackingCode: result.trackingCode,
         labelUrl: result.labelUrl,
-        status: 'pending',
+        status: "pending",
         paid: true,
         paidAt: new Date(),
       },
@@ -127,7 +132,7 @@ export async function POST(request: NextRequest) {
       where: { id: orderId },
       data: {
         shippingTrackingCode: result.trackingCode,
-        status: 'processing',
+        status: "processing",
       },
     });
 
@@ -140,17 +145,18 @@ export async function POST(request: NextRequest) {
         labelUrl: shipment.labelUrl,
       },
     });
-  } catch (error: any) {
-    console.error('❌ Erro detalhado ao comprar frete:', {
-      message: error.message,
-      stack: error.stack,
+  } catch (error) {
+    const err = error as Error;
+    console.error("❌ Erro detalhado ao comprar frete:", {
+      message: err.message,
+      stack: err.stack,
       request: requestBody,
     });
-    
+
     return NextResponse.json(
-      { 
-        error: error.message || 'Erro ao comprar frete',
-        details: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+      {
+        error: err.message || "Erro ao comprar frete",
+        details: process.env.NODE_ENV === "development" ? err.stack : undefined,
       },
       { status: 500 }
     );

@@ -18,7 +18,6 @@ import AddressForm from "./components/address-form";
 import OrderSummary from "./components/order-summary";
 import ShippingSelector from "./components/shipping-selector";
 import StripePayment from "./components/stripe-payment";
-import CouponInput from "./components/coupon-input";
 import {
   Dialog,
   DialogContent,
