@@ -346,7 +346,7 @@ export async function POST(request: NextRequest) {
         price: selectedQuote.price,
         discount: selectedQuote.discount || 0,
         finalPrice: selectedQuote.price - (selectedQuote.discount || 0),
-        deliveryTime: `${selectedQuote.delivery_range.min}-${selectedQuote.delivery_range.max}`,
+        deliveryTime: selectedQuote.delivery_range.max, // Usando o máximo de dias
         trackingCode: shipmentDetails.tracking || null,
         status: 'pending',
         labelUrl: labelUrl,
