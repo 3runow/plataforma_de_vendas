@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, Suspense, useCallback } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCircle, Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -13,7 +13,11 @@ function CheckoutSuccessNewContent() {
   const [orderId, setOrderId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const processOrder = useCallback(async () => {
+  useEffect(() => {
+    processOrder();
+  }, []);
+
+  const processOrder = async () => {
     try {
       console.log("=== PROCESSANDO PEDIDO ===");
 
@@ -64,11 +68,7 @@ function CheckoutSuccessNewContent() {
     } finally {
       setLoading(false);
     }
-  }, [router]);
-
-  useEffect(() => {
-    processOrder();
-  }, [processOrder]);
+  };
 
   if (loading) {
     return (
