@@ -168,8 +168,17 @@ export async function POST(request: NextRequest) {
       error?: string;
       name: string;
       id: number;
-      price: number;
-      delivery_time: number;
+      price: number | string;
+      discount?: number | string;
+      final_price?: number | string;
+      company: {
+        name: string;
+      };
+      delivery_time?: number | string;
+      delivery_range?: {
+        min: number | string;
+        max: number | string;
+      };
     }
 
     const selectedQuote =
@@ -186,6 +195,37 @@ export async function POST(request: NextRequest) {
     console.log(
       `✅ Serviço selecionado: ${selectedQuote.name} - R$ ${selectedQuote.price}`
     );
+
+    const toNumber = (value: unknown): number | null => {
+      if (typeof value === "number") return value;
+      if (typeof value === "string") {
+        const normalized = value.replace(",", ".");
+        const parsed = Number(normalized);
+        return Number.isNaN(parsed) ? null : parsed;
+      }
+      return null;
+    };
+
+    const shipmentPrice = toNumber(selectedQuote.price);
+
+    if (shipmentPrice === null) {
+      return NextResponse.json(
+        { error: "Preço inválido retornado pela cotação" },
+        { status: 500 }
+      );
+    }
+
+    const shipmentDiscount =
+      toNumber(selectedQuote.discount) ?? 0;
+
+    const shipmentFinalPrice =
+      toNumber(selectedQuote.final_price) ??
+      shipmentPrice - shipmentDiscount;
+
+    const shipmentDeliveryTime =
+      toNumber(selectedQuote.delivery_range?.max) ??
+      toNumber(selectedQuote.delivery_time) ??
+      null;
 
     // ETAPA 2: Adicionar ao carrinho
     console.log("2️⃣ Adicionando ao carrinho...");
@@ -379,10 +419,10 @@ export async function POST(request: NextRequest) {
         serviceId: selectedQuote.id,
         serviceName: selectedQuote.name,
         carrier: selectedQuote.company.name,
-        price: selectedQuote.price,
-        discount: selectedQuote.discount || 0,
-        finalPrice: selectedQuote.price - (selectedQuote.discount || 0),
-        deliveryTime: selectedQuote.delivery_range.max, // Usando o máximo de dias
+        price: shipmentPrice,
+        discount: shipmentDiscount,
+        finalPrice: shipmentFinalPrice,
+        deliveryTime: shipmentDeliveryTime ?? undefined, // Usando o máximo de dias
         trackingCode: shipmentDetails.tracking || null,
         status: "pending",
         labelUrl: labelUrl,
