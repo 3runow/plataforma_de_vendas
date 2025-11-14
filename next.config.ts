@@ -4,6 +4,20 @@ const nextConfig: NextConfig = {
   env: {
     NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY: process.env.NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY,
   },
+  // Allow next/image to load external QR code images (and other external hosts if needed)
+  images: {
+    // simple allowlist by domain
+    domains: ["api.qrserver.com"],
+    // more precise pattern if needed
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "api.qrserver.com",
+        port: "",
+        pathname: "/v1/create-qr-code/**",
+      },
+    ],
+  },
   async headers() {
     return [
       {
