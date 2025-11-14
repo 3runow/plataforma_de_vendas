@@ -9,8 +9,10 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import Image from "next/image";
-import { Package, MapPin, Calendar } from "lucide-react";
+import { Package, MapPin, Calendar, RotateCcw } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface OrderItem {
   id: number;
@@ -51,11 +53,20 @@ const statusMap: Record<string, { label: string; color: string }> = {
   shipped: { label: "Enviado", color: "bg-purple-500" },
   delivered: { label: "Entregue", color: "bg-green-500" },
   cancelled: { label: "Cancelado", color: "bg-red-500" },
+  return_requested: { label: "Devolução Solicitada", color: "bg-orange-500" },
+  return_approved: { label: "Devolução Aprovada", color: "bg-blue-500" },
+  return_label_generated: { label: "Etiqueta de Devolução Gerada", color: "bg-purple-500" },
+  return_in_transit: { label: "Devolução em Trânsito", color: "bg-orange-500" },
+  return_received: { label: "Devolução Recebida", color: "bg-green-500" },
+  return_rejected: { label: "Devolução Rejeitada", color: "bg-red-500" },
 };
 
 export default function OrdersTab({ userId }: OrdersTabProps) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [processingReturn, setProcessingReturn] = useState<number | null>(null);
+  const { toast } = useToast();
+
   useEffect(() => {
     async function fetchOrders() {
       setLoading(true);
@@ -81,6 +92,54 @@ export default function OrdersTab({ userId }: OrdersTabProps) {
     }
     fetchOrders();
   }, [userId]);
+
+  const handleRequestReturn = async (orderId: number) => {
+    if (!confirm('Tem certeza que deseja solicitar a devolução deste pedido?')) {
+      return;
+    }
+
+    setProcessingReturn(orderId);
+
+    try {
+      const response = await fetch('/api/shipping/reverse-logistics', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ orderId }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast({
+          title: 'Solicitação enviada!',
+          description: 'Sua solicitação de devolução foi registrada. Entraremos em contato em breve.',
+        });
+        // Recarregar pedidos
+        const res = await fetch("/api/order/list");
+        const ordersData = await res.json();
+        if (ordersData.success) {
+          setOrders(ordersData.orders);
+        }
+      } else {
+        toast({
+          title: 'Erro',
+          description: data.error || 'Não foi possível processar a solicitação de devolução.',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao solicitar devolução:', error);
+      toast({
+        title: 'Erro',
+        description: 'Ocorreu um erro ao processar sua solicitação.',
+        variant: 'destructive',
+      });
+    } finally {
+      setProcessingReturn(null);
+    }
+  };
 
   return (
     <Card>
@@ -142,9 +201,23 @@ export default function OrdersTab({ userId }: OrdersTabProps) {
                           </p>
                         </div>
                       </div>
-                      <Badge className={statusInfo.color}>
-                        {statusInfo.label}
-                      </Badge>
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <Badge className={statusInfo.color}>
+                          {statusInfo.label}
+                        </Badge>
+                        {order.status === 'delivered' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleRequestReturn(order.id)}
+                            disabled={processingReturn === order.id}
+                            className="flex items-center gap-2"
+                          >
+                            <RotateCcw className="h-4 w-4" />
+                            {processingReturn === order.id ? 'Processando...' : 'Solicitar Devolução'}
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </div>
                   <CardContent className="pt-4 sm:pt-6">

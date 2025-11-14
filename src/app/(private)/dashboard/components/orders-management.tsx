@@ -96,6 +96,12 @@ export function OrdersManagement({
       shipped: "bg-purple-100 text-purple-800",
       delivered: "bg-green-100 text-green-800",
       cancelled: "bg-red-100 text-red-800",
+      return_requested: "bg-orange-100 text-orange-800",
+      return_approved: "bg-blue-100 text-blue-800",
+      return_label_generated: "bg-purple-100 text-purple-800",
+      return_in_transit: "bg-orange-100 text-orange-800",
+      return_received: "bg-green-100 text-green-800",
+      return_rejected: "bg-red-100 text-red-800",
     };
     return colors[status] || "bg-gray-100 text-gray-800";
   };
@@ -107,6 +113,12 @@ export function OrdersManagement({
       shipped: "Enviado",
       delivered: "Entregue",
       cancelled: "Cancelado",
+      return_requested: "Devolução Solicitada",
+      return_approved: "Devolução Aprovada",
+      return_label_generated: "Etiqueta de Devolução Gerada",
+      return_in_transit: "Devolução em Trânsito",
+      return_received: "Devolução Recebida",
+      return_rejected: "Devolução Rejeitada",
     };
     return labels[status] || status;
   };

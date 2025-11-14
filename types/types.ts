@@ -9,6 +9,8 @@ export interface Product {
   discount?: number | null;
   isNew?: boolean;
   isFeatured?: boolean;
+  pieces?: number | null;
+  dimensions?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -25,6 +27,8 @@ export interface SerializableProduct {
   discount?: number | null;
   isNew?: boolean;
   isFeatured?: boolean;
+  pieces?: number | null;
+  dimensions?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -39,6 +43,8 @@ export interface ProductFormData {
   discount?: string;
   isNew?: boolean;
   isFeatured?: boolean;
+  pieces?: string;
+  dimensions?: string;
 }
 
 export interface CartItem {

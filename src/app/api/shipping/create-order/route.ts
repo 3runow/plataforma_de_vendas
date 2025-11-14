@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
 
     // Criar pedido no Melhor Envio
     const response = await axios.post(
-      `${MELHOR_ENVIO_API}/shipment`,
+      `${MELHOR_ENVIO_API}/shipmentn`,
       shippingData,
       {
         headers: {
