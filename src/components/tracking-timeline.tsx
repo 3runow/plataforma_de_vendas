@@ -1,9 +1,22 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { Package, MapPin, Clock, CheckCircle, XCircle, Truck } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { useState, useEffect, useCallback } from "react";
+import {
+  Package,
+  MapPin,
+  Clock,
+  CheckCircle,
+  XCircle,
+  Truck,
+} from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 interface TrackingEvent {
   id: number;
@@ -31,14 +44,36 @@ interface TrackingTimelineProps {
   refreshInterval?: number; // em segundos
 }
 
-export function TrackingTimeline({ 
-  trackingCode, 
-  autoRefresh = true, 
-  refreshInterval = 60 
+export function TrackingTimeline({
+  trackingCode,
+  autoRefresh = true,
+  refreshInterval = 60,
 }: TrackingTimelineProps) {
   const [tracking, setTracking] = useState<TrackingData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const fetchTracking = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`/api/shipping/track/${trackingCode}`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Erro ao buscar rastreamento");
+      }
+
+      setTracking(data.tracking);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Erro ao buscar rastreamento"
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [trackingCode]);
 
   useEffect(() => {
     if (trackingCode) {
@@ -49,49 +84,29 @@ export function TrackingTimeline({
         return () => clearInterval(interval);
       }
     }
-  }, [trackingCode]);
-
-  const fetchTracking = async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await fetch(`/api/shipping/track/${trackingCode}`);
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Erro ao buscar rastreamento');
-      }
-
-      setTracking(data.tracking);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao buscar rastreamento');
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [trackingCode, fetchTracking, autoRefresh, refreshInterval]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return new Intl.DateTimeFormat('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
+    return new Intl.DateTimeFormat("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     }).format(date);
   };
 
   const getStatusIcon = (status: string) => {
     const statusLower = status.toLowerCase();
-    
-    if (statusLower.includes('entregue') || statusLower.includes('delivered')) {
+
+    if (statusLower.includes("entregue") || statusLower.includes("delivered")) {
       return <CheckCircle className="h-6 w-6 text-green-500" />;
     }
-    if (statusLower.includes('cancelado') || statusLower.includes('canceled')) {
+    if (statusLower.includes("cancelado") || statusLower.includes("canceled")) {
       return <XCircle className="h-6 w-6 text-red-500" />;
     }
-    if (statusLower.includes('postado') || statusLower.includes('posted')) {
+    if (statusLower.includes("postado") || statusLower.includes("posted")) {
       return <Truck className="h-6 w-6 text-blue-500" />;
     }
     return <Package className="h-6 w-6 text-orange-500" />;
@@ -99,17 +114,17 @@ export function TrackingTimeline({
 
   const getStatusColor = (status: string) => {
     const statusLower = status.toLowerCase();
-    
-    if (statusLower.includes('entregue') || statusLower.includes('delivered')) {
-      return 'bg-green-500';
+
+    if (statusLower.includes("entregue") || statusLower.includes("delivered")) {
+      return "bg-green-500";
     }
-    if (statusLower.includes('cancelado') || statusLower.includes('canceled')) {
-      return 'bg-red-500';
+    if (statusLower.includes("cancelado") || statusLower.includes("canceled")) {
+      return "bg-red-500";
     }
-    if (statusLower.includes('postado') || statusLower.includes('posted')) {
-      return 'bg-blue-500';
+    if (statusLower.includes("postado") || statusLower.includes("posted")) {
+      return "bg-blue-500";
     }
-    return 'bg-orange-500';
+    return "bg-orange-500";
   };
 
   if (loading && !tracking) {
@@ -169,14 +184,20 @@ export function TrackingTimeline({
               Rastreamento de Envio
             </CardTitle>
             <CardDescription className="mt-1">
-              Código: <span className="font-mono font-semibold">{tracking.code}</span>
+              Código:{" "}
+              <span className="font-mono font-semibold">{tracking.code}</span>
             </CardDescription>
             <CardDescription>
               Protocolo: <span className="font-mono">{tracking.protocol}</span>
             </CardDescription>
           </div>
-          <Button onClick={fetchTracking} variant="outline" size="sm" disabled={loading}>
-            {loading ? 'Atualizando...' : 'Atualizar'}
+          <Button
+            onClick={fetchTracking}
+            variant="outline"
+            size="sm"
+            disabled={loading}
+          >
+            {loading ? "Atualizando..." : "Atualizar"}
           </Button>
         </div>
       </CardHeader>
@@ -185,30 +206,40 @@ export function TrackingTimeline({
         <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
           <div className="rounded-lg border bg-gray-50 p-3">
             <p className="text-xs text-gray-500">Criado</p>
-            <p className="text-sm font-medium">{formatDate(tracking.createdAt)}</p>
+            <p className="text-sm font-medium">
+              {formatDate(tracking.createdAt)}
+            </p>
           </div>
           {tracking.paidAt && (
             <div className="rounded-lg border bg-gray-50 p-3">
               <p className="text-xs text-gray-500">Pago</p>
-              <p className="text-sm font-medium">{formatDate(tracking.paidAt)}</p>
+              <p className="text-sm font-medium">
+                {formatDate(tracking.paidAt)}
+              </p>
             </div>
           )}
           {tracking.postedAt && (
             <div className="rounded-lg border bg-gray-50 p-3">
               <p className="text-xs text-gray-500">Postado</p>
-              <p className="text-sm font-medium">{formatDate(tracking.postedAt)}</p>
+              <p className="text-sm font-medium">
+                {formatDate(tracking.postedAt)}
+              </p>
             </div>
           )}
           {tracking.deliveredAt && (
             <div className="rounded-lg border bg-green-50 p-3">
               <p className="text-xs text-green-700">Entregue</p>
-              <p className="text-sm font-medium text-green-800">{formatDate(tracking.deliveredAt)}</p>
+              <p className="text-sm font-medium text-green-800">
+                {formatDate(tracking.deliveredAt)}
+              </p>
             </div>
           )}
           {tracking.canceledAt && (
             <div className="rounded-lg border bg-red-50 p-3">
               <p className="text-xs text-red-700">Cancelado</p>
-              <p className="text-sm font-medium text-red-800">{formatDate(tracking.canceledAt)}</p>
+              <p className="text-sm font-medium text-red-800">
+                {formatDate(tracking.canceledAt)}
+              </p>
             </div>
           )}
         </div>
@@ -226,7 +257,7 @@ export function TrackingTimeline({
                   {/* Ponto na timeline */}
                   <div
                     className={`absolute -left-[25px] h-6 w-6 rounded-full ${
-                      index === 0 ? getStatusColor(event.status) : 'bg-gray-300'
+                      index === 0 ? getStatusColor(event.status) : "bg-gray-300"
                     }`}
                   />
 
@@ -235,7 +266,9 @@ export function TrackingTimeline({
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <p className="font-medium">{event.status}</p>
-                        <p className="mt-1 text-sm text-gray-600">{event.description}</p>
+                        <p className="mt-1 text-sm text-gray-600">
+                          {event.description}
+                        </p>
                         {event.location && (
                           <p className="mt-1 flex items-center gap-1 text-xs text-gray-500">
                             <MapPin className="h-3 w-3" />

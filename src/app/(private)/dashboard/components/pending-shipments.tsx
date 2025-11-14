@@ -1,19 +1,24 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { 
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { useToast } from '@/hooks/use-toast';
-import { Package, Printer, Loader2, ExternalLink, AlertCircle } from 'lucide-react';
+} from "@/components/ui/table";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Package,
+  Printer,
+  Loader2,
+  ExternalLink,
+  AlertCircle,
+} from "lucide-react";
 
 interface Order {
   id: number;
@@ -49,11 +54,11 @@ interface PendingShipmentsProps {
   emptyMessage?: string;
 }
 
-export function PendingShipments({ 
-  orders, 
+export function PendingShipments({
+  orders,
   showPrintLabel = false,
   title = "Pedidos Aguardando Envio",
-  emptyMessage = "Nenhum pedido aguardando envio"
+  emptyMessage = "Nenhum pedido aguardando envio",
 }: PendingShipmentsProps) {
   const [loading, setLoading] = useState<number | null>(null);
   const { toast } = useToast();
@@ -61,18 +66,18 @@ export function PendingShipments({
   const handleGenerateLabel = async (order: Order) => {
     if (!order.shipment?.melhorEnvioId) {
       toast({
-        title: 'Erro',
-        description: 'Frete não foi comprado para este pedido',
-        variant: 'destructive',
+        title: "Erro",
+        description: "Frete não foi comprado para este pedido",
+        variant: "destructive",
       });
       return;
     }
 
     setLoading(order.id);
     try {
-      const response = await fetch('/api/shipping/label', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/shipping/label", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           shipmentId: order.shipment.melhorEnvioId,
         }),
@@ -81,24 +86,25 @@ export function PendingShipments({
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Erro ao gerar etiqueta');
+        throw new Error(data.error || "Erro ao gerar etiqueta");
       }
 
       // Abrir etiqueta em nova aba
-      window.open(data.labelUrl, '_blank');
+      window.open(data.labelUrl, "_blank");
 
       toast({
-        title: 'Sucesso!',
-        description: 'Etiqueta gerada e aberta em nova aba',
+        title: "Sucesso!",
+        description: "Etiqueta gerada e aberta em nova aba",
       });
 
       // Recarregar página para atualizar status
       setTimeout(() => window.location.reload(), 1000);
     } catch (error) {
       toast({
-        title: 'Erro',
-        description: error instanceof Error ? error.message : 'Erro ao gerar etiqueta',
-        variant: 'destructive',
+        title: "Erro",
+        description:
+          error instanceof Error ? error.message : "Erro ao gerar etiqueta",
+        variant: "destructive",
       });
     } finally {
       setLoading(null);
@@ -108,9 +114,9 @@ export function PendingShipments({
   const handlePurchaseShipping = async (order: Order) => {
     setLoading(order.id);
     try {
-      const response = await fetch('/api/shipping/purchase', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/shipping/purchase", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           orderId: order.id,
           serviceId: 1, // Você pode adicionar lógica para escolher o serviço
@@ -120,11 +126,11 @@ export function PendingShipments({
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Erro ao comprar frete');
+        throw new Error(data.error || "Erro ao comprar frete");
       }
 
       toast({
-        title: 'Frete Comprado!',
+        title: "Frete Comprado!",
         description: `Código de rastreio: ${data.shipment.trackingCode}`,
       });
 
@@ -132,9 +138,10 @@ export function PendingShipments({
       setTimeout(() => window.location.reload(), 1000);
     } catch (error) {
       toast({
-        title: 'Erro',
-        description: error instanceof Error ? error.message : 'Erro ao comprar frete',
-        variant: 'destructive',
+        title: "Erro",
+        description:
+          error instanceof Error ? error.message : "Erro ao comprar frete",
+        variant: "destructive",
       });
     } finally {
       setLoading(null);
@@ -142,17 +149,17 @@ export function PendingShipments({
   };
 
   const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
+    return new Date(date).toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
     });
   };
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
     }).format(value);
   };
 
@@ -160,7 +167,9 @@ export function PendingShipments({
     return (
       <div className="text-center py-12">
         <Package className="mx-auto h-12 w-12 text-gray-400" />
-        <h3 className="mt-2 text-sm font-semibold text-gray-900">{emptyMessage}</h3>
+        <h3 className="mt-2 text-sm font-semibold text-gray-900">
+          {emptyMessage}
+        </h3>
         <p className="mt-1 text-sm text-gray-500">
           Todos os pedidos estão processados
         </p>
@@ -201,14 +210,20 @@ export function PendingShipments({
                 <TableCell>
                   <div>
                     <div className="font-medium">{order.user.name}</div>
-                    <div className="text-xs text-gray-500">{order.user.email}</div>
+                    <div className="text-xs text-gray-500">
+                      {order.user.email}
+                    </div>
                   </div>
                 </TableCell>
                 <TableCell>
                   {order.address ? (
                     <div className="text-sm">
-                      <div>{order.address.city} - {order.address.state}</div>
-                      <div className="text-xs text-gray-500">CEP: {order.address.cep}</div>
+                      <div>
+                        {order.address.city} - {order.address.state}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        CEP: {order.address.cep}
+                      </div>
                     </div>
                   ) : (
                     <span className="text-xs text-gray-400">Não informado</span>
@@ -223,7 +238,9 @@ export function PendingShipments({
                 </TableCell>
                 <TableCell>
                   <div>
-                    <div className="font-medium">{formatCurrency(order.total)}</div>
+                    <div className="font-medium">
+                      {formatCurrency(order.total)}
+                    </div>
                     {order.shippingPrice && (
                       <div className="text-xs text-gray-500">
                         Frete: {formatCurrency(order.shippingPrice)}
@@ -234,22 +251,26 @@ export function PendingShipments({
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
                     {/* Mostra erro se houver */}
-                    {order.shipment?.status === 'error' && order.shipment?.error && (
-                      <div className="flex items-center gap-2 mr-2">
-                        <Badge variant="destructive" className="gap-1">
-                          <AlertCircle className="h-3 w-3" />
-                          Erro
-                        </Badge>
-                      </div>
-                    )}
+                    {order.shipment?.status === "error" &&
+                      order.shipment?.error && (
+                        <div className="flex items-center gap-2 mr-2">
+                          <Badge variant="destructive" className="gap-1">
+                            <AlertCircle className="h-3 w-3" />
+                            Erro
+                          </Badge>
+                        </div>
+                      )}
 
-                                        {/* Fluxo manual: Comprar Frete → Gerar Etiqueta → Imprimir */}
+                    {/* Fluxo manual: Comprar Frete → Gerar Etiqueta → Imprimir */}
                     {showPrintLabel && order.shipment?.labelUrl ? (
                       // Etapa 3: Imprimir etiqueta
                       <Button
                         size="sm"
                         variant="default"
-                        onClick={() => order.shipment?.labelUrl && window.open(order.shipment.labelUrl, '_blank')}
+                        onClick={() =>
+                          order.shipment?.labelUrl &&
+                          window.open(order.shipment.labelUrl, "_blank")
+                        }
                         className="gap-1"
                       >
                         <Printer className="h-4 w-4" />
@@ -291,11 +312,7 @@ export function PendingShipments({
 
                     {/* Link de rastreamento se disponível */}
                     {order.shipment?.trackingCode && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        asChild
-                      >
+                      <Button size="sm" variant="ghost" asChild>
                         <a
                           href={`/rastreamento/${order.shipment.trackingCode}`}
                           target="_blank"

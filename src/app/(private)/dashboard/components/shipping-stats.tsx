@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp, DollarSign, Package, BarChart } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DollarSign, BarChart } from "lucide-react";
 
 interface Stats {
   pending: number;
@@ -24,20 +24,23 @@ interface ShippingStatsProps {
 
 export function ShippingStats({ stats, orders }: ShippingStatsProps) {
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
     }).format(value);
   };
 
   // Calcular distribuição por transportadora
   const serviceCount = orders
     .filter((o) => o.shippingService)
-    .reduce((acc, order) => {
-      const service = order.shippingService || 'Não definido';
-      acc[service] = (acc[service] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    .reduce(
+      (acc, order) => {
+        const service = order.shippingService || "Não definido";
+        acc[service] = (acc[service] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
 
   const topServices = Object.entries(serviceCount)
     .sort(([, a], [, b]) => b - a)
@@ -73,7 +76,10 @@ export function ShippingStats({ stats, orders }: ShippingStatsProps) {
           <div className="space-y-2">
             {topServices.length > 0 ? (
               topServices.map(([service, count], index) => (
-                <div key={service} className="flex items-center justify-between">
+                <div
+                  key={service}
+                  className="flex items-center justify-between"
+                >
                   <span className="text-sm font-medium">
                     {index + 1}. {service}
                   </span>

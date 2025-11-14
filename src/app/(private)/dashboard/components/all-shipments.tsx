@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -9,8 +9,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { ExternalLink, Package, Truck } from 'lucide-react';
+} from "@/components/ui/table";
+import { ExternalLink, Truck } from "lucide-react";
 
 interface Order {
   id: number;
@@ -36,25 +36,33 @@ interface AllShipmentsProps {
   emptyMessage?: string;
 }
 
-export function AllShipments({ 
+export function AllShipments({
   orders,
   title = "Todos os Envios",
-  emptyMessage = "Nenhum envio encontrado"
+  emptyMessage = "Nenhum envio encontrado",
 }: AllShipmentsProps) {
   const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
+    return new Date(date).toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
     });
   };
 
   const getStatusBadge = (order: Order) => {
     if (order.shipment?.delivered) {
-      return <Badge variant="default" className="bg-green-600">Entregue</Badge>;
+      return (
+        <Badge variant="default" className="bg-green-600">
+          Entregue
+        </Badge>
+      );
     }
     if (order.shipment?.posted) {
-      return <Badge variant="default" className="bg-blue-600">Em trânsito</Badge>;
+      return (
+        <Badge variant="default" className="bg-blue-600">
+          Em trânsito
+        </Badge>
+      );
     }
     if (order.shipment) {
       return <Badge variant="secondary">Processando</Badge>;
@@ -66,7 +74,9 @@ export function AllShipments({
     return (
       <div className="text-center py-12">
         <Truck className="mx-auto h-12 w-12 text-gray-400" />
-        <h3 className="mt-2 text-sm font-semibold text-gray-900">{emptyMessage}</h3>
+        <h3 className="mt-2 text-sm font-semibold text-gray-900">
+          {emptyMessage}
+        </h3>
       </div>
     );
   }
@@ -112,24 +122,21 @@ export function AllShipments({
                   )}
                 </TableCell>
                 <TableCell>
-                  {order.shipment?.trackingCode || order.shippingTrackingCode ? (
+                  {order.shipment?.trackingCode ||
+                  order.shippingTrackingCode ? (
                     <code className="text-xs bg-gray-100 px-2 py-1 rounded">
-                      {order.shipment?.trackingCode || order.shippingTrackingCode}
+                      {order.shipment?.trackingCode ||
+                        order.shippingTrackingCode}
                     </code>
                   ) : (
                     <span className="text-xs text-gray-400">-</span>
                   )}
                 </TableCell>
-                <TableCell>
-                  {getStatusBadge(order)}
-                </TableCell>
+                <TableCell>{getStatusBadge(order)}</TableCell>
                 <TableCell className="text-right">
-                  {(order.shipment?.trackingCode || order.shippingTrackingCode) && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      asChild
-                    >
+                  {(order.shipment?.trackingCode ||
+                    order.shippingTrackingCode) && (
+                    <Button size="sm" variant="ghost" asChild>
                       <a
                         href={`/rastreamento/${order.shipment?.trackingCode || order.shippingTrackingCode}`}
                         target="_blank"

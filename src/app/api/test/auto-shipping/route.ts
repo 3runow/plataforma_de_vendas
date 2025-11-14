@@ -24,8 +24,11 @@ export async function POST(request: NextRequest) {
 
     // 1. Verificar configuração
     console.log("1️⃣ Verificando configuração...");
-    const autoPurchaseEnabled = process.env.MELHOR_ENVIO_AUTO_PURCHASE === 'true';
-    console.log(`   MELHOR_ENVIO_AUTO_PURCHASE: ${process.env.MELHOR_ENVIO_AUTO_PURCHASE}`);
+    const autoPurchaseEnabled =
+      process.env.MELHOR_ENVIO_AUTO_PURCHASE === "true";
+    console.log(
+      `   MELHOR_ENVIO_AUTO_PURCHASE: ${process.env.MELHOR_ENVIO_AUTO_PURCHASE}`
+    );
     console.log(`   Enabled: ${autoPurchaseEnabled}`);
 
     if (!autoPurchaseEnabled) {
@@ -81,7 +84,7 @@ export async function POST(request: NextRequest) {
     if (existingShipment) {
       console.log(`   ⚠️  Frete já foi comprado anteriormente`);
       console.log(`   Protocol: ${existingShipment.protocol}`);
-      
+
       return NextResponse.json(
         {
           warning: "Frete já comprado",
@@ -100,7 +103,7 @@ export async function POST(request: NextRequest) {
 
     // 4. Comprar frete
     console.log("\n4️⃣ Comprando frete automaticamente...");
-    
+
     const melhorEnvioToken = process.env.MELHOR_ENVIO_TOKEN;
     if (!melhorEnvioToken) {
       return NextResponse.json(
@@ -111,7 +114,7 @@ export async function POST(request: NextRequest) {
 
     const melhorEnvio = new MelhorEnvioService({
       token: melhorEnvioToken,
-      sandbox: process.env.MELHOR_ENVIO_SANDBOX === 'true',
+      sandbox: process.env.MELHOR_ENVIO_SANDBOX === "true",
     });
 
     const defaultServiceId = 1; // PAC
@@ -119,14 +122,15 @@ export async function POST(request: NextRequest) {
     const shippingResult = await melhorEnvio.purchaseShipping({
       serviceId: defaultServiceId,
       from: {
-        postal_code: process.env.STORE_CEP || process.env.STORE_ZIP_CODE || '11045003',
+        postal_code:
+          process.env.STORE_CEP || process.env.STORE_ZIP_CODE || "11045003",
       },
       to: {
         postal_code: fullOrder.address.cep,
         name: fullOrder.address.recipientName,
-        phone: fullOrder.user.phone || '1140004000',
+        phone: fullOrder.user.phone || "1140004000",
         email: fullOrder.user.email,
-        document: fullOrder.user.cpf || '12345678909',
+        document: fullOrder.user.cpf || "12345678909",
         address: fullOrder.address.street,
         number: fullOrder.address.number,
         district: fullOrder.address.neighborhood,
@@ -154,14 +158,17 @@ export async function POST(request: NextRequest) {
       message: "Frete comprado automaticamente",
       shipping: shippingResult,
     });
-
-  } catch (error: any) {
+  } catch (error) {
+    const err = error as Error & {
+      response?: { data?: unknown };
+      stack?: string;
+    };
     console.error("\n❌ Erro ao testar compra automática:", error);
     return NextResponse.json(
       {
         error: "Erro ao comprar frete",
-        message: error.message,
-        details: error.response?.data || error.stack,
+        message: err.message,
+        details: err.response?.data || err.stack,
       },
       { status: 500 }
     );

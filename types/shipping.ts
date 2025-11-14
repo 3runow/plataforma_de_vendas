@@ -185,7 +185,7 @@ export interface ShippingOptionsProps {
     quantity: number;
   }>;
   toZipCode: string;
-  onSelect: (option: ShippingQuote) => void;
+  onSelectAction: (option: ShippingQuote) => void;
 }
 
 export interface TrackingTimelineProps {
@@ -230,25 +230,25 @@ export interface ShippingServiceConfig {
 // ============================================
 
 export enum ShipmentStatus {
-  PENDING = 'pending',
-  PAID = 'paid',
-  GENERATED = 'generated',
-  POSTED = 'posted',
-  IN_TRANSIT = 'in_transit',
-  DELIVERED = 'delivered',
-  CANCELED = 'canceled',
-  ERROR = 'error'
+  PENDING = "pending",
+  PAID = "paid",
+  GENERATED = "generated",
+  POSTED = "posted",
+  IN_TRANSIT = "in_transit",
+  DELIVERED = "delivered",
+  CANCELED = "canceled",
+  ERROR = "error",
 }
 
 export enum TrackingEventStatus {
-  CREATED = 'created',
-  PAID = 'paid',
-  POSTED = 'posted',
-  IN_ROUTE = 'in_route',
-  OUT_FOR_DELIVERY = 'out_for_delivery',
-  DELIVERED = 'delivered',
-  EXCEPTION = 'exception',
-  CANCELED = 'canceled'
+  CREATED = "created",
+  PAID = "paid",
+  POSTED = "posted",
+  IN_ROUTE = "in_route",
+  OUT_FOR_DELIVERY = "out_for_delivery",
+  DELIVERED = "delivered",
+  EXCEPTION = "exception",
+  CANCELED = "canceled",
 }
 
 // ============================================
@@ -262,7 +262,7 @@ export class ShippingError extends Error {
     public details?: unknown
   ) {
     super(message);
-    this.name = 'ShippingError';
+    this.name = "ShippingError";
   }
 }
 
@@ -277,7 +277,11 @@ export interface ApiErrorResponse {
 // ============================================
 
 export interface WebhookEvent {
-  type: 'tracking.updated' | 'order.posted' | 'order.delivered' | 'order.canceled';
+  type:
+    | "tracking.updated"
+    | "order.posted"
+    | "order.delivered"
+    | "order.canceled";
   data: {
     order_id: string;
     tracking_code?: string;
@@ -295,7 +299,13 @@ export interface WebhookEvent {
 // TIPOS AUXILIARES
 // ============================================
 
-export type ShippingMethod = 'PAC' | 'SEDEX' | 'JADLOG' | 'AZUL' | 'LOGGI' | 'CORREIOS';
+export type ShippingMethod =
+  | "PAC"
+  | "SEDEX"
+  | "JADLOG"
+  | "AZUL"
+  | "LOGGI"
+  | "CORREIOS";
 
 export interface ShippingCalculation {
   products: Array<{
@@ -316,21 +326,15 @@ export interface ShippingCalculation {
 
 export interface ShippingLabel {
   url: string;
-  format: 'pdf' | 'zpl';
-  size: 'A4' | '10x15';
+  format: "pdf" | "zpl";
+  size: "A4" | "10x15";
 }
 
 // ============================================
 // EXPORTAÇÕES DE TIPOS DO PRISMA
 // ============================================
 
-export type {
-  Order,
-  Address,
-  Product,
-  CartItem,
-  User
-} from '@prisma/client';
+export type { Order, Address, Product, CartItem, User } from "@prisma/client";
 
 // ============================================
 // TIPOS ESTENDIDOS
