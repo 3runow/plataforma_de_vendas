@@ -1,4 +1,38 @@
 import React from "react";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Galeria de Produtos - Minifiguras Colecionáveis",
+  description:
+    "Confira nossa incrível galeria de minifiguras colecionáveis: Pokémon, Disney, Super Mario, Bob Esponja e muito mais. Personagens exclusivos e raros para sua coleção.",
+  keywords: [
+    "minifiguras",
+    "pikachu",
+    "mario",
+    "luigi",
+    "mickey",
+    "disney",
+    "pokemon",
+    "bob esponja",
+    "hello kitty",
+    "stitch",
+    "colecionáveis",
+  ],
+  openGraph: {
+    title: "Galeria de Produtos - Minifiguras Colecionáveis | Bricks",
+    description:
+      "Confira nossa incrível galeria de minifiguras colecionáveis: Pokémon, Disney, Super Mario e muito mais!",
+    type: "website",
+    images: [
+      {
+        url: "/assets/image/2025-09-BRICKS-PIKACHU.jpg",
+        width: 800,
+        height: 800,
+        alt: "Minifiguras Colecionáveis Bricks",
+      },
+    ],
+  },
+};
 
 const imageFiles = [
   "2025-09-BRICKS-ANGEL.jpg",

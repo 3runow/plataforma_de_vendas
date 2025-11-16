@@ -1,0 +1,21 @@
+# Bricks Store - Robots.txt
+# Atualizado em: 16 de novembro de 2025
+
+User-agent: *
+Allow: /
+Allow: /api/products
+Disallow: /api/auth/
+Disallow: /api/stripe/
+Disallow: /api/mercado-pago/
+Disallow: /api/melhor-envio/
+Disallow: /dashboard
+Disallow: /dashboard/*
+Disallow: /checkout
+Disallow: /carrinho
+Disallow: /favoritos
+
+# Crawl-delay for bots
+Crawl-delay: 1
+
+# Sitemap
+Sitemap: https://seudomain.com/sitemap.xml
