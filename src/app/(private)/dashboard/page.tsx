@@ -324,29 +324,31 @@ export default async function Dashboard() {
           </div>
 
           <Tabs defaultValue="overview" className="space-y-4 sm:space-y-6">
-            <TabsList className="grid w-full grid-cols-8 bg-white shadow-sm p-1 rounded-lg h-auto">
+            <TabsList className="grid w-full grid-cols-4 sm:grid-cols-4 lg:grid-cols-8 bg-white shadow-sm p-1 rounded-lg h-auto gap-1">
               <TabsTrigger
                 value="overview"
-                className="data-[state=active]:bg-purple-600 data-[state=active]:text-white transition-all text-xs sm:text-sm py-2 sm:py-2.5"
+                className="data-[state=active]:bg-purple-600 data-[state=active]:text-white transition-all text-[10px] sm:text-xs lg:text-sm py-1.5 sm:py-2 px-1 sm:px-2"
               >
-                <span className="hidden sm:inline">Visão Geral</span>
-                <span className="sm:hidden">Visão</span>
+                <span className="hidden lg:inline">Visão Geral</span>
+                <span className="lg:hidden">Visão</span>
               </TabsTrigger>
               <TabsTrigger
                 value="products"
-                className="data-[state=active]:bg-purple-600 data-[state=active]:text-white transition-all text-xs sm:text-sm py-2 sm:py-2.5"
+                className="data-[state=active]:bg-purple-600 data-[state=active]:text-white transition-all text-[10px] sm:text-xs lg:text-sm py-1.5 sm:py-2 px-1 sm:px-2"
               >
-                Produtos
+                <span className="hidden sm:inline">Produtos</span>
+                <span className="sm:hidden">Prod</span>
               </TabsTrigger>
               <TabsTrigger
                 value="stock"
-                className="relative data-[state=active]:bg-purple-600 data-[state=active]:text-white transition-all text-xs sm:text-sm py-2 sm:py-2.5"
+                className="relative data-[state=active]:bg-purple-600 data-[state=active]:text-white transition-all text-[10px] sm:text-xs lg:text-sm py-1.5 sm:py-2 px-1 sm:px-2"
               >
-                Estoque
+                <span className="hidden sm:inline">Estoque</span>
+                <span className="sm:hidden">Est</span>
                 {lowStockCount > 0 && (
                   <Badge
                     variant="destructive"
-                    className="ml-1 sm:ml-2 px-1 sm:px-1.5 py-0 text-xs animate-pulse"
+                    className="ml-0.5 sm:ml-1 lg:ml-2 px-0.5 sm:px-1 py-0 text-[8px] sm:text-xs animate-pulse"
                   >
                     {lowStockCount}
                   </Badge>
@@ -354,35 +356,38 @@ export default async function Dashboard() {
               </TabsTrigger>
               <TabsTrigger
                 value="orders"
-                className="data-[state=active]:bg-purple-600 data-[state=active]:text-white transition-all text-xs sm:text-sm py-2 sm:py-2.5"
+                className="data-[state=active]:bg-purple-600 data-[state=active]:text-white transition-all text-[10px] sm:text-xs lg:text-sm py-1.5 sm:py-2 px-1 sm:px-2"
               >
-                Pedidos
+                <span className="hidden sm:inline">Pedidos</span>
+                <span className="sm:hidden">Ped</span>
               </TabsTrigger>
               <TabsTrigger
                 value="shipping"
-                className="data-[state=active]:bg-purple-600 data-[state=active]:text-white transition-all text-xs sm:text-sm py-2 sm:py-2.5"
+                className="data-[state=active]:bg-purple-600 data-[state=active]:text-white transition-all text-[10px] sm:text-xs lg:text-sm py-1.5 sm:py-2 px-1 sm:px-2"
               >
-                Envios
+                <span className="hidden sm:inline">Envios</span>
+                <span className="sm:hidden">Env</span>
               </TabsTrigger>
               <TabsTrigger
                 value="returns"
-                className="data-[state=active]:bg-purple-600 data-[state=active]:text-white transition-all text-xs sm:text-sm py-2 sm:py-2.5"
+                className="data-[state=active]:bg-purple-600 data-[state=active]:text-white transition-all text-[10px] sm:text-xs lg:text-sm py-1.5 sm:py-2 px-1 sm:px-2"
               >
                 <span className="hidden sm:inline">Devoluções</span>
-                <span className="sm:hidden">Devol</span>
+                <span className="sm:hidden">Dev</span>
               </TabsTrigger>
               <TabsTrigger
                 value="users"
-                className="data-[state=active]:bg-purple-600 data-[state=active]:text-white transition-all text-xs sm:text-sm py-2 sm:py-2.5"
+                className="data-[state=active]:bg-purple-600 data-[state=active]:text-white transition-all text-[10px] sm:text-xs lg:text-sm py-1.5 sm:py-2 px-1 sm:px-2"
               >
                 <span className="hidden sm:inline">Usuários</span>
-                <span className="sm:hidden">Users</span>
+                <span className="sm:hidden">User</span>
               </TabsTrigger>
               <TabsTrigger
                 value="coupons"
-                className="data-[state=active]:bg-purple-600 data-[state=active]:text-white transition-all text-xs sm:text-sm py-2 sm:py-2.5"
+                className="data-[state=active]:bg-purple-600 data-[state=active]:text-white transition-all text-[10px] sm:text-xs lg:text-sm py-1.5 sm:py-2 px-1 sm:px-2"
               >
-                Cupons
+                <span className="hidden sm:inline">Cupons</span>
+                <span className="sm:hidden">Cup</span>
               </TabsTrigger>
             </TabsList>
 
