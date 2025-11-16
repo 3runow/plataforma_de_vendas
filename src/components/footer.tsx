@@ -262,8 +262,9 @@ export default function Footer() {
             </p>
             <p className="text-xs text-center md:text-right">
               Site desenvolvido por{" "}
-              <span className="font-semibold text-white">Bruno Barros</span> e{" "}
-              <span className="font-semibold text-white">Lucas Barros</span>
+              <a href="https://gblsolucoes.com.br" target="_blank" rel="noopener noreferrer">
+                <span className="font-semibold text-white">GBL Soluções</span>
+              </a>
             </p>
           </div>
         </div>
