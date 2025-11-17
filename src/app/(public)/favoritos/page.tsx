@@ -9,6 +9,9 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
+// Note: Client components can't export metadata directly
+// Metadata is handled by parent layout
+
 export default function FavoritosPage() {
   const { favorites } = useFavorites();
   const { addToCart } = useCart();

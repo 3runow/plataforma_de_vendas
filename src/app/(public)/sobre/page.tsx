@@ -1,5 +1,18 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Package, Shield, Truck, Heart } from "lucide-react";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Sobre Nós - Nossa História e Valores",
+  description:
+    "Conheça a Bricks Store, sua loja especializada em blocos de montar e minifiguras colecionáveis. Produtos de qualidade, entrega rápida e satisfação garantida.",
+  openGraph: {
+    title: "Sobre a Bricks Store - Nossa História",
+    description:
+      "Loja especializada em blocos de construção dos personagens mais amados do mundo. Qualidade, segurança e satisfação garantida.",
+    type: "website",
+  },
+};
 
 export default function Sobre() {
   const features = [
