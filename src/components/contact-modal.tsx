@@ -99,20 +99,10 @@ export default function ContactModal() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-3 sm:space-y-4 mb-4">
-            <div className="flex items-center gap-3 text-xs sm:text-sm">
+          <div className="pl-2">
+            <div className="flex items-center gap-2 text-xs sm:text-sm">
               <Mail className="h-4 w-4 text-[#022044] shrink-0" />
-              <span className="break-all">devlucasbarros@gmail.com</span>
-            </div>
-            <div className="flex items-center gap-3 text-xs sm:text-sm">
-              <WhatsAppLogo className="h-4 w-4 shrink-0" />
-              <a
-                href="https://wa.me/5513996222102"
-                target="_blank"
-                rel="noreferrer"
-              >
-                (13) 99622-2102
-              </a>
+              <span className="break-all">contato@oficialbricks.com.br</span>
             </div>
           </div>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">

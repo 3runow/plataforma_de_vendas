@@ -92,6 +92,17 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // PIX temporariamente desabilitado
+    if (paymentMethod === "pix") {
+      return NextResponse.json(
+        {
+          error: "Pagamento via PIX está temporariamente indisponível.",
+        },
+        { status: 400 }
+      );
+    }
+
+    /*
     // Configuração específica para PIX (simulado)
     if (paymentMethod === "pix") {
       // Para contas Stripe que não têm PIX habilitado, simulamos o comportamento
@@ -130,6 +141,7 @@ export async function POST(request: NextRequest) {
         isSimulated: true, // Flag para indicar que é simulado
       });
     }
+    */
 
     // Para cartão de crédito, usa automatic_payment_methods
     const paymentIntent = await stripe.paymentIntents.create({

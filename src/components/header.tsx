@@ -19,15 +19,17 @@ export default async function Header() {
     <header className="flex items-center justify-between flex-col border-b-2 border-zinc-400/10 bg-[#87CEEB]">
       <div className="relative w-full h-24 md:h-32 overflow-hidden flex items-center justify-center bg-[#87CEEB]">
         <div className="relative w-full h-full">
-          <Image
-            src="/assets/header.jpeg"
-            alt="Logo"
-            fill
-            className="object-cover"
+          <a href="https://oficialbricks.com.br/">
+            <Image
+              src="/assets/header.jpeg"
+              alt="Logo"
+              fill
+              className="object-cover"
             priority
             unoptimized
             draggable="false"
           />
+          </a>
         </div>
       </div>
 
