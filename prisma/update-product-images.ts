@@ -20,14 +20,43 @@ async function main() {
     // Exemplo: 2025-09-BRICKS-MARIO.jpg => BRICKS MARIO
     const match = file.match(/2025-09-BRICKS-(.*)\.jpg/i);
     if (!match) continue;
-    const productName = "BRICKS " + match[1].replace(/_/g, " ").replace(/-/g, " ").toUpperCase();
+    let productName = "BRICKS " + match[1].replace(/_/g, " ").replace(/-/g, " ").toUpperCase();
     const imageUrl = `/assets/image/${file}`;
 
-    // Atualiza produto no banco
-    const result = await prisma.product.updateMany({
+    // Tentar atualizar sem acento
+    let result = await prisma.product.updateMany({
       where: { name: productName },
       data: { imageUrl },
     });
+
+    // Se não encontrou, tentar com acento (ex: LEITÃO)
+    if (result.count === 0 && productName.includes("LEITAO")) {
+      const productNameAcento = productName.replace("LEITAO", "LEITÃO");
+      result = await prisma.product.updateMany({
+        where: { name: productNameAcento },
+        data: { imageUrl },
+      });
+      if (result.count > 0) {
+        updated++;
+        console.log(`✅ Atualizado: ${productNameAcento} -> ${imageUrl}`);
+        continue;
+      }
+    }
+
+    // Se não encontrou, tentar outros acentos comuns
+    if (result.count === 0 && productName.includes("URSO TOY STORY")) {
+      const productNameAcento = productName.replace("URSO TOY STORY", "URSO TOY STORY"); // Mantém igual, mas pode adaptar se necessário
+      result = await prisma.product.updateMany({
+        where: { name: productNameAcento },
+        data: { imageUrl },
+      });
+      if (result.count > 0) {
+        updated++;
+        console.log(`✅ Atualizado: ${productNameAcento} -> ${imageUrl}`);
+        continue;
+      }
+    }
+
     if (result.count > 0) {
       updated++;
       console.log(`✅ Atualizado: ${productName} -> ${imageUrl}`);
