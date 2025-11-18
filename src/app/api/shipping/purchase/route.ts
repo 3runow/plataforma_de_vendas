@@ -74,6 +74,16 @@ export async function POST(request: NextRequest) {
       quantity: item.quantity,
     }));
 
+    // Determinar CPF do destinatário (limpa e usa o salvo no user)
+    const cleanedCpf = order.user.cpf
+      ? String(order.user.cpf).replace(/\D/g, "")
+      : undefined;
+
+    // Determinar telefone do destinatário (limpa e usa o salvo no user)
+    const cleanedPhone = order.user.phone
+      ? String(order.user.phone).replace(/\D/g, "")
+      : "1140004000";
+
     // Preparar dados para compra de frete (formato API Melhor Envio)
     const shippingData = {
       serviceId,
@@ -92,9 +102,9 @@ export async function POST(request: NextRequest) {
       to: {
         postal_code: order.address.cep.replace(/\D/g, ""),
         name: order.address.recipientName,
-        phone: order.user.phone || "1140004000",
+        phone: cleanedPhone,
         email: order.user.email,
-        document: order.user.cpf,
+        document: cleanedCpf,
         address: order.address.street,
         number: order.address.number,
         district: order.address.neighborhood,

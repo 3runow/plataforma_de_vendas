@@ -1,6 +1,7 @@
+// This is an example-only file; type-safety is relaxed to avoid impacting app build.
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /**
  * EXEMPLO DE USO COMPLETO DA INTEGRAÇÃO DE ENVIO
  *
@@ -13,7 +14,7 @@
 // ============================================
 
 import { ShippingOptions } from "@/components/shipping-options";
-import { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 export function CheckoutPage() {
   const [selectedShipping, setSelectedShipping] = useState<{
@@ -25,7 +26,7 @@ export function CheckoutPage() {
     cep: "",
     // ... outros campos
   });
-  const [cartItems, setCartItems] = useState([
+  const [cartItems] = useState([
     { id: 1, quantity: 2 },
     { id: 3, quantity: 1 },
   ]);
@@ -81,7 +82,6 @@ export function CheckoutPage() {
 // 2. CRIAR PEDIDO - Salvar dados do frete selecionado
 // ============================================
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function createOrder(orderData: any) {
   const response = await fetch("/api/orders", {
     method: "POST",
@@ -107,7 +107,7 @@ async function createOrder(orderData: any) {
 // 3. APÓS CONFIRMAÇÃO DE PAGAMENTO - Comprar Frete
 // ============================================
 
-async function purchaseShippingForOrder(orderId, serviceId) {
+async function purchaseShippingForOrder(orderId: number, serviceId: number) {
   try {
     const response = await fetch("/api/shipping/purchase", {
       method: "POST",
@@ -136,7 +136,7 @@ async function purchaseShippingForOrder(orderId, serviceId) {
 }
 
 // Exemplo de uso após pagamento confirmado
-async function handlePaymentConfirmed(orderId) {
+async function handlePaymentConfirmed(orderId: number) {
   // Buscar dados do pedido
   const order = await fetch(`/api/orders/${orderId}`).then((r) => r.json());
 
@@ -163,7 +163,7 @@ async function handlePaymentConfirmed(orderId) {
 // 4. NO PAINEL ADMIN - Gerar e Imprimir Etiquetas
 // ============================================
 
-async function generateAndPrintLabel(shipmentId) {
+async function generateAndPrintLabel(shipmentId: number) {
   try {
     const response = await fetch("/api/shipping/label", {
       method: "POST",
@@ -188,7 +188,7 @@ async function generateAndPrintLabel(shipmentId) {
 }
 
 // Exemplo: Gerar etiquetas em lote
-async function printMultipleLabels(orderIds) {
+async function printMultipleLabels(orderIds: number[]) {
   for (const orderId of orderIds) {
     const order = await fetch(`/api/orders/${orderId}`).then((r) => r.json());
 
@@ -207,8 +207,12 @@ async function printMultipleLabels(orderIds) {
 
 import { TrackingTimeline } from "@/components/tracking-timeline";
 
-export function OrderTrackingPage({ orderId }) {
-  const [order, setOrder] = useState(null);
+interface OrderTrackingPageProps {
+  orderId: number;
+}
+
+export function OrderTrackingPage({ orderId }: OrderTrackingPageProps) {
+  const [order, setOrder] = useState<any>(null);
 
   useEffect(() => {
     fetch(`/api/orders/${orderId}`)

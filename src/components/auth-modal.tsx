@@ -29,6 +29,20 @@ const registerSchema = z
   .object({
     name: z.string().min(2, "Nome deve ter no mínimo 2 caracteres"),
     email: z.string().email("Email inválido"),
+    cpf: z
+      .string()
+      .min(11, "CPF deve ter 11 dígitos")
+      .regex(
+        /^\d{3}\.?\d{3}\.?\d{3}-?\d{2}$/,
+        "CPF inválido (use formato: 000.000.000-00)"
+      ),
+    phone: z
+      .string()
+      .min(10, "Telefone deve ter no mínimo 10 dígitos")
+      .regex(
+        /^\(?\d{2}\)?\s?\d{4,5}-?\d{4}$/,
+        "Telefone inválido (use formato: (00) 00000-0000)"
+      ),
     password: z.string().min(6, "Senha deve ter no mínimo 6 caracteres"),
     confirmPassword: z.string().min(6, "Confirme sua senha"),
   })
@@ -323,6 +337,40 @@ export default function AuthModal({
                 {registerForm.formState.errors.name && (
                   <p className="text-sm text-red-500">
                     {registerForm.formState.errors.name.message}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {!isLogin && (
+              <div className="space-y-2">
+                <Label htmlFor="cpf">CPF</Label>
+                <Input
+                  id="cpf"
+                  placeholder="000.000.000-00"
+                  {...registerForm.register("cpf")}
+                  disabled={registerForm.formState.isSubmitting}
+                />
+                {registerForm.formState.errors.cpf && (
+                  <p className="text-sm text-red-500">
+                    {registerForm.formState.errors.cpf.message}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {!isLogin && (
+              <div className="space-y-2">
+                <Label htmlFor="phone">Telefone</Label>
+                <Input
+                  id="phone"
+                  placeholder="(00) 00000-0000"
+                  {...registerForm.register("phone")}
+                  disabled={registerForm.formState.isSubmitting}
+                />
+                {registerForm.formState.errors.phone && (
+                  <p className="text-sm text-red-500">
+                    {registerForm.formState.errors.phone.message}
                   </p>
                 )}
               </div>

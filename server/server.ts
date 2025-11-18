@@ -33,6 +33,15 @@ const app = new Elysia()
         .regex(/[A-Z]/, "Senha deve conter pelo menos uma letra maiúscula")
         .regex(/[a-z]/, "Senha deve conter pelo menos uma letra minúscula")
         .regex(/\d/, "Senha deve conter pelo menos um número"),
+      cpf: z
+        .string()
+        .min(11, "CPF deve ter 11 dígitos")
+        .max(14, "CPF inválido")
+        .regex(/^\d{3}\.?\d{3}\.?\d{3}-?\d{2}$/, "CPF inválido"),
+      phone: z
+        .string()
+        .min(10, "Telefone deve ter no mínimo 10 dígitos")
+        .max(15, "Telefone inválido"),
     });
 
     const parsed = schema.safeParse(body);
@@ -41,7 +50,7 @@ const app = new Elysia()
       return { error: parsed.error.issues[0]?.message || "Dados inválidos" };
     }
 
-    const { name, email, password } = parsed.data;
+    const { name, email, password, cpf, phone } = parsed.data;
 
     try {
       const existing = await prisma.user.findUnique({ where: { email } });
@@ -50,14 +59,27 @@ const app = new Elysia()
         return { error: "E-Mail já cadastrado." };
       }
 
+      // Limpar CPF (apenas dígitos)
+      const cleanCpf = cpf.replace(/\D/g, "");
+
+      // Verificar se CPF já existe
+      const existingCpf = await prisma.user.findUnique({
+        where: { cpf: cleanCpf },
+      });
+      if (existingCpf) {
+        set.status = 409;
+        return { error: "CPF já cadastrado." };
+      }
+
       const hashed = await bcrypt.hash(password, 10);
       const user = await prisma.user.create({
-        data: { name, email, password: hashed },
+        data: { name, email, password: hashed, cpf: cleanCpf, phone },
       });
 
       return { id: user.id, name: user.name, email: user.email };
     } catch (e: unknown) {
       set.status = 500;
+      console.error("Erro ao criar usuário:", e);
       return { error: "Erro ao criar usuário" };
     }
   })
@@ -98,7 +120,7 @@ const app = new Elysia()
         }
       );
 
-      set.headers["Set-Cookie"] = cookie.serialize("token", token, {
+  set.headers["Set-Cookie"] = cookie.serialize("token", token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "strict",
@@ -112,6 +134,7 @@ const app = new Elysia()
       };
     } catch (e: unknown) {
       set.status = 500;
+      console.error("Erro ao realizar login:", e);
       return { error: "Erro ao realizar login" };
     }
   })
@@ -317,6 +340,7 @@ const app = new Elysia()
 
       return product;
     } catch (e: unknown) {
+      console.error("Erro ao atualizar produto:", e);
       set.status = 500;
       return { error: "Erro ao atualizar produto" };
     }
@@ -358,6 +382,7 @@ const app = new Elysia()
 
       return { message: "Produto deletado com sucesso" };
     } catch (e: unknown) {
+      console.error("Erro ao deletar produto:", e);
       set.status = 500;
       return { error: "Erro ao deletar produto" };
     }
@@ -419,6 +444,7 @@ const app = new Elysia()
 
       return order;
     } catch (e: unknown) {
+      console.error("Erro ao atualizar pedido:", e);
       set.status = 500;
       return { error: "Erro ao atualizar pedido" };
     }
@@ -474,6 +500,7 @@ const app = new Elysia()
 
       return updatedUser;
     } catch (e: unknown) {
+      console.error("Erro ao atualizar usuário:", e);
       set.status = 500;
       return { error: "Erro ao atualizar usuário" };
     }
@@ -515,6 +542,7 @@ const app = new Elysia()
 
       return { message: "Usuário deletado com sucesso" };
     } catch (e: unknown) {
+      console.error("Erro ao deletar usuário:", e);
       set.status = 500;
       return { error: "Erro ao deletar usuário" };
     }

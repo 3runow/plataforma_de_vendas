@@ -15,7 +15,6 @@ import { Mail } from "lucide-react";
 import { Label } from "./ui/label";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
-import WhatsAppLogo from "./icons/whats-app";
 
 const contactSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório."),

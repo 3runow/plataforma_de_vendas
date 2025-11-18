@@ -99,7 +99,16 @@ export async function testCalculateShipping() {
       console.log(`✅ ${data.options.length} opções de frete encontradas\n`);
       
       console.log('📦 Opções disponíveis:');
-      data.options.forEach((option: any, index: number) => {
+      data.options.forEach(
+        (
+          option: {
+            company: string;
+            name: string;
+            discountedPrice: number;
+            deliveryTime: number;
+          },
+          index: number,
+        ) => {
         console.log(`\n${index + 1}. ${option.company} - ${option.name}`);
         console.log(`   Preço: R$ ${option.discountedPrice.toFixed(2)}`);
         console.log(`   Prazo: ${option.deliveryTime} dias úteis`);
@@ -213,10 +222,9 @@ export async function testListAgencies() {
     
     if (agencies.length > 0) {
       console.log('📍 Primeiras 5 agências:');
-      agencies.slice(0, 5).forEach((agency: any, index: number) => {
+      agencies.slice(0, 5).forEach((agency, index) => {
         console.log(`\n${index + 1}. ${agency.name}`);
-        console.log(`   Endereço: ${agency.address.address}`);
-        console.log(`   Cidade: ${agency.address.city}`);
+        console.log(`   Endereço: ${agency.address}`);
       });
       console.log();
     }
@@ -354,7 +362,7 @@ export async function runAllTests() {
 // EXPORTAÇÕES
 // ============================================
 
-export default {
+const shippingTests = {
   testValidateToken,
   testCalculateShipping,
   testCheckBalance,
@@ -364,6 +372,8 @@ export default {
   testCompleteAPIFlow,
   runAllTests,
 };
+
+export default shippingTests;
 
 // ============================================
 // INSTRUÇÕES DE USO

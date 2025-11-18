@@ -20,7 +20,12 @@ async function main() {
     // Exemplo: 2025-09-BRICKS-MARIO.jpg => BRICKS MARIO
     const match = file.match(/2025-09-BRICKS-(.*)\.jpg/i);
     if (!match) continue;
-    let productName = "BRICKS " + match[1].replace(/_/g, " ").replace(/-/g, " ").toUpperCase();
+    const productName =
+      "BRICKS " +
+      match[1]
+        .replace(/_/g, " ")
+        .replace(/-/g, " ")
+        .toUpperCase();
     const imageUrl = `/assets/image/${file}`;
 
     // Tentar atualizar sem acento

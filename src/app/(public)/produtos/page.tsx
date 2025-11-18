@@ -1,4 +1,5 @@
 import React from "react";
+import Image from "next/image";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -67,8 +68,23 @@ export default function ProdutosPage() {
       <h1 className="text-2xl font-bold mb-6">Galeria de Produtos</h1>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 16 }}>
         {imageFiles.map((file) => (
-          <div key={file} style={{ width: 200, height: 200, border: "1px solid #eee", borderRadius: 8, overflow: "hidden" }}>
-            <img src={`/assets/image/${file}`} alt={file} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+          <div
+            key={file}
+            style={{
+              width: 200,
+              height: 200,
+              border: "1px solid #eee",
+              borderRadius: 8,
+              overflow: "hidden",
+              position: "relative",
+            }}
+          >
+            <Image
+              src={`/assets/image/${file}`}
+              alt={file}
+              fill
+              style={{ objectFit: "contain" }}
+            />
           </div>
         ))}
       </div>

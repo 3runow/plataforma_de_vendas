@@ -6,8 +6,22 @@ import { z } from "zod";
 const userUpdateSchema = z.object({
   name: z.string().min(2).max(100),
   email: z.string().email().max(255),
-  cpf: z.string().regex(/^\d{11}$/).optional().nullable(),
-  phone: z.string().regex(/^\d{10,11}$/).optional().nullable(),
+  cpf: z
+    .string()
+    .transform((val) => val.replace(/\D/g, ""))
+    .refine((val) => val.length === 11 || val.length === 0, {
+      message: "CPF deve ter 11 dígitos",
+    })
+    .optional()
+    .nullable(),
+  phone: z
+    .string()
+    .transform((val) => val.replace(/\D/g, ""))
+    .refine((val) => val.length >= 10 && val.length <= 11, {
+      message: "Telefone deve ter 10 ou 11 dígitos",
+    })
+    .optional()
+    .nullable(),
 });
 
 export async function PUT(request: Request) {
