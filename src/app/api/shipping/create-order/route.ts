@@ -45,6 +45,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
     }
 
+
+    console.log("Dados do pedido encontrado:", order);
+
     // Preparar dados para o Melhor Envio
     const shippingData = {
       service: order.shippingService || "1",
@@ -68,7 +71,7 @@ export async function POST(request: NextRequest) {
         name: order.address.recipientName,
         phone: order.user.phone || "11999999999",
         email: order.user.email,
-        document: order.user.cpf || "00000000000",
+        document: order.user.cpf,
         address: order.address.street,
         complement: order.address.complement || "",
         number: order.address.number,
