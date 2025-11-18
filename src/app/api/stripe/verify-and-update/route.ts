@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { verifyAuth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { buildOrderConfirmationEmail, sendEmail } from "@/lib/email";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
   apiVersion: "2025-02-24.acacia",
@@ -66,8 +67,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Se o pagamento foi confirmado no Stripe, atualiza o pedido
-    if (paymentIntent.status === "succeeded" && order.paymentStatus !== "approved") {
+  // Se o pagamento foi confirmado no Stripe, atualiza o pedido
+  if (paymentIntent.status === "succeeded" && order.paymentStatus !== "approved") {
       console.log(`✅ Verificando e atualizando pedido ${orderIdNum} com pagamento confirmado`);
 
       await prisma.order.update({
@@ -101,6 +102,74 @@ export async function POST(request: NextRequest) {
       console.log(`🛒 Carrinho limpo: ${deletedCartItems.count} itens removidos`);
 
       console.log(`✅ Pedido ${orderIdNum} atualizado para processamento`);
+
+      // Para métodos diferentes de boleto, o pedido é confirmado junto com o pagamento
+      // Aqui é o ponto certo para disparar o e-mail de confirmação baseado no pedido
+      try {
+        const fullOrder = await prisma.order.findUnique({
+          where: { id: orderIdNum },
+          include: {
+            user: true,
+            items: {
+              include: {
+                product: true,
+              },
+            },
+            address: true,
+          },
+        });
+
+        if (fullOrder?.user?.email) {
+          // Se o método for boleto, não disparamos aqui, pois o boleto ainda não foi pago
+          if (fullOrder.paymentMethod === "boleto") {
+            console.log(
+              "📧 Pedido com boleto: não enviar e-mail de confirmação ainda (aguarda pagamento)."
+            );
+          } else {
+            const html = buildOrderConfirmationEmail({
+              customerName: fullOrder.user.name || "Cliente",
+              orderId: fullOrder.id,
+              orderTotal: Number(fullOrder.total),
+              paymentMethod:
+                fullOrder.paymentMethod === "pix"
+                  ? "PIX"
+                  : "Cartão de crédito",
+              items: fullOrder.items.map((item) => ({
+                name: item.product.name,
+                quantity: item.quantity,
+                price: Number(item.price),
+                imageUrl:
+                  (item.product as unknown as { mainImageUrl?: string | null })
+                    .mainImageUrl || undefined,
+              })),
+            });
+
+            await sendEmail({
+              to: fullOrder.user.email,
+              subject: `Seu pedido #${fullOrder.id} foi recebido - Bricks`,
+              html,
+              text: `Olá, ${
+                fullOrder.user.name || "cliente"
+              }! Recebemos o seu pedido #${fullOrder.id}. Total: R$ ${fullOrder.total}.`,
+            });
+
+            console.log(
+              "📧 E-mail de confirmação de pedido enviado para",
+              fullOrder.user.email
+            );
+          }
+        } else {
+          console.warn(
+            "Não foi possível enviar e-mail de confirmação: usuário sem e-mail",
+            fullOrder?.userId
+          );
+        }
+      } catch (emailError) {
+        console.error(
+          "Erro ao enviar e-mail de confirmação de pedido (verify-and-update):",
+          emailError
+        );
+      }
     }
 
     // Retorna o status atualizado do pedido

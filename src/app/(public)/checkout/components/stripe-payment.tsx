@@ -28,6 +28,8 @@ const stripePromise = loadStripe(
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || ""
 );
 
+const PIX_ENABLED = false;
+
 interface PaymentData {
   amount: number;
   paymentMethod: string;
@@ -229,7 +231,12 @@ const StripePayment = forwardRef<StripePaymentRef, StripePaymentProps>(
     const [clientSecret, setClientSecret] = useState<string>("");
     const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
-    const [selectedMethod, setSelectedMethod] = useState(paymentMethod);
+    const normalizedInitialMethod =
+      !PIX_ENABLED && paymentMethod === "pix"
+        ? "credit_card"
+        : paymentMethod;
+    const [selectedMethod, setSelectedMethod] =
+      useState<StripePaymentProps["paymentMethod"]>(normalizedInitialMethod);
     const [payerNameInput, setPayerNameInput] = useState(payerName);
     const [payerCpfInput, setPayerCpfInput] = useState(payerCpf);
     const [installments, setInstallments] = useState("1");
@@ -254,12 +261,16 @@ const StripePayment = forwardRef<StripePaymentRef, StripePaymentProps>(
         icon: CreditCard,
         description: "Visa, Mastercard, Elo, etc",
       },
-      {
-        id: "pix",
-        name: "PIX",
-        icon: QrCode,
-        description: "Pagamento instantâneo",
-      },
+      ...(PIX_ENABLED
+        ? [
+            {
+              id: "pix",
+              name: "PIX",
+              icon: QrCode,
+              description: "Pagamento instantâneo",
+            },
+          ]
+        : []),
     ];
 
     const formatCPF = (value: string) => {
@@ -322,7 +333,7 @@ const StripePayment = forwardRef<StripePaymentRef, StripePaymentProps>(
         }
         // Se já tem clientSecret, o PaymentElement do Stripe já vai processar
         // O usuário precisa preencher os dados do cartão e clicar no botão interno
-      } else if (selectedMethod === "pix") {
+      } else if (PIX_ENABLED && selectedMethod === "pix") {
         if (!pixQrCode && !pixLoading) {
           setPixLoading(true);
           try {
@@ -365,6 +376,8 @@ const StripePayment = forwardRef<StripePaymentRef, StripePaymentProps>(
             setPixLoading(false);
           }
         }
+      } else if (!PIX_ENABLED && selectedMethod === "pix") {
+        onPaymentErrorAction("Pagamento via PIX está temporariamente indisponível.");
       }
     };
 
@@ -410,7 +423,12 @@ const StripePayment = forwardRef<StripePaymentRef, StripePaymentProps>(
             } finally {
               setLoading(false);
             }
-          } else if (selectedMethod === "pix" && !pixQrCode && !pixLoading) {
+          } else if (
+            PIX_ENABLED &&
+            selectedMethod === "pix" &&
+            !pixQrCode &&
+            !pixLoading
+          ) {
             setPixLoading(true);
             try {
               const response = await fetch(
@@ -476,16 +494,18 @@ const StripePayment = forwardRef<StripePaymentRef, StripePaymentProps>(
             await processPayment();
           }
           // O usuário precisa preencher os dados e usar o botão interno do CheckoutForm
-        } else if (selectedMethod === "pix") {
+        } else if (PIX_ENABLED && selectedMethod === "pix") {
           // PIX já foi processado automaticamente
           return;
+        } else if (!PIX_ENABLED && selectedMethod === "pix") {
+          onPaymentErrorAction("Pagamento via PIX está temporariamente indisponível.");
         }
       },
     }));
 
     // Polling para verificar status do pagamento PIX
     useEffect(() => {
-      if (!pixPaymentIntentId || paymentCompleted) return;
+      if (!PIX_ENABLED || !pixPaymentIntentId || paymentCompleted) return;
 
       const interval = setInterval(async () => {
         try {
@@ -675,7 +695,7 @@ const StripePayment = forwardRef<StripePaymentRef, StripePaymentProps>(
             )}
 
           {/* Informações específicas por método */}
-          {selectedMethod === "pix" && (
+          {PIX_ENABLED && selectedMethod === "pix" && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <div className="flex items-start gap-3">
                 <QrCode className="w-5 h-5 text-blue-600 mt-0.5" />
@@ -722,7 +742,7 @@ const StripePayment = forwardRef<StripePaymentRef, StripePaymentProps>(
           )}
 
           {/* Seção de PIX */}
-          {selectedMethod === "pix" && (
+          {PIX_ENABLED && selectedMethod === "pix" && (
             <div className="space-y-4">
               {pixLoading && !pixQrCode && (
                 <div className="flex items-center justify-center p-4">

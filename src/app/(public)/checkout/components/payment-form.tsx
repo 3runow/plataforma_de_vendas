@@ -17,7 +17,7 @@ import {
   FieldLegend,
   FieldDescription,
 } from "@/components/ui/field";
-import { CreditCard, QrCode, Barcode } from "lucide-react";
+import { CreditCard, Barcode } from "lucide-react";
 
 interface PaymentFormProps {
   paymentData: {
@@ -44,9 +44,11 @@ export default function PaymentForm({
   paymentData,
   onPaymentDataChangeAction,
 }: PaymentFormProps) {
-  const [selectedMethod, setSelectedMethod] = useState(
-    paymentData.paymentMethod || "credit_card"
-  );
+  const initialMethod =
+    paymentData.paymentMethod === "pix" || !paymentData.paymentMethod
+      ? "credit_card"
+      : paymentData.paymentMethod;
+  const [selectedMethod, setSelectedMethod] = useState(initialMethod);
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 10 }, (_, i) => currentYear + i);
 
@@ -83,12 +85,13 @@ export default function PaymentForm({
       icon: CreditCard,
       description: "Visa, Mastercard, Elo, etc",
     },
-    {
-      id: "pix",
-      name: "PIX",
-      icon: QrCode,
-      description: "Pagamento instantâneo",
-    },
+    // PIX temporariamente indisponível
+    // {
+    //   id: "pix",
+    //   name: "PIX",
+    //   icon: QrCode,
+    //   description: "Pagamento instantâneo",
+    // },
     {
       id: "boleto",
       name: "Boleto Bancário",
@@ -254,7 +257,8 @@ export default function PaymentForm({
           </>
         )}
 
-        {/* Formulário de PIX */}
+        {/* Formulário de PIX (desativado temporariamente) */}
+        {/*
         {selectedMethod === "pix" && (
           <div className="space-y-4">
             <Field>
@@ -292,6 +296,7 @@ export default function PaymentForm({
             </div>
           </div>
         )}
+        */}
 
         {/* Formulário de Boleto */}
         {selectedMethod === "boleto" && (

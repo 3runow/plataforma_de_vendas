@@ -228,16 +228,24 @@ export default function CheckoutPage() {
 
       try {
         console.log("Criando pedido com dados:", {
-          address: addressData,
+          address: {
+            ...addressData,
+            cep: addressData.cep.replace(/\D/g, ""),
+          },
           itemsCount: cartItems.length,
           shipping: selectedShipping,
         });
+
+        const addressPayload = {
+          ...addressData,
+          cep: addressData.cep.replace(/\D/g, ""),
+        };
 
         const orderRes = await fetch("/api/order/create", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            address: addressData,
+            address: addressPayload,
             items: cartItems.map((item) => ({
               productId: item.productId,
               quantity: item.quantity,
@@ -380,13 +388,14 @@ export default function CheckoutPage() {
 
   const handleSaveAddress = async () => {
     try {
+      const sanitizedCep = addressData.cep.replace(/\D/g, "");
       const response = await fetch("/api/addresses", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: addressData.addressName || "Endereço Principal",
           recipientName: addressData.recipientName,
-          cep: addressData.cep,
+          cep: sanitizedCep,
           street: addressData.street,
           number: addressData.number,
           complement: addressData.complement || null,
@@ -477,11 +486,15 @@ export default function CheckoutPage() {
       }
 
       // Cria o pedido (sem reduzir estoque ainda)
+      const sanitizedCep = addressData.cep.replace(/\D/g, "");
       const orderRes = await fetch("/api/order/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          address: addressData,
+          address: {
+            ...addressData,
+            cep: sanitizedCep,
+          },
           items: cartItems.map((item) => ({
             productId: item.id,
             quantity: item.quantity,
