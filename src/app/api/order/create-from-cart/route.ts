@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyAuth } from "@/lib/auth";
+import { buildOrderConfirmationEmail, sendEmail } from "@/lib/email";
 
 export async function POST(request: NextRequest) {
   try {
@@ -82,7 +83,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Criar o pedido
-    const order = await prisma.order.create({
+  const order = await prisma.order.create({
       data: {
         userId: user.id,
         addressId: defaultAddress.id,
@@ -115,6 +116,48 @@ export async function POST(request: NextRequest) {
       total: order.total,
       itemsCount: order.items.length,
     });
+
+    // Enviar e-mail de confirmação de pedido
+    try {
+      const userData = await prisma.user.findUnique({
+        where: { id: user.id },
+      });
+
+      if (userData?.email) {
+        const html = buildOrderConfirmationEmail({
+          customerName: userData.name || "Cliente",
+          orderId: order.id,
+          orderTotal: Number(order.total),
+          paymentMethod: "Pagamento via Bricks", // pode ser ajustado depois com o método real
+          items: order.items.map((item) => ({
+            name: item.product.name,
+            quantity: item.quantity,
+            price: Number(item.price),
+            imageUrl:
+              (item.product as unknown as { mainImageUrl?: string | null })
+                .mainImageUrl || undefined,
+          })),
+        });
+
+        await sendEmail({
+          to: userData.email,
+          subject: `Seu pedido #${order.id} foi recebido - Bricks`,
+          html,
+          text: `Olá, ${
+            userData.name || "cliente"
+          }! Recebemos o seu pedido #${order.id}. Total: R$ ${order.total}.`,
+        });
+
+        console.log("E-mail de confirmação de pedido enviado para", userData.email);
+      } else {
+        console.warn(
+          "Usuário sem e-mail cadastrado, não foi possível enviar confirmação.",
+          user.id
+        );
+      }
+    } catch (emailError) {
+      console.error("Erro ao enviar e-mail de confirmação de pedido:", emailError);
+    }
 
     return NextResponse.json({
       success: true,

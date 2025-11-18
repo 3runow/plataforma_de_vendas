@@ -55,17 +55,13 @@ export default function ContactModal() {
     setErrorMsg("");
 
     try {
-      const response = await fetch(
-        "https://formsubmit.co/ajax/devlucasbarros@gmail.com",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
-          body: JSON.stringify(data),
-        }
-      );
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
 
       if (response.ok) {
         setSuccessMsg("Mensagem enviada com sucesso!");
