@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import * as cookie from "cookie";
 import { prisma } from "../src/lib/prisma";
+import { getMelhorEnvioService } from "../src/lib/melhor-envio";
 
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
@@ -545,6 +546,516 @@ const app = new Elysia()
       console.error("Erro ao deletar usuário:", e);
       set.status = 500;
       return { error: "Erro ao deletar usuário" };
+    }
+  })
+
+  // ===== WEBHOOKS MELHOR ENVIO =====
+  // Webhook para rastreamento de entregas
+  .post("/api/webhooks/melhor-envio/tracking", async ({ body, set }) => {
+    const timestamp = new Date().toISOString();
+    console.log(`\n${"=".repeat(80)}`);
+    console.log(`📦 [${timestamp}] WEBHOOK MELHOR ENVIO RECEBIDO`);
+    console.log(`${"=".repeat(80)}`);
+    console.log("Payload completo:", JSON.stringify(body, null, 2));
+    console.log(`${"=".repeat(80)}\n`);
+
+    try {
+      const webhookData = body as {
+        tracking?: string;
+        status?: string;
+        substatus?: string[];
+        message?: string;
+        created_at?: string;
+        occurred_at?: string;
+        location?: {
+          city?: string;
+          state?: string;
+        };
+        // Campos adicionais que o Melhor Envio pode enviar
+        order_id?: string;
+        service_id?: number;
+        agency?: string;
+        protocol?: string;
+      };
+
+      const trackingCode = webhookData.tracking;
+      const status = webhookData.status;
+      const message = webhookData.message || "";
+      const substatus = webhookData.substatus || [];
+
+      console.log("📋 Dados extraídos do webhook:");
+      console.log(`  - Tracking Code: ${trackingCode}`);
+      console.log(`  - Status: ${status}`);
+      console.log(`  - Sub-status: ${substatus.join(", ")}`);
+      console.log(`  - Mensagem: ${message}`);
+
+      if (!trackingCode) {
+        console.error("❌ Código de rastreamento não fornecido no webhook");
+        set.status = 400;
+        return { error: "Código de rastreamento não fornecido" };
+      }
+
+      // Buscar o shipment pelo código de rastreamento
+      const shipment = await prisma.shipment.findFirst({
+        where: { trackingCode },
+        include: { 
+          order: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                }
+              }
+            }
+          } 
+        },
+      });
+
+      if (!shipment) {
+        console.warn(`⚠️  Shipment não encontrado para o código: ${trackingCode}`);
+        console.warn(`   Tentando buscar por melhorEnvioId...`);
+        
+        // Tentar buscar pelo melhorEnvioId
+        const shipmentByMEId = webhookData.order_id 
+          ? await prisma.shipment.findFirst({
+              where: { melhorEnvioId: webhookData.order_id },
+              include: { 
+                order: {
+                  include: {
+                    user: {
+                      select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                      }
+                    }
+                  }
+                } 
+              },
+            })
+          : null;
+
+        if (!shipmentByMEId) {
+          set.status = 404;
+          return { error: "Envio não encontrado" };
+        }
+        
+        console.log(`✅ Shipment encontrado via melhorEnvioId`);
+        // Atualizar o tracking code se estava faltando
+        if (!shipmentByMEId.trackingCode) {
+          await prisma.shipment.update({
+            where: { id: shipmentByMEId.id },
+            data: { trackingCode },
+          });
+          console.log(`📝 Tracking code ${trackingCode} adicionado ao shipment ${shipmentByMEId.id}`);
+        }
+      }
+
+      const finalShipment = shipment || (await prisma.shipment.findFirst({
+        where: webhookData.order_id ? { melhorEnvioId: webhookData.order_id } : undefined,
+        include: { 
+          order: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                }
+              }
+            }
+          } 
+        },
+      }));
+
+      if (!finalShipment) {
+        set.status = 404;
+        return { error: "Envio não encontrado" };
+      }
+
+      console.log(`\n✅ Shipment encontrado:`);
+      console.log(`  - ID: ${finalShipment.id}`);
+      console.log(`  - Order ID: ${finalShipment.orderId}`);
+      console.log(`  - Status atual: ${finalShipment.status}`);
+      console.log(`  - Cliente: ${finalShipment.order.user.name} (${finalShipment.order.user.email})`);
+
+      // Criar evento de rastreamento
+      const location = webhookData.location
+        ? `${webhookData.location.city || ""}, ${webhookData.location.state || ""}`.trim()
+        : null;
+
+      const trackingEvent = await prisma.trackingEvent.create({
+        data: {
+          shipmentId: finalShipment.id,
+          status: status || "unknown",
+          message,
+          location: location || undefined,
+          date: webhookData.occurred_at
+            ? new Date(webhookData.occurred_at)
+            : new Date(),
+        },
+      });
+
+      console.log(`\n📝 Evento de rastreamento criado:`);
+      console.log(`  - ID: ${trackingEvent.id}`);
+      console.log(`  - Status: ${trackingEvent.status}`);
+      console.log(`  - Localização: ${location || "N/A"}`);
+      console.log(`  - Data: ${trackingEvent.date.toISOString()}`);
+
+      // Atualizar status do shipment baseado no status recebido
+      const updateData: {
+        status: string;
+        delivered?: boolean;
+        deliveredAt?: Date;
+        posted?: boolean;
+        postedAt?: Date;
+        canceled?: boolean;
+        canceledAt?: Date;
+        trackingCode?: string;
+      } = {
+        status: status || finalShipment.status,
+      };
+
+      // Garantir que o tracking code está salvo
+      if (trackingCode && !finalShipment.trackingCode) {
+        updateData.trackingCode = trackingCode;
+      }
+
+      let orderStatus: string | null = null;
+
+      // Mapear status do Melhor Envio para nosso sistema
+      // Referência: https://docs.melhorenvio.com.br/docs/status-de-rastreamento
+      const statusLower = status?.toLowerCase() || "";
+      
+      console.log(`\n🔄 Mapeando status "${status}"...`);
+
+      if (statusLower.includes("delivered") || statusLower.includes("entregue")) {
+        updateData.delivered = true;
+        updateData.deliveredAt = new Date();
+        updateData.status = "delivered";
+        orderStatus = "delivered";
+        console.log("  ✅ Status mapeado para: DELIVERED (Entregue)");
+      } else if (statusLower.includes("posted") || statusLower.includes("postado")) {
+        updateData.posted = true;
+        updateData.postedAt = new Date();
+        updateData.status = "posted";
+        orderStatus = "shipped";
+        console.log("  📮 Status mapeado para: POSTED (Postado) - Pedido será marcado como SHIPPED");
+      } else if (statusLower.includes("cancel") || statusLower.includes("cancelado")) {
+        updateData.canceled = true;
+        updateData.canceledAt = new Date();
+        updateData.status = "canceled";
+        orderStatus = "cancelled";
+        console.log("  ❌ Status mapeado para: CANCELED (Cancelado)");
+      } else if (statusLower.includes("transit") || statusLower.includes("transito")) {
+        updateData.status = "in_transit";
+        orderStatus = "shipped";
+        console.log("  🚚 Status mapeado para: IN_TRANSIT (Em trânsito)");
+      } else if (statusLower.includes("out_for_delivery") || statusLower.includes("saiu para entrega")) {
+        updateData.status = "out_for_delivery";
+        orderStatus = "shipped";
+        console.log("  🚗 Status mapeado para: OUT_FOR_DELIVERY (Saiu para entrega)");
+      } else if (statusLower.includes("released") || statusLower.includes("liberado")) {
+        updateData.status = "released";
+        orderStatus = "shipped";
+        console.log("  📦 Status mapeado para: RELEASED (Liberado)");
+      } else if (statusLower.includes("pending") || statusLower.includes("pendente")) {
+        updateData.status = "pending";
+        console.log("  ⏳ Status mapeado para: PENDING (Pendente)");
+      } else if (statusLower.includes("collecting") || statusLower.includes("coleta")) {
+        updateData.status = "collecting";
+        orderStatus = "processing";
+        console.log("  📥 Status mapeado para: COLLECTING (Em coleta)");
+      } else {
+        updateData.status = status || "unknown";
+        console.log(`  ℹ️  Status mantido como recebido: ${status || "unknown"}`);
+      }
+
+      // Atualizar shipment
+      const updatedShipment = await prisma.shipment.update({
+        where: { id: finalShipment.id },
+        data: updateData,
+      });
+
+      console.log(`\n✅ Shipment ${finalShipment.id} atualizado:`);
+      console.log(`  - Novo status: ${updatedShipment.status}`);
+      console.log(`  - Posted: ${updatedShipment.posted}`);
+      console.log(`  - Delivered: ${updatedShipment.delivered}`);
+      console.log(`  - Canceled: ${updatedShipment.canceled}`);
+
+      // Atualizar status do pedido
+      let updatedOrder = null;
+      if (orderStatus) {
+        const currentOrderStatus = finalShipment.order.status;
+        
+        // Evitar regressões de status (ex: não mudar de "delivered" para "shipped")
+        const statusPriority: { [key: string]: number } = {
+          pending: 1,
+          processing: 2,
+          shipped: 3,
+          delivered: 4,
+          cancelled: 5,
+        };
+
+        const currentPriority = statusPriority[currentOrderStatus] || 0;
+        const newPriority = statusPriority[orderStatus] || 0;
+
+        if (newPriority > currentPriority || orderStatus === "cancelled") {
+          updatedOrder = await prisma.order.update({
+            where: { id: finalShipment.orderId },
+            data: { 
+              status: orderStatus,
+              shippingTrackingCode: trackingCode || finalShipment.order.shippingTrackingCode,
+            },
+          });
+          
+          console.log(`\n🔄 Pedido ${finalShipment.orderId} atualizado:`);
+          console.log(`  - Status anterior: ${currentOrderStatus}`);
+          console.log(`  - Novo status: ${orderStatus}`);
+          console.log(`  - Tracking code: ${trackingCode || finalShipment.order.shippingTrackingCode || "N/A"}`);
+        } else {
+          console.log(`\n⚠️  Status do pedido não atualizado (evitando regressão):`);
+          console.log(`  - Status atual: ${currentOrderStatus} (prioridade ${currentPriority})`);
+          console.log(`  - Status recebido: ${orderStatus} (prioridade ${newPriority})`);
+        }
+      }
+
+      console.log(`\n${"=".repeat(80)}`);
+      console.log("✅ WEBHOOK PROCESSADO COM SUCESSO");
+      console.log(`${"=".repeat(80)}\n`);
+
+      return {
+        success: true,
+        message: "Webhook processado com sucesso",
+        data: {
+          shipmentId: finalShipment.id,
+          orderId: finalShipment.orderId,
+          trackingCode: trackingCode,
+          shipmentStatus: updatedShipment.status,
+          orderStatus: updatedOrder?.status || finalShipment.order.status,
+          trackingEventId: trackingEvent.id,
+          statusUpdated: !!orderStatus,
+          delivered: updatedShipment.delivered,
+          posted: updatedShipment.posted,
+          canceled: updatedShipment.canceled,
+        },
+      };
+    } catch (e: unknown) {
+      console.error("\n" + "=".repeat(80));
+      console.error("❌ ERRO AO PROCESSAR WEBHOOK DO MELHOR ENVIO");
+      console.error("=".repeat(80));
+      console.error("Erro:", e);
+      console.error("Stack:", e instanceof Error ? e.stack : "N/A");
+      console.error("=".repeat(80) + "\n");
+      
+      set.status = 500;
+      return {
+        success: false,
+        error: "Erro ao processar webhook",
+        details: e instanceof Error ? e.message : String(e),
+      };
+    }
+  })
+
+  // Webhook genérico do Melhor Envio (para outros eventos)
+  .post("/api/webhooks/melhor-envio", async ({ body, set }) => {
+    console.log("📬 Webhook Melhor Envio (genérico) recebido:", JSON.stringify(body, null, 2));
+
+    try {
+      // Log para debug - adicionar lógica específica conforme necessário
+      const webhookData = body as {
+        event?: string;
+        order_id?: string;
+        tracking?: string;
+      };
+
+      console.log("Evento:", webhookData.event);
+      console.log("Order ID:", webhookData.order_id);
+      console.log("Tracking:", webhookData.tracking);
+
+      return {
+        success: true,
+        message: "Webhook recebido",
+      };
+    } catch (e: unknown) {
+      console.error("❌ Erro ao processar webhook genérico:", e);
+      set.status = 500;
+      return {
+        error: "Erro ao processar webhook",
+        details: e instanceof Error ? e.message : String(e),
+      };
+    }
+  })
+
+  // ===== SINCRONIZAÇÃO MELHOR ENVIO =====
+  // Rota para sincronizar pedidos com Melhor Envio (admin only)
+  .post("/api/sync-orders", async ({ request, set }) => {
+    const cookies = cookie.parse(request.headers.get("cookie") || "");
+    const token = cookies.token;
+
+    if (!token) {
+      set.status = 401;
+      return { error: "Não autenticado." };
+    }
+
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET) as {
+        id: number;
+        role: string;
+      };
+      const user = await prisma.user.findUnique({
+        where: { id: decoded.id },
+      });
+
+      if (!user || user.role !== "admin") {
+        set.status = 403;
+        return { error: "Acesso negado. Apenas administradores." };
+      }
+
+      console.log('\n🔄 Iniciando sincronização de pedidos via API...\n');
+
+      // Buscar todos os pedidos com shipment e melhorEnvioId
+      const ordersWithShipment = await prisma.order.findMany({
+        where: {
+          shipment: {
+            melhorEnvioId: {
+              not: null,
+            },
+          },
+        },
+        include: {
+          shipment: true,
+        },
+        orderBy: {
+          id: 'desc',
+        },
+      });
+
+      if (ordersWithShipment.length === 0) {
+        return {
+          success: true,
+          message: 'Nenhum pedido para sincronizar',
+          synchronized: 0,
+          errors: 0,
+        };
+      }
+
+      const melhorEnvio = getMelhorEnvioService();
+      let successCount = 0;
+      let errorCount = 0;
+      const errors: { orderId: number; error: string }[] = [];
+
+      for (const order of ordersWithShipment) {
+        if (!order.shipment?.melhorEnvioId) continue;
+
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const orderInfo = await melhorEnvio.getOrder(order.shipment.melhorEnvioId) as any;
+
+          // Preparar dados para atualização do shipment
+          const updateData: {
+            trackingCode?: string;
+            status: string;
+            protocol?: string;
+            serviceName?: string;
+            carrier?: string;
+            posted?: boolean;
+            postedAt?: Date;
+            delivered?: boolean;
+            deliveredAt?: Date;
+            canceled?: boolean;
+            canceledAt?: Date;
+          } = {
+            status: orderInfo.status || 'pending',
+          };
+
+          if (orderInfo.tracking) updateData.trackingCode = orderInfo.tracking;
+          if (orderInfo.protocol) updateData.protocol = orderInfo.protocol;
+          if (orderInfo.service) {
+            updateData.serviceName = orderInfo.service.name;
+            if (orderInfo.service.company) {
+              updateData.carrier = orderInfo.service.company.name;
+            }
+          }
+          if (orderInfo.posted_at) {
+            updateData.posted = true;
+            updateData.postedAt = new Date(orderInfo.posted_at);
+          }
+          if (orderInfo.delivered_at) {
+            updateData.delivered = true;
+            updateData.deliveredAt = new Date(orderInfo.delivered_at);
+          }
+          if (orderInfo.canceled_at) {
+            updateData.canceled = true;
+            updateData.canceledAt = new Date(orderInfo.canceled_at);
+          }
+
+          // Atualizar shipment
+          await prisma.shipment.update({
+            where: { id: order.shipment.id },
+            data: updateData,
+          });
+
+          // Atualizar pedido
+          const orderUpdateData: {
+            shippingTrackingCode?: string;
+            status?: string;
+          } = {};
+
+          if (updateData.trackingCode) {
+            orderUpdateData.shippingTrackingCode = updateData.trackingCode;
+          }
+
+          if (orderInfo.status === 'delivered') {
+            orderUpdateData.status = 'delivered';
+          } else if (orderInfo.status === 'posted' || orderInfo.status === 'in_transit') {
+            orderUpdateData.status = 'shipped';
+          } else if (orderInfo.status === 'canceled') {
+            orderUpdateData.status = 'cancelled';
+          }
+
+          if (Object.keys(orderUpdateData).length > 0) {
+            await prisma.order.update({
+              where: { id: order.id },
+              data: orderUpdateData,
+            });
+          }
+
+          successCount++;
+          console.log(`✅ Pedido #${order.id} sincronizado`);
+
+        } catch (error) {
+          errorCount++;
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          errors.push({ orderId: order.id, error: errorMessage });
+          console.error(`❌ Erro ao sincronizar pedido #${order.id}:`, errorMessage);
+        }
+
+        // Aguardar 300ms entre requisições
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+
+      console.log(`\n✅ Sincronização concluída: ${successCount} sucesso, ${errorCount} erros\n`);
+
+      return {
+        success: true,
+        message: 'Sincronização concluída',
+        total: ordersWithShipment.length,
+        synchronized: successCount,
+        errors: errorCount,
+        errorDetails: errors.length > 0 ? errors : undefined,
+      };
+
+    } catch (e: unknown) {
+      console.error("❌ Erro ao sincronizar pedidos:", e);
+      set.status = 500;
+      return {
+        success: false,
+        error: "Erro ao sincronizar pedidos",
+        details: e instanceof Error ? e.message : String(e),
+      };
     }
   });
 
