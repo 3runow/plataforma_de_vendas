@@ -147,38 +147,56 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Cria o pedido
-    const order = await prisma.order.create({
-      data: {
-        userId: user.id,
-        addressId,
-        total,
-        status: "pending",
-        shippingService: shipping?.company || null,
-        shippingPrice: shipping?.price || null,
-        shippingDeliveryTime: shipping?.deliveryTime || null,
-        items: {
-          create: items.map(
-            (item: { productId: number; quantity: number; price: number }) => ({
-              productId: item.productId,
-              quantity: item.quantity,
-              price: item.price,
-            })
-          ),
-        },
-      },
-      include: {
-        items: {
-          select: {
-            id: true,
-            productId: true,
-            quantity: true,
-            orderId: true,
-            product: true,
+    // Cria o pedido e reduz o estoque em uma transação
+    const order = await prisma.$transaction(async (tx) => {
+      // 1. Criar o pedido
+      const createdOrder = await tx.order.create({
+        data: {
+          userId: user.id,
+          addressId,
+          total,
+          status: "pending",
+          shippingService: shipping?.company || null,
+          shippingPrice: shipping?.price || null,
+          shippingDeliveryTime: shipping?.deliveryTime || null,
+          items: {
+            create: items.map(
+              (item: { productId: number; quantity: number; price: number }) => ({
+                productId: item.productId,
+                quantity: item.quantity,
+                price: item.price,
+              })
+            ),
           },
         },
-        address: true,
-      },
+        include: {
+          items: {
+            select: {
+              id: true,
+              productId: true,
+              quantity: true,
+              orderId: true,
+              product: true,
+            },
+          },
+          address: true,
+        },
+      });
+
+      // 2. Reduzir o estoque de cada produto
+      for (const item of items) {
+        await tx.product.update({
+          where: { id: item.productId },
+          data: {
+            stock: {
+              decrement: item.quantity,
+            },
+          },
+        });
+        console.log(`✅ Estoque do produto ${item.productId} reduzido em ${item.quantity} unidades`);
+      }
+
+      return createdOrder;
     });
 
     console.log("Pedido criado:", {

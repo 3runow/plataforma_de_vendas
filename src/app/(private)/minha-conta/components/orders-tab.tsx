@@ -11,8 +11,10 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
-import { Package, MapPin, Calendar, RotateCcw } from "lucide-react";
+import { Package, MapPin, Calendar, RotateCcw, Printer } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { RequestReturnModal } from "./request-return-modal";
+import { ReturnLabelModal } from "./return-label-modal";
 
 interface OrderItem {
   id: number;
@@ -65,6 +67,16 @@ export default function OrdersTab({ userId }: OrdersTabProps) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingReturn, setProcessingReturn] = useState<number | null>(null);
+  const [returnModalOpen, setReturnModalOpen] = useState(false);
+  const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+  const [labelModalOpen, setLabelModalOpen] = useState(false);
+  const [labelData, setLabelData] = useState<{
+    labelUrl: string;
+    trackingCode: string | null;
+    protocol: string | null;
+    carrier: string | null;
+    serviceName: string | null;
+  } | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -93,20 +105,18 @@ export default function OrdersTab({ userId }: OrdersTabProps) {
     fetchOrders();
   }, [userId]);
 
-  const handleRequestReturn = async (orderId: number) => {
-    if (!confirm('Tem certeza que deseja solicitar a devolução deste pedido?')) {
-      return;
-    }
+  const handleRequestReturn = async (reason: string) => {
+    if (!selectedOrderId) return;
 
-    setProcessingReturn(orderId);
+    setProcessingReturn(selectedOrderId);
 
     try {
-      const response = await fetch('/api/shipping/reverse-logistics', {
+      const response = await fetch('/api/order/request-return', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ orderId }),
+        body: JSON.stringify({ orderId: selectedOrderId, reason }),
       });
 
       const data = await response.json();
@@ -114,8 +124,12 @@ export default function OrdersTab({ userId }: OrdersTabProps) {
       if (response.ok) {
         toast({
           title: 'Solicitação enviada!',
-          description: 'Sua solicitação de devolução foi registrada. Entraremos em contato em breve.',
+          description: 'Sua solicitação de devolução foi registrada. Aguarde a aprovação do administrador.',
         });
+        
+        setReturnModalOpen(false);
+        setSelectedOrderId(null);
+        
         // Recarregar pedidos
         const res = await fetch("/api/order/list");
         const ordersData = await res.json();
@@ -139,6 +153,43 @@ export default function OrdersTab({ userId }: OrdersTabProps) {
     } finally {
       setProcessingReturn(null);
     }
+  };
+
+  const handleDownloadLabel = async (orderId: number) => {
+    try {
+      const response = await fetch(`/api/order/${orderId}/return-label`);
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setLabelData({
+          labelUrl: data.labelUrl,
+          trackingCode: data.trackingCode,
+          protocol: data.protocol,
+          carrier: data.carrier,
+          serviceName: data.serviceName,
+        });
+        setSelectedOrderId(orderId);
+        setLabelModalOpen(true);
+      } else {
+        toast({
+          title: 'Etiqueta não disponível',
+          description: data.message || data.error || 'Aguarde a aprovação do administrador.',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao buscar etiqueta:', error);
+      toast({
+        title: 'Erro',
+        description: 'Ocorreu um erro ao buscar a etiqueta de devolução.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const openReturnModal = (orderId: number) => {
+    setSelectedOrderId(orderId);
+    setReturnModalOpen(true);
   };
 
   return (
@@ -209,12 +260,28 @@ export default function OrdersTab({ userId }: OrdersTabProps) {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleRequestReturn(order.id)}
+                            onClick={() => openReturnModal(order.id)}
                             disabled={processingReturn === order.id}
                             className="flex items-center gap-2"
                           >
                             <RotateCcw className="h-4 w-4" />
                             {processingReturn === order.id ? 'Processando...' : 'Solicitar Devolução'}
+                          </Button>
+                        )}
+                        {(order.status === 'return_requested' || order.status === 'return_approved') && (
+                          <Badge variant="outline" className="bg-yellow-50">
+                            Aguardando processamento
+                          </Badge>
+                        )}
+                        {order.status === 'return_label_generated' && (
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => handleDownloadLabel(order.id)}
+                            className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
+                          >
+                            <Printer className="h-4 w-4" />
+                            Baixar Etiqueta de Devolução
                           </Button>
                         )}
                       </div>
@@ -289,6 +356,35 @@ export default function OrdersTab({ userId }: OrdersTabProps) {
           </div>
         )}
       </CardContent>
+
+      {/* Modals */}
+      <RequestReturnModal
+        isOpen={returnModalOpen}
+        onClose={() => {
+          setReturnModalOpen(false);
+          setSelectedOrderId(null);
+        }}
+        onSubmit={handleRequestReturn}
+        orderId={selectedOrderId || 0}
+        isLoading={processingReturn !== null}
+      />
+
+      {labelData && selectedOrderId && (
+        <ReturnLabelModal
+          isOpen={labelModalOpen}
+          onClose={() => {
+            setLabelModalOpen(false);
+            setLabelData(null);
+            setSelectedOrderId(null);
+          }}
+          labelUrl={labelData.labelUrl}
+          trackingCode={labelData.trackingCode}
+          protocol={labelData.protocol}
+          carrier={labelData.carrier}
+          serviceName={labelData.serviceName}
+          orderId={selectedOrderId}
+        />
+      )}
     </Card>
   );
 }
