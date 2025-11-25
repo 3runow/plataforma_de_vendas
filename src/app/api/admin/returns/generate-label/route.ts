@@ -410,9 +410,31 @@ export async function POST(request: NextRequest) {
 
     const shipmentDetails = await shipmentDetailsResponse.json();
 
-    // Salvar no banco de dados
-    const reverseShipment = await prisma.shipment.create({
-      data: {
+    // Salvar no banco de dados (upsert para evitar erro de constraint única)
+    const reverseShipment = await prisma.shipment.upsert({
+      where: {
+        orderId: order.id,
+      },
+      update: {
+        melhorEnvioId: cartItem.id,
+        protocol: checkout.purchase.protocol,
+        serviceId: selectedQuote.id,
+        serviceName: selectedQuote.name,
+        carrier: selectedQuote.company.name,
+        price: shipmentPrice,
+        discount: shipmentDiscount,
+        finalPrice: shipmentFinalPrice,
+        deliveryTime: shipmentDeliveryTime ?? undefined,
+        trackingCode: shipmentDetails.tracking || null,
+        status: "pending",
+        labelUrl: labelUrl,
+        paid: false,
+        posted: false,
+        delivered: false,
+        canceled: false,
+        updatedAt: new Date(),
+      },
+      create: {
         orderId: order.id,
         melhorEnvioId: cartItem.id,
         protocol: checkout.purchase.protocol,
@@ -422,7 +444,7 @@ export async function POST(request: NextRequest) {
         price: shipmentPrice,
         discount: shipmentDiscount,
         finalPrice: shipmentFinalPrice,
-        deliveryTime: shipmentDeliveryTime ?? undefined, // Usando o máximo de dias
+        deliveryTime: shipmentDeliveryTime ?? undefined,
         trackingCode: shipmentDetails.tracking || null,
         status: "pending",
         labelUrl: labelUrl,

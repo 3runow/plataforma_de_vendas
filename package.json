@@ -7,9 +7,7 @@
     "build": "prisma generate && next build --turbopack",
     "start": "next start",
     "lint": "eslint",
-    "postinstall": "prisma generate",
-    "sync:orders": "tsx scripts/sync-all-orders.ts",
-    "sync:scheduler": "tsx scheduler.ts"
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
