@@ -204,34 +204,59 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        // Criar pedido de teste
-        const order = await prisma.order.create({
-          data: {
-            userId: user.id,
-            addressId: address.id,
-            total: testProduct.price + 15.0,
-            status: "processing",
-            paymentStatus: "approved",
-            shippingService: "Correios",
-            shippingPrice: 15.0,
-            shippingDeliveryTime: 5,
-            items: {
-              create: [
-                {
-                  productId: testProduct.id,
-                  quantity: 1,
-                },
-              ],
-            },
-          },
-          include: {
-            items: {
-              include: {
-                product: true,
+        // Salvar userId para usar dentro da transação
+        const userId = user.id;
+
+        // Criar pedido de teste com redução de estoque
+        const order = await prisma.$transaction(async (tx) => {
+          // Verificar estoque do produto
+          if (testProduct.stock < 1) {
+            throw new Error(`Estoque insuficiente para ${testProduct.name}`);
+          }
+
+          // 1. Criar pedido
+          const createdOrder = await tx.order.create({
+            data: {
+              userId: userId,
+              addressId: address.id,
+              total: testProduct.price + 15.0,
+              status: "processing",
+              paymentStatus: "approved",
+              shippingService: "Correios",
+              shippingPrice: 15.0,
+              shippingDeliveryTime: 5,
+              items: {
+                create: [
+                  {
+                    productId: testProduct.id,
+                    quantity: 1,
+                    price: testProduct.price,
+                  },
+                ],
               },
             },
-            address: true,
-          },
+            include: {
+              items: {
+                include: {
+                  product: true,
+                },
+              },
+              address: true,
+            },
+          });
+
+          // 2. Reduzir estoque
+          await tx.product.update({
+            where: { id: testProduct.id },
+            data: {
+              stock: {
+                decrement: 1,
+              },
+            },
+          });
+          console.log(`✅ Estoque do produto ${testProduct.id} reduzido em 1 unidade`);
+
+          return createdOrder;
         });
 
         console.log("Pedido de teste criado:", order.id);
@@ -300,37 +325,63 @@ export async function POST(request: NextRequest) {
         }))
       );
 
-      // Criar pedido
-      const order = await prisma.order.create({
-        data: {
-          userId: user.id,
-          addressId: address.id,
-          total,
-          status: "processing",
-          paymentStatus: "approved",
-          shippingService: "Correios",
-          shippingPrice: shipping,
-          shippingDeliveryTime: 5,
-          items: {
-            create: cartItems.map((item) => ({
-              productId: item.productId,
-              quantity: item.quantity,
-              price: item.product.price,
-            })),
-          },
-        },
-        include: {
-          items: {
-            select: {
-              id: true,
-              productId: true,
-              quantity: true,
-              orderId: true,
-              product: true,
+      // Salvar userId para usar dentro da transação
+      const userId = user.id;
+
+      // Criar pedido e reduzir estoque em uma transação
+      const order = await prisma.$transaction(async (tx) => {
+        // 1. Criar pedido
+        const createdOrder = await tx.order.create({
+          data: {
+            userId: userId,
+            addressId: address.id,
+            total,
+            status: "processing",
+            paymentStatus: "approved",
+            shippingService: "Correios",
+            shippingPrice: shipping,
+            shippingDeliveryTime: 5,
+            items: {
+              create: cartItems.map((item) => ({
+                productId: item.productId,
+                quantity: item.quantity,
+                price: item.product.price,
+              })),
             },
           },
-          address: true,
-        },
+          include: {
+            items: {
+              select: {
+                id: true,
+                productId: true,
+                quantity: true,
+                orderId: true,
+                product: true,
+              },
+            },
+            address: true,
+          },
+        });
+
+        // 2. Reduzir estoque de cada produto
+        for (const item of cartItems) {
+          await tx.product.update({
+            where: { id: item.productId },
+            data: {
+              stock: {
+                decrement: item.quantity,
+              },
+            },
+          });
+          console.log(`✅ Estoque do produto ${item.productId} reduzido em ${item.quantity} unidades`);
+        }
+
+        // 3. Limpar carrinho
+        await tx.cartItem.deleteMany({
+          where: { userId: userId },
+        });
+
+        return createdOrder;
       });
 
       console.log("Pedido criado:", order.id);
@@ -344,23 +395,6 @@ export async function POST(request: NextRequest) {
           price: item.product.price,
         }))
       );
-
-      // Reduzir estoque
-      for (const item of order.items) {
-        await prisma.product.update({
-          where: { id: item.productId },
-          data: {
-            stock: {
-              decrement: item.quantity,
-            },
-          },
-        });
-      }
-
-      // Limpar carrinho
-      await prisma.cartItem.deleteMany({
-        where: { userId: user.id },
-      });
 
       console.log("Processo concluído com sucesso");
 

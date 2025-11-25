@@ -82,32 +82,55 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Criar o pedido
-  const order = await prisma.order.create({
-      data: {
-        userId: user.id,
-        addressId: defaultAddress.id,
-        total,
-        status: "pending",
-        shippingService: "Correios",
-        shippingPrice: shipping,
-        shippingDeliveryTime: 5,
-        items: {
-          create: cartItems.map((item) => ({
-            productId: item.productId,
-            quantity: item.quantity,
-            price: item.product.price,
-          })),
-        },
-      },
-      include: {
-        items: {
-          include: {
-            product: true,
+    // Criar o pedido e reduzir o estoque em uma transação
+    const order = await prisma.$transaction(async (tx) => {
+      // 1. Criar o pedido
+      const createdOrder = await tx.order.create({
+        data: {
+          userId: user.id,
+          addressId: defaultAddress.id,
+          total,
+          status: "pending",
+          shippingService: "Correios",
+          shippingPrice: shipping,
+          shippingDeliveryTime: 5,
+          items: {
+            create: cartItems.map((item) => ({
+              productId: item.productId,
+              quantity: item.quantity,
+              price: item.product.price,
+            })),
           },
         },
-        address: true,
-      },
+        include: {
+          items: {
+            include: {
+              product: true,
+            },
+          },
+          address: true,
+        },
+      });
+
+      // 2. Reduzir o estoque de cada produto
+      for (const item of cartItems) {
+        await tx.product.update({
+          where: { id: item.productId },
+          data: {
+            stock: {
+              decrement: item.quantity,
+            },
+          },
+        });
+        console.log(`✅ Estoque do produto ${item.productId} reduzido em ${item.quantity} unidades`);
+      }
+
+      // 3. Limpar o carrinho do usuário
+      await tx.cartItem.deleteMany({
+        where: { userId: user.id },
+      });
+
+      return createdOrder;
     });
 
     console.log("Pedido criado com sucesso:", {
