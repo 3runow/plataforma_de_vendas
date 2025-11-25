@@ -3,14 +3,19 @@ set -e
 
 echo "==== DEPLOY OFICIALBRICKS ===="
 
+echo ">> Parando PM2"
+pm2 stop oficialbricks || true
+
 echo ">> Atualizando código (git fetch/reset)"
 git fetch origin main
 git reset --hard origin/main
 
-echo ">> Limpando cache e reinstalando dependências"
-rm -rf node_modules/.cache
+echo ">> Limpando node_modules, .next e package-lock.json"
+rm -rf node_modules
 rm -rf .next
-npm rebuild
+rm -f package-lock.json
+
+echo ">> Instalando dependências (npm install)"
 npm install
 
 echo ">> Gerando build (npm run build)"
