@@ -88,82 +88,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const sanitizeNumber = (value?: string | null) =>
-      value ? value.replace(/\D/g, '') : '';
-
-    const totalInsuranceValue = order.items.reduce((sum, item) => {
-      return sum + item.product.price * item.quantity;
-    }, 0);
-
-    const reversePayload = {
-      service: serviceId,
-      agency: null,
-      from: {
-        name: order.address.recipientName,
-        phone: sanitizeNumber(order.user.phone) || '11999999999',
-        email: order.user.email,
-        document: sanitizeNumber(order.user.cpf) || '00000000000',
-        address: order.address.street,
-        complement: order.address.complement || '',
-        number: order.address.number,
-        district: order.address.neighborhood,
-        city: order.address.city,
-        state_abbr: order.address.state,
-        country_id: 'BR',
-        postal_code: sanitizeNumber(order.address.cep),
-      },
-      to: {
-        name: process.env.COMPANY_NAME || 'Loja Bricks',
-        phone: sanitizeNumber(process.env.COMPANY_PHONE) || '11912345678',
-        email:
-          process.env.COMPANY_EMAIL ||
-          process.env.RESEND_FROM_EMAIL ||
-          'contato@lojabricks.com',
-        document: sanitizeNumber(process.env.COMPANY_DOCUMENT) || '00000000000',
-        address: process.env.COMPANY_ADDRESS || 'Av. Conselheiro Nebias',
-        complement: process.env.COMPANY_COMPLEMENT || '',
-        number: process.env.COMPANY_NUMBER || '669',
-        district: process.env.COMPANY_DISTRICT || 'Boqueirão',
-        city: process.env.COMPANY_CITY || 'Santos',
-        state_abbr: process.env.COMPANY_STATE || 'SP',
-        country_id: 'BR',
-        postal_code: sanitizeNumber(process.env.COMPANY_CEP) || '11045003',
-      },
-      products: order.items.map((item) => ({
-        name: item.product.name,
-        quantity: item.quantity,
-        unitary_value: item.product.price,
-      })),
-      volumes: [
-        {
-          height: 10,
-          width: 20,
-          length: 30,
-          weight: Math.max(
-            0.3,
-            order.items.reduce((sum, item) => sum + 0.3 * item.quantity, 0)
-          ),
-        },
-      ],
-      options: {
-        insurance_value: totalInsuranceValue,
-        receipt: false,
-        own_hand: false,
-        reverse: true,
-        non_commercial: false,
-      },
-    };
-
     const reverseResponse = await fetch(
       `${melhorEnvioBaseUrl}/me/shipment/reverse`,
       {
-        method: 'POST',
+        method: 'GET',
         headers: {
           Authorization: `Bearer ${melhorEnvioToken}`,
-          'Content-Type': 'application/json',
           Accept: 'application/json',
         },
-        body: JSON.stringify(reversePayload),
       }
     );
 
@@ -357,9 +289,9 @@ export async function POST(request: NextRequest) {
       protocol: shipmentDetails?.protocol,
     });
   } catch (error) {
-    console.error('Erro ao processar logística reversa:', error);
+    console.error('Erro na logística reversa', error);
     return NextResponse.json(
-      { error: 'Erro ao processar solicitação de devolução' },
+      { error: true, message: 'Erro logística reversa' },
       { status: 500 }
     );
   }
