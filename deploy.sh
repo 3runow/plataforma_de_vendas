@@ -7,7 +7,10 @@ echo ">> Atualizando código (git fetch/reset)"
 git fetch origin main
 git reset --hard origin/main
 
-echo ">> Instalando dependências (npm install)"
+echo ">> Limpando cache e reinstalando dependências"
+rm -rf node_modules/.cache
+rm -rf .next
+npm rebuild
 npm install
 
 echo ">> Gerando build (npm run build)"
