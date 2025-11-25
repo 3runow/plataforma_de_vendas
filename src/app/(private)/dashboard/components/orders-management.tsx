@@ -27,6 +27,7 @@ import { Badge } from "@/components/ui/badge";
 import { ShoppingCart, Eye } from "lucide-react";
 import { OrderDetailsModal } from "./order-details-modal";
 import { OrdersFilter } from "./orders-filter";
+import { SyncOrdersButton } from "@/components/sync-orders-button";
 
 interface Order {
   id: number;
@@ -172,13 +173,16 @@ export function OrdersManagement({
               Visualize e gerencie todos os pedidos da plataforma
             </CardDescription>
           </div>
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
             <OrdersFilter value={filterStatus} onValueChange={setFilterStatus} />
-            {filterStatus !== "all" && (
-              <div className="text-xs sm:text-sm text-muted-foreground">
-                {filteredOrders.length} pedido{filteredOrders.length !== 1 ? "s" : ""} encontrado{filteredOrders.length !== 1 ? "s" : ""}
-              </div>
-            )}
+            <div className="flex items-center gap-3">
+              {filterStatus !== "all" && (
+                <div className="text-xs sm:text-sm text-muted-foreground">
+                  {filteredOrders.length} pedido{filteredOrders.length !== 1 ? "s" : ""} encontrado{filteredOrders.length !== 1 ? "s" : ""}
+                </div>
+              )}
+              <SyncOrdersButton />
+            </div>
           </div>
         </div>
       </CardHeader>
