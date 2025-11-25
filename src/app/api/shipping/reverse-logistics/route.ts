@@ -80,120 +80,258 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const serviceId = order.shipment?.serviceId;
-    if (!serviceId) {
+    console.log('🔄 ========================================');
+    console.log('🔄 INICIANDO LOGÍSTICA REVERSA');
+    console.log('🔄 ========================================');
+    console.log(`📦 Pedido #${orderId}`);
+
+    // ETAPA 1: Calcular frete para logística reversa
+    console.log('1️⃣ Calculando frete reverso...');
+
+    const products = order.items.map((item) => ({
+      id: String(item.product.id),
+      width: 20, // Dimensão padrão
+      height: 10,
+      length: 30,
+      weight: 0.3,
+      insurance_value: item.product.price * item.quantity,
+      quantity: item.quantity,
+    }));
+
+    // Na logística reversa, FROM é o endereço do cliente e TO é o depósito da empresa
+    const quotePayload = {
+      from: {
+        postal_code: order.address.cep.replace(/\D/g, ''),
+      },
+      to: {
+        postal_code: process.env.COMPANY_CEP?.replace(/\D/g, '') || '11045003',
+      },
+      products,
+      options: {
+        receipt: false,
+        own_hand: false,
+        reverse: true, // ATIVA LOGÍSTICA REVERSA
+        insurance_value: products.reduce((sum, p) => sum + p.insurance_value, 0),
+      },
+    };
+
+    console.log('📊 Payload de cotação:', JSON.stringify(quotePayload, null, 2));
+
+    const quoteResponse = await fetch(
+      `${melhorEnvioBaseUrl}/me/shipment/calculate`,
+      {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${melhorEnvioToken}`,
+        },
+        body: JSON.stringify(quotePayload),
+      }
+    );
+
+    if (!quoteResponse.ok) {
+      const error = await quoteResponse.text();
+      console.error('❌ Erro na cotação:', error);
       return NextResponse.json(
-        { error: 'Informações de envio não disponíveis para este pedido' },
+        { error: 'Erro ao calcular frete de devolução', details: error },
+        { status: 500 }
+      );
+    }
+
+    const quotes = await quoteResponse.json();
+    console.log(`✅ ${quotes.length} cotações retornadas`);
+
+    // Buscar o serviço PAC ou o primeiro disponível
+    interface Quote {
+      error?: string;
+      name: string;
+      id: number;
+      price: number | string;
+      company: {
+        name: string;
+      };
+    }
+
+    const selectedQuote =
+      quotes.find((q: Quote) => !q.error && q.name === 'PAC') ||
+      quotes.find((q: Quote) => !q.error);
+
+    if (!selectedQuote) {
+      return NextResponse.json(
+        { error: 'Nenhum serviço de frete disponível para devolução' },
         { status: 400 }
       );
     }
 
-    const reverseResponse = await fetch(
-      `${melhorEnvioBaseUrl}/me/shipment/reverse`,
-      {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${melhorEnvioToken}`,
-          Accept: 'application/json',
+    console.log(`✅ Serviço selecionado: ${selectedQuote.name} - R$ ${selectedQuote.price}`);
+
+    // ETAPA 2: Adicionar ao carrinho
+    console.log('2️⃣ Adicionando ao carrinho...');
+
+    const cartPayload = {
+      service: selectedQuote.id,
+      agency: null,
+      from: {
+        name: order.user.name,
+        phone: order.user.phone?.replace(/\D/g, '') || '',
+        email: order.user.email,
+        document: order.user.cpf?.replace(/\D/g, '') || '',
+        address: order.address.street,
+        complement: order.address.complement || '',
+        number: order.address.number,
+        district: order.address.neighborhood,
+        city: order.address.city,
+        state_abbr: order.address.state,
+        country_id: 'BR',
+        postal_code: order.address.cep.replace(/\D/g, ''),
+      },
+      to: {
+        name: process.env.COMPANY_NAME || 'Loja Bricks',
+        phone: process.env.COMPANY_PHONE?.replace(/\D/g, '') || '11912345678',
+        email: process.env.COMPANY_EMAIL || 'devguilhermeverrone@gmail.com',
+        document: process.env.COMPANY_DOCUMENT?.replace(/\D/g, '') || '49100771899',
+        address: process.env.COMPANY_ADDRESS || 'Av. Conselheiro Nebias',
+        complement: process.env.COMPANY_COMPLEMENT || '',
+        number: process.env.COMPANY_NUMBER || '669',
+        district: process.env.COMPANY_DISTRICT || 'Boqueirão',
+        city: process.env.COMPANY_CITY || 'Santos',
+        state_abbr: process.env.COMPANY_STATE || 'SP',
+        country_id: 'BR',
+        postal_code: process.env.COMPANY_CEP?.replace(/\D/g, '') || '11045003',
+      },
+      products: order.items.map((item) => ({
+        name: item.product.name,
+        quantity: item.quantity,
+        unitary_value: item.product.price,
+      })),
+      volumes: [
+        {
+          height: products[0]?.height || 10,
+          width: products[0]?.width || 20,
+          length: products[0]?.length || 30,
+          weight: products.reduce((sum, p) => sum + p.weight * p.quantity, 0),
         },
+      ],
+      options: {
+        insurance_value: products.reduce((sum, p) => sum + p.insurance_value, 0),
+        receipt: false,
+        own_hand: false,
+        reverse: true, // LOGÍSTICA REVERSA
+        non_commercial: false,
+      },
+    };
+
+    console.log('📋 Payload do carrinho:', JSON.stringify(cartPayload, null, 2));
+
+    const cartResponse = await fetch(`${melhorEnvioBaseUrl}/me/cart`, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${melhorEnvioToken}`,
+      },
+      body: JSON.stringify(cartPayload),
+    });
+
+    if (!cartResponse.ok) {
+      const error = await cartResponse.text();
+      console.error('❌ Erro ao adicionar ao carrinho:', error);
+      return NextResponse.json(
+        { error: 'Erro ao adicionar devolução ao carrinho', details: error },
+        { status: 500 }
+      );
+    }
+
+    const cartItem = await cartResponse.json();
+    console.log('✅ Adicionado ao carrinho:', cartItem.id);
+
+    // ETAPA 3: Fazer checkout
+    console.log('3️⃣ Fazendo checkout...');
+
+    const checkoutResponse = await fetch(
+      `${melhorEnvioBaseUrl}/me/shipment/checkout`,
+      {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${melhorEnvioToken}`,
+        },
+        body: JSON.stringify({
+          orders: [cartItem.id],
+        }),
       }
     );
 
-    if (!reverseResponse.ok) {
-      let errorDetails: unknown;
-      try {
-        errorDetails = await reverseResponse.json();
-      } catch {
-        errorDetails = await reverseResponse.text();
-      }
-
-      console.error('Erro na logística reversa do Melhor Envio:', errorDetails);
+    if (!checkoutResponse.ok) {
+      const error = await checkoutResponse.text();
+      console.error('❌ Erro no checkout:', error);
       return NextResponse.json(
-        {
-          error: 'Não foi possível solicitar a logística reversa no Melhor Envio',
-          details: errorDetails,
-        },
-        { status: reverseResponse.status === 400 ? 400 : 502 }
+        { error: 'Erro ao fazer checkout da devolução', details: error },
+        { status: 500 }
       );
     }
 
-    const reverseData = await reverseResponse.json();
+    const checkout = await checkoutResponse.json();
+    console.log('✅ Checkout concluído:', checkout.purchase.protocol);
 
-    const reverseOrderIdRaw =
-      reverseData?.id ??
-      reverseData?.order_id ??
-      reverseData?.order?.id ??
-      (Array.isArray(reverseData?.orders)
-        ? reverseData.orders[0]?.id
-        : undefined) ??
-      reverseData?.data?.id;
-
-    const reverseOrderId = reverseOrderIdRaw
-      ? String(reverseOrderIdRaw)
-      : null;
-
-    if (!reverseOrderId) {
-      return NextResponse.json(
-        {
-          error: 'Melhor Envio não retornou o identificador da logística reversa',
-          details: reverseData,
-        },
-        { status: 502 }
-      );
-    }
+    // ETAPA 4: Gerar etiqueta
+    console.log('4️⃣ Gerando etiqueta...');
 
     const generateResponse = await fetch(
       `${melhorEnvioBaseUrl}/me/shipment/generate`,
       {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${melhorEnvioToken}`,
           Accept: 'application/json',
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${melhorEnvioToken}`,
         },
-        body: JSON.stringify({ orders: [reverseOrderId] }),
+        body: JSON.stringify({
+          orders: [cartItem.id],
+        }),
       }
     );
 
     if (!generateResponse.ok) {
-      const errorDetails = await generateResponse.text();
-      console.error('Erro ao gerar etiqueta de devolução:', errorDetails);
+      const error = await generateResponse.text();
+      console.error('❌ Erro ao gerar etiqueta:', error);
       return NextResponse.json(
-        { error: 'Erro ao gerar etiqueta de devolução', details: errorDetails },
-        { status: 502 }
+        { error: 'Erro ao gerar etiqueta de devolução', details: error },
+        { status: 500 }
       );
     }
 
-    const printResponse = await fetch(
-      `${melhorEnvioBaseUrl}/me/shipment/print`,
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${melhorEnvioToken}`,
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ orders: [reverseOrderId] }),
-      }
-    );
+    console.log('✅ Etiqueta gerada');
+
+    // ETAPA 5: Obter URL de impressão
+    console.log('5️⃣ Obtendo URL de impressão...');
+
+    const printResponse = await fetch(`${melhorEnvioBaseUrl}/me/shipment/print`, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${melhorEnvioToken}`,
+      },
+      body: JSON.stringify({
+        orders: [cartItem.id],
+      }),
+    });
 
     if (!printResponse.ok) {
-      const errorDetails = await printResponse.text();
-      console.error('Erro ao obter etiqueta de devolução:', errorDetails);
+      const error = await printResponse.text();
+      console.error('❌ Erro ao obter URL de impressão:', error);
       return NextResponse.json(
-        {
-          error: 'Erro ao recuperar a etiqueta de devolução',
-          details: errorDetails,
-        },
-        { status: 502 }
+        { error: 'Erro ao obter URL de impressão', details: error },
+        { status: 500 }
       );
     }
 
     const printData = await printResponse.json();
-    const labelUrl =
-      (printData && typeof printData === 'object' && 'url' in printData
-        ? (printData as { url?: string }).url
-        : Array.isArray(printData) && printData[0]?.url) || null;
+    const labelUrl = printData.url;
+    console.log('✅ URL da etiqueta:', labelUrl);
 
     if (!labelUrl) {
       return NextResponse.json(
@@ -202,38 +340,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // ETAPA 6: Buscar detalhes do envio
+    console.log('6️⃣ Buscando detalhes do envio...');
+
     const shipmentDetailsResponse = await fetch(
-      `${melhorEnvioBaseUrl}/me/orders/${reverseOrderId}`,
+      `${melhorEnvioBaseUrl}/me/orders/${cartItem.id}`,
       {
         headers: {
-          Authorization: `Bearer ${melhorEnvioToken}`,
           Accept: 'application/json',
+          Authorization: `Bearer ${melhorEnvioToken}`,
         },
       }
     );
 
     if (!shipmentDetailsResponse.ok) {
       const errorDetails = await shipmentDetailsResponse.text();
-      console.error('Erro ao consultar detalhes da devolução:', errorDetails);
-      return NextResponse.json(
-        {
-          error: 'Erro ao consultar rastreamento da devolução',
-          details: errorDetails,
-        },
-        { status: 502 }
-      );
+      console.error('❌ Erro ao consultar detalhes da devolução:', errorDetails);
     }
 
     const shipmentDetails = await shipmentDetailsResponse.json();
-
-    const trackingCode =
-      reverseData?.tracking ||
-      reverseData?.tracking_code ||
-      reverseData?.order?.tracking ||
-      shipmentDetails?.tracking ||
-      shipmentDetails?.melhorenvio_tracking ||
-      shipmentDetails?.protocol ||
-      reverseOrderId;
+    const trackingCode = shipmentDetails?.tracking || cartItem.id;
 
     if (!resend) {
       return NextResponse.json(
@@ -246,7 +372,7 @@ export async function POST(request: NextRequest) {
       where: { id: order.id },
       data: {
         status: 'return_label_generated',
-        melhorEnvioOrderId: reverseOrderId,
+        melhorEnvioOrderId: cartItem.id,
         shippingTrackingCode: trackingCode,
         updatedAt: new Date(),
       },
@@ -279,14 +405,18 @@ export async function POST(request: NextRequest) {
       `,
     });
 
+    console.log('✅ ========================================');
+    console.log('✅ LOGÍSTICA REVERSA CONCLUÍDA COM SUCESSO');
+    console.log('✅ ========================================');
+
     return NextResponse.json({
       success: true,
       message: 'Etiqueta de devolução gerada com sucesso',
       orderId: order.id,
-      reverseLogisticsId: reverseOrderId,
+      reverseLogisticsId: cartItem.id,
       trackingCode,
       labelUrl,
-      protocol: shipmentDetails?.protocol,
+      protocol: checkout.purchase.protocol,
     });
   } catch (error) {
     console.error('Erro na logística reversa', error);
