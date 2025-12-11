@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/accordion";
 import { useCart } from "@/contexts/cart-context";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ShoppingCart } from "lucide-react";
 import type { SerializableProduct } from "../../../../../../types/types";
@@ -83,8 +84,10 @@ export default function MainContent({
 
   // Carrinho: estado e helpers
   const { addToCart, cartItems } = useCart();
+  const router = useRouter();
   const [quantity, setQuantity] = useState(1);
   const [isAdding, setIsAdding] = useState(false);
+  const [isBuying, setIsBuying] = useState(false);
   const [added, setAdded] = useState(false);
 
   const isOutOfStock = stock === 0;
@@ -113,6 +116,14 @@ export default function MainContent({
     setAdded(true);
     setTimeout(() => setAdded(false), 1500);
     setQuantity(1);
+  }
+
+  async function handleBuyNow() {
+    if (isOutOfStock) return;
+    setIsBuying(true);
+    addToCart({ ...productBase }, quantity);
+    setIsBuying(false);
+    router.push("/checkout");
   }
 
   return (
@@ -196,6 +207,13 @@ export default function MainContent({
                   : existingInCart > 0
                     ? "Adicionar mais"
                     : "Adicionar ao carrinho"}
+            </Button>
+            <Button
+              className="flex-1 bg-[#0f3d91] hover:bg-[#0c3276] text-white"
+              onClick={handleBuyNow}
+              disabled={isOutOfStock || isBuying}
+            >
+              {isBuying ? "Indo para compra..." : "Comprar agora"}
             </Button>
             {added && (
               <span className="ml-2 text-green-600 font-medium">

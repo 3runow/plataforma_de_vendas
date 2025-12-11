@@ -1,6 +1,9 @@
+import path from "path";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Define explicit root to silence lockfile root warnings
+  outputFileTracingRoot: path.join(__dirname),
   env: {
     NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY: process.env.NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY,
   },

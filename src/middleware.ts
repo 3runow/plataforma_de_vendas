@@ -66,25 +66,9 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // Protege a rota de checkout - requer autenticação
+  // Checkout: manter o usuário na página e deixar o cliente pedir login inline
   if (pathname.startsWith("/checkout")) {
-    const token = req.cookies.get("token")?.value;
-    if (!token) {
-      const url = req.nextUrl.clone();
-      url.pathname = "/";
-      url.searchParams.set("login", "true");
-      return NextResponse.redirect(url);
-    }
-
-    try {
-      await verifyHS256(token, JWT_SECRET_KEY);
-      return NextResponse.next();
-    } catch {
-      const url = req.nextUrl.clone();
-      url.pathname = "/";
-      url.searchParams.set("login", "true");
-      return NextResponse.redirect(url);
-    }
+    return NextResponse.next();
   }
 
   // Protege a rota de dashboard - requer autenticação e role admin

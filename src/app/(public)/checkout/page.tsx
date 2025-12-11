@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/contexts/cart-context";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Lock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import type { StripePaymentRef } from "./components/stripe-payment";
@@ -18,6 +18,7 @@ import AddressForm from "./components/address-form";
 import OrderSummary from "./components/order-summary";
 import ShippingSelector from "./components/shipping-selector";
 import StripePayment from "./components/stripe-payment";
+import AuthModal from "@/components/auth-modal";
 import {
   Dialog,
   DialogContent,
@@ -67,6 +68,8 @@ export default function CheckoutPage() {
   const [selectedAddressId, setSelectedAddressId] = useState<number | null>(
     null
   );
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   // Controla se o usuário já avançou automaticamente (para evitar avanço forçado ao editar)
   const [hasAutoAdvanced, setHasAutoAdvanced] = useState({
@@ -129,56 +132,67 @@ export default function CheckoutPage() {
     cpf: "",
   });
 
-  // Carregar dados do usuário
-  useEffect(() => {
-    const loadUserData = async () => {
-      try {
-        const response = await fetch("/api/user/current");
-        if (response.ok) {
-          const data = await response.json();
-
-          // Preencher dados pessoais
-          setFormData({
-            name: data.name || "",
-            email: data.email || "",
-            cpf: data.cpf || "",
-            phone: data.phone || "",
-          });
-
-          // Carregar todos os endereços salvos
-          const addressesResponse = await fetch("/api/addresses");
-          if (addressesResponse.ok) {
-            const addresses = await addressesResponse.json();
-            setSavedAddresses(addresses);
-
-            // Preencher endereço padrão ou o primeiro se existir
-            if (addresses.length > 0) {
-              const defaultAddress =
-                addresses.find(
-                  (addr: { isDefault: boolean }) => addr.isDefault
-                ) || addresses[0];
-              setSelectedAddressId(defaultAddress.id);
-              setAddressData({
-                addressName: defaultAddress.recipientName || "",
-                cep: defaultAddress.cep || "",
-                street: defaultAddress.street || "",
-                number: defaultAddress.number || "",
-                complement: defaultAddress.complement || "",
-                neighborhood: defaultAddress.neighborhood || "",
-                city: defaultAddress.city || "",
-                state: defaultAddress.state || "",
-                recipientName: defaultAddress.recipientName || "",
-              });
-            }
-          }
-        }
-      } catch (error) {
-        console.error("Erro ao carregar dados do usuário:", error);
+  const checkAuthAndLoadUser = useCallback(async () => {
+    try {
+      const response = await fetch("/api/user/current");
+      if (!response.ok) {
+        setIsAuthenticated(false);
+        setShowAuthModal(true);
+        return;
       }
-    };
 
-    loadUserData();
+      setIsAuthenticated(true);
+      const data = await response.json();
+
+      setFormData({
+        name: data.name || "",
+        email: data.email || "",
+        cpf: data.cpf || "",
+        phone: data.phone || "",
+      });
+
+      const addressesResponse = await fetch("/api/addresses");
+      if (addressesResponse.ok) {
+        const addresses = await addressesResponse.json();
+        setSavedAddresses(addresses);
+
+        if (addresses.length > 0) {
+          const defaultAddress =
+            addresses.find((addr: { isDefault: boolean }) => addr.isDefault) ||
+            addresses[0];
+          setSelectedAddressId(defaultAddress.id);
+          setAddressData({
+            addressName: defaultAddress.recipientName || "",
+            cep: defaultAddress.cep || "",
+            street: defaultAddress.street || "",
+            number: defaultAddress.number || "",
+            complement: defaultAddress.complement || "",
+            neighborhood: defaultAddress.neighborhood || "",
+            city: defaultAddress.city || "",
+            state: defaultAddress.state || "",
+            recipientName: defaultAddress.recipientName || "",
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Erro ao carregar dados do usuário:", error);
+      setIsAuthenticated(false);
+      setShowAuthModal(true);
+    }
   }, []);
+
+  useEffect(() => {
+    checkAuthAndLoadUser();
+  }, [checkAuthAndLoadUser]);
+
+  useEffect(() => {
+    const handler = () => {
+      checkAuthAndLoadUser();
+      setShowAuthModal(false);
+    };
+    window.addEventListener("auth-change", handler);
+    return () => window.removeEventListener("auth-change", handler);
+  }, [checkAuthAndLoadUser]);
 
   // Atualizar endereço quando o usuário selecionar um endereço salvo
   useEffect(() => {
@@ -571,6 +585,33 @@ export default function CheckoutPage() {
           Voltar para a loja
         </Link>
 
+        {isAuthenticated === false && (
+          <div className="mb-6 rounded-lg border border-dashed border-primary/40 bg-primary/5 p-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-start gap-3">
+                <div className="mt-1 rounded-full bg-primary/10 p-2 text-primary">
+                  <Lock className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="font-semibold text-primary">
+                    Entre para finalizar sua compra
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Faça login sem sair desta página para salvar seus dados e acompanhar o pedido.
+                  </p>
+                </div>
+              </div>
+              <Button
+                type="button"
+                className="w-full sm:w-auto"
+                onClick={() => setShowAuthModal(true)}
+              >
+                Fazer login
+              </Button>
+            </div>
+          </div>
+        )}
+
         <h1 className="text-3xl font-bold mb-8">Finalizar Compra</h1>
 
         <form onSubmit={handleSubmit}>
@@ -938,6 +979,11 @@ export default function CheckoutPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AuthModal
+        open={showAuthModal}
+        onOpenChangeAction={setShowAuthModal}
+      />
     </div>
   );
 }

@@ -21,6 +21,7 @@ export default function ProductCard({
 }: ProductCardProps) {
   const [quantity, setQuantity] = useState(1);
   const [isAdding, setIsAdding] = useState(false);
+  const [isBuying, setIsBuying] = useState(false);
   const { addToFavorites, removeFromFavorites, isFavorite } = useFavorites();
   const router = useRouter();
   const productHref = `/produtos/${product.id}`;
@@ -46,6 +47,23 @@ export default function ProductCard({
       console.error("Erro ao adicionar ao carrinho:", error);
     } finally {
       setIsAdding(false);
+    }
+  };
+
+  const handleBuyNow = async (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    if (isOutOfStock) return;
+
+    setIsBuying(true);
+    try {
+      if (onAddToCart) {
+        await onAddToCart(product, Math.max(1, quantity));
+      }
+      router.push("/checkout");
+    } catch (error) {
+      console.error("Erro ao comprar:", error);
+    } finally {
+      setIsBuying(false);
     }
   };
 
@@ -196,7 +214,10 @@ export default function ProductCard({
           </div>
         </CardContent>
 
-        <CardFooter className="p-4 pt-0 flex gap-2 bg-[#f5f1e8]" onClick={(e) => e.stopPropagation()}>
+        <CardFooter
+          className="p-4 pt-0 flex  gap-2 bg-[#f5f1e8]"
+          onClick={(e) => e.stopPropagation()}
+        >
           {!isOutOfStock && (
             <div className="flex items-center border rounded-md bg-white">
               <Button
@@ -235,19 +256,20 @@ export default function ProductCard({
               </Button>
             </div>
           )}
+            <Button
+              className="flex-1 w-1/3"
+              onClick={handleAddToCart}
+              disabled={isOutOfStock || isAdding}
+            ><ShoppingCart className="h-4 w-4" />
+            </Button>
 
-          <Button
-            className="flex-1"
-            onClick={handleAddToCart}
-            disabled={isOutOfStock || isAdding}
-          >
-            <ShoppingCart className="mr-2 h-4 w-4" />
-            {isAdding
-              ? "Adicionando..."
-              : isOutOfStock
-                ? "Esgotado"
-                : "Adicionar"}
-          </Button>
+            <Button
+              className="flex-1 bg-[#0f3d91] hover:bg-[#0c3276] text-white"
+              onClick={handleBuyNow}
+              disabled={isOutOfStock || isBuying}
+            >
+              {isBuying ? "Indo para compra..." : "Comprar"}
+            </Button>
         </CardFooter>
       </Card>
     </div>
