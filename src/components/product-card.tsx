@@ -257,7 +257,7 @@ export default function ProductCard({
             </div>
           )}
             <Button
-              className="flex-1 w-1/3"
+              className="flex-1"
               onClick={handleAddToCart}
               disabled={isOutOfStock || isAdding}
             ><ShoppingCart className="h-4 w-4" />
