@@ -569,11 +569,6 @@ export default function CheckoutPage() {
     setSelectedShipping(null);
   };
 
-  // Não renderiza nada se carrinho vazio (middleware já verifica autenticação)
-  if (cartItems.length === 0) {
-    return null;
-  }
-
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="container mx-auto px-4">
@@ -611,8 +606,23 @@ export default function CheckoutPage() {
             </div>
           </div>
         )}
-
         <h1 className="text-3xl font-bold mb-8">Finalizar Compra</h1>
+
+        {cartItems.length === 0 && (
+          <div className="mb-8 rounded-lg border border-dashed bg-white p-6 text-center shadow-sm">
+            <p className="text-lg font-semibold text-gray-800 mb-2">
+              Seu carrinho está vazio.
+            </p>
+            <p className="text-sm text-muted-foreground mb-4">
+              Escolha seus produtos e volte para finalizar a compra.
+            </p>
+            <div className="flex justify-center gap-3">
+              <Button variant="outline" onClick={() => router.push("/")}>
+                Continuar comprando
+              </Button>
+            </div>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit}>
           <div className="grid lg:grid-cols-3 gap-8">
