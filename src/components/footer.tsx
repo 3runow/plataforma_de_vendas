@@ -153,18 +153,10 @@ export default function Footer() {
             </h3>
             <ul className="space-y-3">
               <li className="flex items-start gap-2 text-zinc-300">
-                <Phone className="h-4 w-4 mt-0.5 shrink-0" />
-                <div className="text-sm">
-                  <p className="font-medium text-zinc-50">SAC</p>
-                  <p>(11) 4002-8922</p>
-                  <p className="text-xs">Seg-Sex: 9h às 18h</p>
-                </div>
-              </li>
-              <li className="flex items-start gap-2 text-zinc-300">
                 <Mail className="h-4 w-4 mt-0.5 shrink-0" />
                 <div className="text-sm">
                   <p className="font-medium text-zinc-50">E-mail</p>
-                  <p>contato@bricks.com.br</p>
+                  <p>contato@oficialbricks.com.br</p>
                 </div>
               </li>
               <li className="flex items-start gap-2 text-zinc-300">
