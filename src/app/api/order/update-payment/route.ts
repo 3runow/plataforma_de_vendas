@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyAuth } from "@/lib/auth";
+import { PAYMENT_RELATED_STATUSES, type OrderStatus } from "@/constants/order-status";
 
 export async function POST(request: NextRequest) {
   try {
@@ -33,8 +34,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
     }
 
-    const nextStatus =
-      paymentStatus === "approved" ? "processing" : order.status;
+    let nextStatus = order.status as OrderStatus;
+
+    if (paymentStatus === "approved") {
+      nextStatus = "processing";
+    } else if (paymentStatus === "failed") {
+      nextStatus = "payment_incomplete";
+    } else if (
+      paymentStatus === "pending" &&
+      PAYMENT_RELATED_STATUSES.includes(order.status as OrderStatus)
+    ) {
+      nextStatus = "payment_pending";
+    }
 
     const updated = await prisma.order.update({
       where: { id: orderIdNum },

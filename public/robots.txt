@@ -5,7 +5,6 @@ User-agent: *
 Allow: /
 Allow: /api/products
 Disallow: /api/auth/
-Disallow: /api/stripe/
 Disallow: /api/mercado-pago/
 Disallow: /api/melhor-envio/
 Disallow: /dashboard

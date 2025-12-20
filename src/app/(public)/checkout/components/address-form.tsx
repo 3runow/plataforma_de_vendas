@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import {
   Field,
@@ -39,6 +40,10 @@ export default function AddressForm({
   addressData,
   onAddressDataChangeAction,
 }: AddressFormProps) {
+  const [isLoadingCep, setIsLoadingCep] = useState(false);
+  const [cepError, setCepError] = useState<string | null>(null);
+  const lastRequestedCepRef = useRef<string>("");
+
   const formatCEP = (value: string) => {
     return value
       .replace(/\D/g, "")
@@ -46,26 +51,65 @@ export default function AddressForm({
       .replace(/(-\d{3})\d+?$/, "$1");
   };
 
-  const handleCepBlur = async () => {
-    const cep = addressData.cep.replace(/\D/g, "");
-    if (cep.length === 8) {
-      try {
-        const response = await fetch(`/api/cep/${cep}`);
-        const data = await response.json();
-        if (!data.error) {
-          onAddressDataChangeAction({
-            ...addressData,
-            street: data.logradouro || "",
-            neighborhood: data.bairro || "",
-            city: data.localidade || "",
-            state: data.uf || "",
-          });
-        }
-      } catch (error) {
-        console.error("Erro ao buscar CEP:", error);
-      }
+  useEffect(() => {
+    const sanitizedCep = addressData.cep.replace(/\D/g, "");
+
+    if (sanitizedCep.length !== 8) {
+      setCepError(null);
+      setIsLoadingCep(false);
+      lastRequestedCepRef.current = "";
+      return;
     }
-  };
+
+    if (sanitizedCep === lastRequestedCepRef.current) {
+      return;
+    }
+
+    const controller = new AbortController();
+    lastRequestedCepRef.current = sanitizedCep;
+    setIsLoadingCep(true);
+    setCepError(null);
+
+    const fetchAddress = async () => {
+      try {
+        const response = await fetch(`/api/cep/${sanitizedCep}`, {
+          signal: controller.signal,
+        });
+        const data = await response.json();
+
+        if (!response.ok || data.error) {
+          throw new Error(data.error || "CEP não encontrado");
+        }
+
+        onAddressDataChangeAction({
+          ...addressData,
+          street: data.logradouro || "",
+          neighborhood: data.bairro || "",
+          city: data.localidade || "",
+          state: data.uf || "",
+        });
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          return;
+        }
+
+        setCepError(
+          error instanceof Error ? error.message : "Erro ao buscar CEP"
+        );
+        lastRequestedCepRef.current = "";
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsLoadingCep(false);
+        }
+      }
+    };
+
+    void fetchAddress();
+
+    return () => {
+      controller.abort();
+    };
+  }, [addressData, onAddressDataChangeAction]);
 
   return (
     <FieldGroup>
@@ -107,11 +151,17 @@ export default function AddressForm({
                   cep: formatCEP(e.target.value),
                 })
               }
-              onBlur={handleCepBlur}
               placeholder="00000-000"
               maxLength={9}
             />
-            <FieldDescription>Informe seu CEP</FieldDescription>
+            <FieldDescription>
+              {isLoadingCep
+                ? "Buscando endereço pelo CEP..."
+                : "Informe seu CEP"}
+            </FieldDescription>
+            {cepError && (
+              <p className="text-sm text-red-500">{cepError}</p>
+            )}
           </Field>
           <Field>
             <FieldLabel htmlFor="recipientName">Destinatário *</FieldLabel>

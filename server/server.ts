@@ -52,16 +52,35 @@ const app = new Elysia()
     }
 
     const { name, email, password, cpf, phone } = parsed.data;
+    const normalizedEmail = email.trim().toLowerCase();
 
     try {
-      const existing = await prisma.user.findUnique({ where: { email } });
-      if (existing) {
-        set.status = 409;
-        return { error: "E-Mail já cadastrado." };
-      }
-
-      // Limpar CPF (apenas dígitos)
       const cleanCpf = cpf.replace(/\D/g, "");
+
+      const existing = await prisma.user.findFirst({
+        where: { email: { equals: normalizedEmail, mode: "insensitive" } },
+      });
+      if (existing) {
+        if (!existing.isGuest) {
+          set.status = 409;
+          return { error: "E-Mail já cadastrado." };
+        }
+
+        const hashed = await bcrypt.hash(password, 10);
+        const updatedUser = await prisma.user.update({
+          where: { id: existing.id },
+          data: {
+            name,
+            email: normalizedEmail,
+            password: hashed,
+            cpf: cleanCpf,
+            phone,
+            isGuest: false,
+          },
+        });
+
+        return { id: updatedUser.id, name: updatedUser.name, email: updatedUser.email };
+      }
 
       // Verificar se CPF já existe
       const existingCpf = await prisma.user.findUnique({
@@ -74,7 +93,13 @@ const app = new Elysia()
 
       const hashed = await bcrypt.hash(password, 10);
       const user = await prisma.user.create({
-        data: { name, email, password: hashed, cpf: cleanCpf, phone },
+        data: {
+          name,
+          email: normalizedEmail,
+          password: hashed,
+          cpf: cleanCpf,
+          phone,
+        },
       });
 
       return { id: user.id, name: user.name, email: user.email };
@@ -99,12 +124,22 @@ const app = new Elysia()
     }
 
     const { email, password } = parsed.data;
+    const normalizedEmail = email.trim().toLowerCase();
 
     try {
-      const user = await prisma.user.findUnique({ where: { email } });
+      const user = await prisma.user.findFirst({
+        where: { email: { equals: normalizedEmail, mode: "insensitive" } },
+      });
       if (!user) {
         set.status = 404;
         return { error: "Usuário não encontrado." };
+      }
+
+      if (user.email !== normalizedEmail) {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { email: normalizedEmail },
+        });
       }
 
       const match = await bcrypt.compare(password, user.password);

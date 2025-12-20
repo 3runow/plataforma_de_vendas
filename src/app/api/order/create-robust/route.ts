@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
         userId: user.id,
         addressId: address.id,
         total,
-        status: "pending",
+        status: "payment_pending",
         paymentStatus: "pending",
         shippingService: "Correios",
         shippingPrice: shipping,

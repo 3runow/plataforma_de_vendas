@@ -1,12 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/contexts/cart-context";
 import { ChevronLeft, Lock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
-import type { StripePaymentRef } from "./components/stripe-payment";
 import {
   Accordion,
   AccordionContent,
@@ -17,7 +16,7 @@ import PersonalDataForm from "./components/personal-data-form";
 import AddressForm from "./components/address-form";
 import OrderSummary from "./components/order-summary";
 import ShippingSelector from "./components/shipping-selector";
-import StripePayment from "./components/stripe-payment";
+import MercadoPagoPayment from "./components/mercado-pago-payment";
 import AuthModal from "@/components/auth-modal";
 import {
   Dialog,
@@ -48,7 +47,6 @@ export default function CheckoutPage() {
     useState<ShippingOption | null>(null);
   const [paymentProcessed, setPaymentProcessed] = useState(false);
   const [currentOrderId, setCurrentOrderId] = useState<number | null>(null);
-  const stripePaymentRef = useRef<StripePaymentRef>(null);
   const [showSaveAddressDialog, setShowSaveAddressDialog] = useState(false);
   const [savedAddresses, setSavedAddresses] = useState<
     {
@@ -131,13 +129,133 @@ export default function CheckoutPage() {
     cvv: "",
     cpf: "",
   });
+  const ensureOrderCreated = useCallback(async (): Promise<number | null> => {
+    if (currentOrderId) return currentOrderId;
+
+    const digits = (value: string) => value.replace(/\D/g, "");
+    const cpfDigits = digits(formData.cpf);
+    const phoneDigits = digits(formData.phone);
+
+    const isPersonalComplete =
+      formData.name.trim().length >= 2 &&
+      formData.email.includes("@") &&
+      cpfDigits.length === 11 &&
+      phoneDigits.length >= 10;
+
+    if (!isPersonalComplete) {
+      toast({
+        title: "Dados pessoais incompletos",
+        description: "Preencha nome, email, CPF e telefone antes de pagar.",
+        variant: "destructive",
+      });
+      return null;
+    }
+
+    const cepValid = addressData.cep.replace(/\D/g, "").length === 8;
+    const isComplete =
+      cepValid &&
+      addressData.street.trim() !== "" &&
+      addressData.number.trim() !== "" &&
+      addressData.neighborhood.trim() !== "" &&
+      addressData.city.trim() !== "" &&
+      addressData.state.length === 2 &&
+      selectedShipping !== null;
+
+    if (!isComplete) {
+      toast({
+        title: "Dados incompletos",
+        description: "Preencha endereço e selecione o frete antes de pagar.",
+        variant: "destructive",
+      });
+      return null;
+    }
+
+    const recipientName =
+      addressData.recipientName || formData.name || "Cliente";
+
+    const addressPayload = {
+      ...addressData,
+      recipientName,
+      cep: addressData.cep.replace(/\D/g, ""),
+    };
+
+    try {
+      const orderRes = await fetch("/api/order/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customer: {
+            name: formData.name,
+            email: formData.email,
+            cpf: cpfDigits,
+            phone: phoneDigits,
+          },
+          address: addressPayload,
+          items: cartItems.map((item) => ({
+            productId: item.productId,
+            quantity: item.quantity,
+            price: item.price,
+          })),
+          shipping: selectedShipping,
+          total: total,
+          couponCode: appliedCoupon?.code,
+        }),
+      });
+
+      const orderJson = await orderRes.json();
+      if (orderJson.success && orderJson.order?.id) {
+        setCurrentOrderId(orderJson.order.id);
+        return orderJson.order.id as number;
+      }
+
+      const details =
+        Array.isArray(orderJson.details) && orderJson.details.length > 0
+          ? orderJson.details
+              .map(
+                (d: { path?: string; message?: string }) =>
+                  `${d.path || "campo"}: ${d.message || ""}`
+              )
+              .join("; ")
+          : null;
+
+      const message = details || orderJson.error || "Erro ao criar pedido";
+      toast({
+        title: "Não foi possível criar o pedido",
+        description: message,
+        variant: "destructive",
+      });
+      return null;
+    } catch (error) {
+      console.error("Erro ao criar pedido:", error);
+      toast({
+        title: "Erro ao criar pedido",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Tente novamente em instantes.",
+        variant: "destructive",
+      });
+      return null;
+    }
+  }, [
+    addressData,
+    appliedCoupon?.code,
+    cartItems,
+    currentOrderId,
+    formData.cpf,
+    formData.email,
+    formData.name,
+    formData.phone,
+    selectedShipping,
+    toast,
+    total,
+  ]);
 
   const checkAuthAndLoadUser = useCallback(async () => {
     try {
       const response = await fetch("/api/user/current");
       if (!response.ok) {
         setIsAuthenticated(false);
-        setShowAuthModal(true);
         return;
       }
 
@@ -177,7 +295,6 @@ export default function CheckoutPage() {
     } catch (error) {
       console.error("Erro ao carregar dados do usuário:", error);
       setIsAuthenticated(false);
-      setShowAuthModal(true);
     }
   }, []);
 
@@ -193,6 +310,20 @@ export default function CheckoutPage() {
     window.addEventListener("auth-change", handler);
     return () => window.removeEventListener("auth-change", handler);
   }, [checkAuthAndLoadUser]);
+
+  // Criar pedido automaticamente ao abrir pagamento, se ainda não existir
+  useEffect(() => {
+    const autoCreateOrder = async () => {
+      if (openSection !== "payment" || currentOrderId) return;
+      try {
+        await ensureOrderCreated();
+      } catch (error) {
+        console.error("Erro ao criar pedido automaticamente:", error);
+      }
+    };
+
+    void autoCreateOrder();
+  }, [currentOrderId, ensureOrderCreated, openSection]);
 
   // Atualizar endereço quando o usuário selecionar um endereço salvo
   useEffect(() => {
@@ -217,88 +348,7 @@ export default function CheckoutPage() {
     }
   }, [selectedAddressId, useSavedAddress, savedAddresses]);
 
-  // Criar pedido quando todas as informações necessárias estiverem prontas
-  useEffect(() => {
-    const createOrder = async () => {
-      // Só cria se ainda não foi criado e se está na seção de pagamento
-      if (currentOrderId || openSection !== "payment") {
-        return;
-      }
-
-      // Verifica se todos os dados necessários estão completos
-      const cepValid = addressData.cep.replace(/\D/g, "").length === 8;
-      const isComplete =
-        cepValid &&
-        addressData.street.trim() !== "" &&
-        addressData.number.trim() !== "" &&
-        addressData.neighborhood.trim() !== "" &&
-        addressData.city.trim() !== "" &&
-        addressData.state.length === 2 &&
-        selectedShipping !== null;
-
-      if (!isComplete) {
-        return;
-      }
-
-      try {
-        console.log("Criando pedido com dados:", {
-          address: {
-            ...addressData,
-            cep: addressData.cep.replace(/\D/g, ""),
-          },
-          itemsCount: cartItems.length,
-          shipping: selectedShipping,
-        });
-
-        const addressPayload = {
-          ...addressData,
-          cep: addressData.cep.replace(/\D/g, ""),
-        };
-
-        const orderRes = await fetch("/api/order/create", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            address: addressPayload,
-            items: cartItems.map((item) => ({
-              productId: item.productId,
-              quantity: item.quantity,
-              price: item.price,
-            })),
-            shipping: selectedShipping,
-            total: total,
-            couponCode: appliedCoupon?.code,
-          }),
-        });
-
-        const orderJson = await orderRes.json();
-        console.log("Resposta da criação do pedido:", orderJson);
-
-        if (orderJson.success && orderJson.order?.id) {
-          console.log("✅ Pedido criado com ID:", orderJson.order.id);
-          setCurrentOrderId(orderJson.order.id);
-        } else {
-          console.error("❌ Erro ao criar pedido:", orderJson.error);
-        }
-      } catch (error) {
-        console.error("Erro ao criar pedido:", error);
-      }
-    };
-
-    createOrder();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    openSection,
-    addressData.cep,
-    addressData.street,
-    addressData.number,
-    addressData.neighborhood,
-    addressData.city,
-    addressData.state,
-    selectedShipping,
-    cartItems.length,
-    currentOrderId,
-  ]);
+  
 
   useEffect(() => {
     // Redireciona se o carrinho estiver vazio
@@ -338,28 +388,7 @@ export default function CheckoutPage() {
     );
   }, [addressData, selectedShipping]);
 
-  const isPaymentComplete = () => {
-    // Validação para cartão de crédito
-    if (paymentData.paymentMethod === "credit_card") {
-      return (
-        paymentData.cardName.trim() !== "" &&
-        paymentData.cardNumber.length === 19 &&
-        paymentData.expiryMonth !== "" &&
-        paymentData.expiryYear !== "" &&
-        paymentData.cvv.length >= 3
-      );
-    }
-
-    // Validação para PIX e Boleto
-    if (
-      paymentData.paymentMethod === "pix" ||
-      paymentData.paymentMethod === "boleto"
-    ) {
-      return paymentData.cpf.length === 14;
-    }
-
-    return false;
-  };
+  const isPaymentComplete = () => paymentProcessed;
 
   // Avança automaticamente para a próxima seção quando completa (apenas na primeira vez)
   useEffect(() => {
@@ -401,6 +430,9 @@ export default function CheckoutPage() {
   };
 
   const handleSaveAddress = async () => {
+    if (!isAuthenticated) {
+      return;
+    }
     try {
       const sanitizedCep = addressData.cep.replace(/\D/g, "");
       const response = await fetch("/api/addresses", {
@@ -446,6 +478,9 @@ export default function CheckoutPage() {
   };
 
   const handleSavePersonalData = async () => {
+    if (!isAuthenticated) {
+      return;
+    }
     try {
       await fetch("/api/user/update", {
         method: "PUT",
@@ -485,13 +520,17 @@ export default function CheckoutPage() {
     try {
       // Se já temos um order_id, significa que o pagamento foi processado
       if (currentOrderId) {
-        // Pergunta se quer salvar o endereço
-        const hasSavedAddress = await fetch("/api/addresses")
-          .then((r) => r.json())
-          .then((data) => data.length > 0);
+        if (isAuthenticated) {
+          const hasSavedAddress = await fetch("/api/addresses")
+            .then((r) => r.json())
+            .then((data) => data.length > 0);
 
-        if (!hasSavedAddress && addressData.cep) {
-          setShowSaveAddressDialog(true);
+          if (!hasSavedAddress && addressData.cep) {
+            setShowSaveAddressDialog(true);
+          } else {
+            clearCart();
+            router.push(`/checkout/confirmation?orderId=${currentOrderId}`);
+          }
         } else {
           clearCart();
           router.push(`/checkout/confirmation?orderId=${currentOrderId}`);
@@ -505,6 +544,7 @@ export default function CheckoutPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          customer: formData,
           address: {
             ...addressData,
             cep: sanitizedCep,
@@ -589,10 +629,10 @@ export default function CheckoutPage() {
                 </div>
                 <div>
                   <p className="font-semibold text-primary">
-                    Entre para finalizar sua compra
+                    Faça login (opcional)
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    Faça login sem sair desta página para salvar seus dados e acompanhar o pedido.
+                    Você pode concluir o pagamento como convidado. Entrar agora apenas salva seus dados automaticamente e libera o acompanhamento imediato.
                   </p>
                 </div>
               </div>
@@ -835,16 +875,16 @@ export default function CheckoutPage() {
                         <h3 className="text-lg font-semibold">Pagamento</h3>
                         {isPaymentComplete() && (
                           <p className="text-sm text-muted-foreground">
-                            Stripe
+                            Mercado Pago
                           </p>
                         )}
                       </div>
                     </div>
                   </AccordionTrigger>
                   <AccordionContent className="px-6 pb-6">
-                    <StripePayment
-                      ref={stripePaymentRef}
+                    <MercadoPagoPayment
                       amount={total}
+                      ensureOrder={ensureOrderCreated}
                       paymentMethod={
                         paymentData.paymentMethod as
                           | "credit_card"
@@ -856,39 +896,37 @@ export default function CheckoutPage() {
                       payerCpf={paymentData.cpf || formData.cpf}
                       orderId={currentOrderId || undefined}
                       onPaymentSuccessAction={async (data) => {
-                        console.log("✅ Pagamento aprovado:", data);
-                        console.log("📍 currentOrderId:", currentOrderId);
-                        console.log("📍 orderId recebido:", data.orderId);
+                        console.log("Pagamento recebido:", data);
+                        console.log("currentOrderId:", currentOrderId);
+                        console.log("orderId recebido:", data.orderId);
 
                         setPaymentProcessed(true);
 
-                        // Salva dados pessoais se estiverem diferentes do perfil
                         await handleSavePersonalData();
 
-                        // Usa o orderId do callback ou o currentOrderId
                         const finalOrderId = data.orderId || currentOrderId;
-                        console.log(
-                          "📍 finalOrderId a ser usado:",
-                          finalOrderId
-                        );
+                        console.log("Final orderId:", finalOrderId);
+
+                        const approved = data.status === "approved";
 
                         toast({
-                          title: "Pagamento aprovado!",
-                          description: "Redirecionando...",
+                          title: approved
+                            ? "Pagamento aprovado!"
+                            : "Pagamento registrado",
+                          description: approved
+                            ? "Redirecionando..."
+                            : "Estamos aguardando a confirmacao do pagamento. Voce pode acompanhar os detalhes no pedido.",
                         });
 
-                        // Limpa o carrinho
                         clearCart();
                         console.log(
-                          "🎉 Pagamento completo! Redirecionando para confirmação com orderId:",
+                          "Pagamento concluido. Redirecionando para confirmacao com orderId:",
                           finalOrderId
                         );
 
-                        // Redireciona diretamente para a tela de confirmação (sem passar pela página success)
                         if (finalOrderId) {
                           window.location.href = `/checkout/confirmation?orderId=${finalOrderId}`;
                         } else {
-                          // Fallback: vai para a home se não tiver orderId
                           window.location.href = "/";
                         }
                       }}
@@ -997,3 +1035,7 @@ export default function CheckoutPage() {
     </div>
   );
 }
+
+
+
+
