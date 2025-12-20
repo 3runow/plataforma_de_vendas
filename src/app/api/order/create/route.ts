@@ -1,12 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyAuth } from "@/lib/auth";
+import { resolveCheckoutUser } from "@/lib/checkout-user";
 import { z } from "zod";
 
 const orderItemSchema = z.object({
   productId: z.number().int().positive(),
   quantity: z.number().int().positive().max(999),
   price: z.number().positive().max(999999.99),
+});
+
+const customerSchema = z.object({
+  name: z.string().min(2).max(150),
+  email: z.string().email().max(255),
+  cpf: z.string().min(11).max(14),
+  phone: z.string().min(10).max(20),
 });
 
 const addressSchema = z.object({
@@ -23,6 +31,7 @@ const addressSchema = z.object({
 });
 
 const orderCreateSchema = z.object({
+  customer: customerSchema,
   address: addressSchema,
   items: z.array(orderItemSchema).min(1),
   shipping: z.object({
@@ -36,10 +45,7 @@ const orderCreateSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await verifyAuth(request);
-    if (!user) {
-      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
-    }
+    const authenticatedUser = await verifyAuth(request);
 
     const body = await request.json();
     
@@ -58,7 +64,36 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { address, items, shipping, total, couponCode } = validationResult.data;
+    const { customer, address, items, shipping, total, couponCode } =
+      validationResult.data;
+
+    const sanitizedCustomer = {
+      name: customer.name.trim(),
+      email: customer.email.trim().toLowerCase(),
+      cpf: customer.cpf.replace(/\D/g, ""),
+      phone: customer.phone.replace(/\D/g, ""),
+    };
+
+    if (sanitizedCustomer.cpf.length !== 11) {
+      return NextResponse.json(
+        { error: "CPF inválido" },
+        { status: 400 }
+      );
+    }
+
+    let userId = authenticatedUser?.id ?? null;
+
+    if (!userId) {
+      const { user } = await resolveCheckoutUser(sanitizedCustomer);
+      userId = user.id;
+    }
+
+    if (!userId) {
+      return NextResponse.json(
+        { error: "Não foi possível identificar o cliente do pedido" },
+        { status: 400 }
+      );
+    }
 
     // Se houver cupom, incrementa o contador de uso
     if (couponCode) {
@@ -88,7 +123,7 @@ export async function POST(request: NextRequest) {
       // Verifica se já existe um endereço idêntico
       const existingAddress = await prisma.address.findFirst({
         where: {
-          userId: user.id,
+          userId,
           recipientName: address.recipientName,
           street: address.street,
           number: address.number,
@@ -117,7 +152,7 @@ export async function POST(request: NextRequest) {
             neighborhood: address.neighborhood,
             city: address.city,
             state: address.state,
-            userId: user.id,
+            userId,
           },
         });
         addressId = addressCreated.id;
@@ -152,10 +187,11 @@ export async function POST(request: NextRequest) {
       // 1. Criar o pedido
       const createdOrder = await tx.order.create({
         data: {
-          userId: user.id,
+          userId,
           addressId,
           total,
-          status: "pending",
+          status: "payment_pending",
+          paymentStatus: "pending",
           shippingService: shipping?.company || null,
           shippingPrice: shipping?.price || null,
           shippingDeliveryTime: shipping?.deliveryTime || null,

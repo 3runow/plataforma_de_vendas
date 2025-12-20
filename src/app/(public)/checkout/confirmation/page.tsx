@@ -44,7 +44,6 @@ function OrderConfirmationContent() {
   const [order, setOrder] = useState<OrderData | null>(null);
   const [loading, setLoading] = useState(true);
   const [cartCleared, setCartCleared] = useState(false);
-  const [paymentVerified, setPaymentVerified] = useState(false);
 
   // Declara as funções ANTES dos useEffects que as utilizam
   const fetchOrder = useCallback(
@@ -92,60 +91,6 @@ function OrderConfirmationContent() {
     [order, cartCleared, clearCart]
   );
 
-  const verifyAndUpdatePayment = useCallback(
-    async (paymentIntentId: string, orderId: number) => {
-      // Evita verificar múltiplas vezes
-      if (paymentVerified) {
-        return;
-      }
-
-      try {
-        console.log("🔍 Verificando status do pagamento:", paymentIntentId);
-        setPaymentVerified(true);
-
-        const response = await fetch("/api/stripe/verify-and-update", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            paymentIntentId,
-            orderId,
-          }),
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          if (data.order && data.order.paymentStatus === "approved") {
-            console.log("✅ Pagamento verificado e pedido atualizado");
-            setOrder(data.order);
-
-            // Limpa o carrinho apenas uma vez quando o pagamento é confirmado
-            if (!cartCleared) {
-              try {
-                // Limpa o carrinho no banco de dados
-                const cartResponse = await fetch("/api/cart/clear", {
-                  method: "POST",
-                });
-                if (cartResponse.ok) {
-                  console.log("🛒 Carrinho limpo no banco de dados");
-                }
-                // Limpa o carrinho no localStorage e no contexto React
-                clearCart();
-                setCartCleared(true);
-                console.log("🛒 Carrinho limpo no frontend (localStorage)");
-              } catch (error) {
-                console.error("Erro ao limpar carrinho:", error);
-              }
-            }
-          }
-        }
-      } catch (error) {
-        console.error("Erro ao verificar pagamento:", error);
-        setPaymentVerified(false); // Permite tentar novamente em caso de erro
-      }
-    },
-    [clearCart, cartCleared, paymentVerified]
-  );
-
   useEffect(() => {
     const orderId = searchParams.get("orderId");
     if (orderId) {
@@ -155,68 +100,32 @@ function OrderConfirmationContent() {
     }
   }, [searchParams, fetchOrder]);
 
-  // Verifica e atualiza o pagamento quando houver payment_intent e redirect_status=succeeded
   useEffect(() => {
-    const orderId = searchParams.get("orderId");
-    const paymentIntent = searchParams.get("payment_intent");
-    const redirectStatus = searchParams.get("redirect_status");
+    const orderIdParam = searchParams.get("orderId");
 
-    if (orderId && paymentIntent && redirectStatus === "succeeded") {
-      // Aguarda um pouco para garantir que o order foi carregado
-      const timer = setTimeout(() => {
-        verifyAndUpdatePayment(paymentIntent, parseInt(orderId));
-      }, 500);
-
-      return () => clearTimeout(timer);
-    }
-  }, [searchParams, verifyAndUpdatePayment]);
-
-  // Verifica periodicamente o status se houver payment_intent nos params e o pagamento ainda estiver pendente
-  useEffect(() => {
-    const orderId = searchParams.get("orderId");
-    const paymentIntent = searchParams.get("payment_intent");
-
-    // Para o polling se o pagamento já foi aprovado
-    if (order && order.paymentStatus === "approved") {
+    if (!orderIdParam || !order || order.paymentStatus === "approved") {
       return;
     }
 
-    // Não faz polling se já verificou o pagamento e foi aprovado
-    if (paymentVerified && order?.paymentStatus === "approved") {
+    const parsedOrderId = parseInt(orderIdParam);
+    if (Number.isNaN(parsedOrderId)) {
       return;
     }
 
-    // Não faz polling se não há payment_intent ou se já verificou
-    if (!paymentIntent || paymentVerified) {
-      return;
-    }
+    let attempts = 0;
+    const maxAttempts = 4;
 
-    if (order && orderId && order.paymentStatus !== "approved") {
-      // Aguarda um pouco para dar tempo do webhook processar, depois verifica periodicamente
-      const initialDelay = setTimeout(() => {
-        fetchOrder(parseInt(orderId));
-      }, 2000); // Primeira verificação após 2 segundos
+    const interval = setInterval(() => {
+      attempts++;
+      fetchOrder(parsedOrderId);
 
-      // Verifica periodicamente a cada 3 segundos, máximo 3 vezes (9 segundos)
-      let attempts = 0;
-      const maxAttempts = 3;
-
-      const interval = setInterval(() => {
-        attempts++;
-        fetchOrder(parseInt(orderId));
-
-        // Para após máximo de tentativas
-        if (attempts >= maxAttempts) {
-          clearInterval(interval);
-        }
-      }, 3000);
-
-      return () => {
-        clearTimeout(initialDelay);
+      if (attempts >= maxAttempts || order.paymentStatus === "approved") {
         clearInterval(interval);
-      };
-    }
-  }, [order, searchParams, fetchOrder, paymentVerified]);
+      }
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [order, searchParams, fetchOrder]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -500,3 +409,5 @@ export default function OrderConfirmationPage() {
     </Suspense>
   );
 }
+
+

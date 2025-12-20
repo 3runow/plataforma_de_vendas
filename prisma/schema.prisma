@@ -19,6 +19,7 @@ model User {
   phone            String?
   resetToken       String?
   resetTokenExpiry DateTime?
+  isGuest          Boolean    @default(false)
   addresses        Address[]
   cartItems        CartItem[]
   orders           Order[]
@@ -69,7 +70,7 @@ model Order {
   createdAt            DateTime    @default(now())
   updatedAt            DateTime    @updatedAt
   addressId            Int
-  status               String      @default("pending")
+  status               String      @default("payment_pending")
   melhorEnvioOrderId   String?
   paymentId            String?
   paymentMethod        String?

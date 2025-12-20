@@ -2,14 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { getMelhorEnvioService } from "@/lib/melhor-envio";
 
 interface TrackParams {
-  params: Promise<{
+  params: {
     code: string;
-  }>;
+  };
 }
 
-export async function GET(request: NextRequest, context: TrackParams) {
+export async function GET(_request: NextRequest, context: TrackParams) {
   try {
-    const { code } = await context.params;
+    const { code } = context.params;
 
     if (!code) {
       return NextResponse.json(

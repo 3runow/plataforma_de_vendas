@@ -160,14 +160,38 @@ export default function MainContent({
           )}
 
           {/* Bloco de carrinho */}
-          <div className="flex items-center gap-3 mt-2 mb-1">
-            <label className="font-medium text-gray-700" htmlFor="qnt-input">
-              Qtd:
+          <div className="flex items-center gap-2 md:gap-8">
+            <div className="flex flex-col gap-2">
+            <Button
+              className="flex-1 bg-[#0f3d91] hover:bg-[#0c3276] text-white py-6"
+              onClick={handleBuyNow}
+              disabled={isOutOfStock || isBuying}
+            >
+              {isBuying ? "Indo para compra..." : "Comprar agora"}
+            </Button>
+                          <Button
+              className="flex"
+              onClick={handleAddToCart}
+              disabled={isOutOfStock || isAdding}
+            >
+              <ShoppingCart className="h-4 w-4" />
+              {isAdding
+                ? "Adicionando..."
+                : isOutOfStock
+                  ? "Esgotado"
+                  : existingInCart > 0
+                    ? "Adicionar mais"
+                    : "Adicionar ao carrinho"}
+            </Button>
+            </div>
+            <div className="flex flex-col"><label className="font-medium text-gray-700 pb-4" htmlFor="qnt-input">
+              Quantidade:
             </label>
+            <div className="flex gap-2">
             <Button
               variant="ghost"
               size="sm"
-              className="h-9 w-9 p-0"
+              className="p-4"
               disabled={quantity <= 1}
               onClick={() => setQuantity((q) => Math.max(1, q - 1))}
             >
@@ -188,33 +212,15 @@ export default function MainContent({
             <Button
               variant="ghost"
               size="sm"
-              className="h-9 w-9 p-0"
+              className="p-4"
               disabled={quantity >= max}
               onClick={() => setQuantity((q) => Math.min(max, q + 1))}
             >
               +
-            </Button>
-            <Button
-              className="flex-1 ml-2"
-              onClick={handleAddToCart}
-              disabled={isOutOfStock || isAdding}
-            >
-              <ShoppingCart className="mr-2 h-4 w-4" />
-              {isAdding
-                ? "Adicionando..."
-                : isOutOfStock
-                  ? "Esgotado"
-                  : existingInCart > 0
-                    ? "Adicionar mais"
-                    : "Adicionar ao carrinho"}
-            </Button>
-            <Button
-              className="flex-1 bg-[#0f3d91] hover:bg-[#0c3276] text-white"
-              onClick={handleBuyNow}
-              disabled={isOutOfStock || isBuying}
-            >
-              {isBuying ? "Indo para compra..." : "Comprar agora"}
-            </Button>
+            </Button></div></div>
+            
+
+            
             {added && (
               <span className="ml-2 text-green-600 font-medium">
                 Adicionado!
