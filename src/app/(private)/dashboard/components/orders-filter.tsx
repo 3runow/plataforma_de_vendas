@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { ORDER_STATUS_META, DASHBOARD_STATUS_FLOW } from "@/constants/order-status";
 
 interface OrdersFilterProps {
   value: string;
@@ -21,11 +22,11 @@ interface OrdersFilterProps {
 
 const statusOptions = [
   { value: "all", label: "Todos os pedidos", color: "bg-gray-100 text-gray-800" },
-  { value: "pending", label: "Pendente", color: "bg-yellow-100 text-yellow-800" },
-  { value: "processing", label: "Processando", color: "bg-blue-100 text-blue-800" },
-  { value: "shipped", label: "Enviado", color: "bg-purple-100 text-purple-800" },
-  { value: "delivered", label: "Entregue", color: "bg-green-100 text-green-800" },
-  { value: "cancelled", label: "Cancelado", color: "bg-red-100 text-red-800" },
+  ...DASHBOARD_STATUS_FLOW.map((status) => ({
+    value: status,
+    label: ORDER_STATUS_META[status].label,
+    color: ORDER_STATUS_META[status].badgeClass,
+  })),
 ];
 
 export function OrdersFilter({ value, onValueChange }: OrdersFilterProps) {

@@ -3,12 +3,14 @@
 import { useEffect, useState, Suspense, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
-import { CheckCircle, Package, Truck, CreditCard } from "lucide-react";
+import { CheckCircle, Package, Truck, CreditCard, UserPlus } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { useCart } from "@/contexts/cart-context";
+import { getOrderStatusMeta, getPaymentStatusMeta } from "@/constants/order-status";
+import AuthModal from "@/components/auth-modal";
 
 interface OrderData {
   id: number;
@@ -44,12 +46,23 @@ function OrderConfirmationContent() {
   const [order, setOrder] = useState<OrderData | null>(null);
   const [loading, setLoading] = useState(true);
   const [cartCleared, setCartCleared] = useState(false);
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [linkedMessage, setLinkedMessage] = useState<string | null>(null);
 
   // Declara as funções ANTES dos useEffects que as utilizam
   const fetchOrder = useCallback(
     async (orderId: number) => {
       try {
-        const response = await fetch(`/api/order/${orderId}`);
+        // Primeiro tenta buscar com autenticação normal
+        let response = await fetch(`/api/order/${orderId}`);
+        
+        // Se não autorizado, tenta endpoint de guest
+        if (response.status === 401 || response.status === 403) {
+          response = await fetch(`/api/order/guest/${orderId}`);
+        }
+        
         if (response.ok) {
           const data = await response.json();
           // Só atualiza se o order mudou ou se o status mudou para approved
@@ -59,6 +72,15 @@ function OrderConfirmationContent() {
             order.status !== data.order?.status
           ) {
             setOrder(data.order);
+            
+            // Se é pedido de guest e não está logado, mostrar prompt
+            if (data.showLoginPrompt) {
+              setShowLoginPrompt(true);
+              setIsAuthenticated(false);
+            } else {
+              setShowLoginPrompt(false);
+              setIsAuthenticated(true);
+            }
 
             // Se o pagamento foi aprovado, limpa o carrinho uma vez
             if (data.order?.paymentStatus === "approved" && !cartCleared) {
@@ -90,6 +112,40 @@ function OrderConfirmationContent() {
     },
     [order, cartCleared, clearCart]
   );
+
+  // Handler para quando o usuário faz login/cadastro
+  const handleAuthSuccess = useCallback(async () => {
+    setShowAuthModal(false);
+    setIsAuthenticated(true);
+    setShowLoginPrompt(false);
+    
+    const orderId = searchParams.get("orderId");
+    if (orderId) {
+      // Vincular o pedido ao usuário recém logado
+      try {
+        const linkResponse = await fetch("/api/order/link-guest", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ orderId: parseInt(orderId) }),
+        });
+        
+        if (linkResponse.ok) {
+          const linkData = await linkResponse.json();
+          if (linkData.linkedOrders > 0) {
+            setLinkedMessage(`Pedido vinculado à sua conta com sucesso!`);
+          }
+        }
+      } catch (error) {
+        console.error("Erro ao vincular pedido:", error);
+      }
+      
+      // Recarregar o pedido
+      fetchOrder(parseInt(orderId));
+    }
+    
+    // Dispara evento para atualizar outros componentes
+    window.dispatchEvent(new CustomEvent("auth-change"));
+  }, [searchParams, fetchOrder]);
 
   useEffect(() => {
     const orderId = searchParams.get("orderId");
@@ -128,33 +184,15 @@ function OrderConfirmationContent() {
   }, [order, searchParams, fetchOrder]);
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case "processing":
-        return "bg-blue-500";
-      case "shipped":
-        return "bg-purple-500";
-      case "delivered":
-        return "bg-green-500";
-      case "cancelled":
-        return "bg-red-500";
-      default:
-        return "bg-yellow-500";
-    }
+    return getOrderStatusMeta(status).dotClass;
   };
 
   const getStatusLabel = (status: string) => {
-    switch (status) {
-      case "processing":
-        return "Processando";
-      case "shipped":
-        return "Enviado";
-      case "delivered":
-        return "Entregue";
-      case "cancelled":
-        return "Cancelado";
-      default:
-        return "Pendente";
-    }
+    return getOrderStatusMeta(status).label;
+  };
+
+  const getPaymentLabel = (status: string) => {
+    return getPaymentStatusMeta(status).label;
   };
 
   if (loading) {
@@ -202,6 +240,57 @@ function OrderConfirmationContent() {
             Seu pedido foi processado com sucesso e está sendo preparado.
           </p>
         </div>
+
+        {/* Mensagem de pedido vinculado */}
+        {linkedMessage && (
+          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg text-center">
+            <p className="text-green-700 font-medium">{linkedMessage}</p>
+          </div>
+        )}
+
+        {/* Card de login/cadastro para guests */}
+        {showLoginPrompt && (
+          <Card className="mb-6 border-2 border-primary/20 bg-primary/5">
+            <CardContent className="p-6">
+              <div className="flex flex-col md:flex-row items-center gap-4">
+                <div className="flex-shrink-0">
+                  <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                    <UserPlus className="h-6 w-6 text-primary" />
+                  </div>
+                </div>
+                <div className="flex-1 text-center md:text-left">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                    Crie uma conta para acompanhar seu pedido!
+                  </h3>
+                  <p className="text-gray-600 text-sm">
+                    Cadastre-se ou faça login para acompanhar o status do seu pedido,
+                    receber atualizações e ter acesso ao histórico de compras.
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowAuthModal(true)}
+                  >
+                    Entrar
+                  </Button>
+                  <Button
+                    onClick={() => setShowAuthModal(true)}
+                  >
+                    Criar Conta
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Modal de autenticação */}
+        <AuthModal
+          open={showAuthModal}
+          onClose={() => setShowAuthModal(false)}
+          onSuccess={handleAuthSuccess}
+        />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Informações do Pedido */}

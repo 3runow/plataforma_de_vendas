@@ -266,11 +266,31 @@ export default function CheckoutPage() {
       setIsAuthenticated(true);
       const data = await response.json();
 
+      // Função para formatar CPF (11 dígitos -> 000.000.000-00)
+      const formatCpf = (cpf: string) => {
+        if (!cpf) return "";
+        const digits = cpf.replace(/\D/g, "");
+        if (digits.length !== 11) return cpf;
+        return digits.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+      };
+
+      // Função para formatar telefone (10-11 dígitos -> (00) 00000-0000)
+      const formatPhone = (phone: string) => {
+        if (!phone) return "";
+        const digits = phone.replace(/\D/g, "");
+        if (digits.length === 11) {
+          return digits.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3");
+        } else if (digits.length === 10) {
+          return digits.replace(/(\d{2})(\d{4})(\d{4})/, "($1) $2-$3");
+        }
+        return phone;
+      };
+
       setFormData({
         name: data.name || "",
         email: data.email || "",
-        cpf: data.cpf || "",
-        phone: data.phone || "",
+        cpf: formatCpf(data.cpf || ""),
+        phone: formatPhone(data.phone || ""),
       });
 
       const addressesResponse = await fetch("/api/addresses");
@@ -897,7 +917,7 @@ export default function CheckoutPage() {
                       }
                       payerEmail={formData.email}
                       payerName={formData.name}
-                      payerCpf={paymentData.cpf || formData.cpf}
+                      payerCpf={formData.cpf}
                       orderId={currentOrderId || undefined}
                       onPaymentSuccessAction={async (data) => {
                         console.log("Pagamento recebido:", data);

@@ -2,10 +2,14 @@
 
 import {
   forwardRef,
+  useCallback,
   useEffect,
   useImperativeHandle,
+  useMemo,
+  useRef,
   useState,
 } from "react";
+import type { TCardPayment } from "@mercadopago/sdk-react/esm/bricks/cardPayment/type";
 import Image from "next/image";
 import { initMercadoPago } from "@mercadopago/sdk-react";
 import dynamic from "next/dynamic";
@@ -62,6 +66,11 @@ interface PixData {
 const MERCADO_PAGO_PUBLIC_KEY =
   process.env.NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY || "";
 
+// Module-level flag to prevent multiple SDK initializations
+let mercadoPagoInitialized = false;
+
+type CardBrickCustomization = NonNullable<TCardPayment["customization"]>;
+
 const CardPaymentBrick = dynamic(
   () => import("@mercadopago/sdk-react").then((mod) => mod.CardPayment),
   { ssr: false }
@@ -107,6 +116,7 @@ MercadoPagoPaymentProps
   const [payerNameInput, setPayerNameInput] = useState(payerName);
   const [payerCpfInput, setPayerCpfInput] = useState(payerCpf);
   const [mpReady, setMpReady] = useState(false);
+  const [containerReady, setContainerReady] = useState(false);
   const [cardFormReady, setCardFormReady] = useState(false);
   const [cardLoading, setCardLoading] = useState(false);
   const [pixLoading, setPixLoading] = useState(false);
@@ -117,19 +127,94 @@ MercadoPagoPaymentProps
   const [resolvedOrderId, setResolvedOrderId] = useState<number | undefined>(
     orderId,
   );
+  const [cardBrickKey, setCardBrickKey] = useState(0);
+  const [initAttempts, setInitAttempts] = useState(0);
+
+  const payerNameRef = useRef(payerName);
+  const payerCpfRef = useRef(payerCpf);
+  const payerEmailRef = useRef(payerEmail);
+  const cardContainerRef = useRef<HTMLDivElement>(null);
+  const ensureOrderRef = useRef(ensureOrder);
+  const orderIdRef = useRef(orderId);
+  const amountRef = useRef(amount);
+  const resolvedOrderIdRef = useRef(resolvedOrderId);
 
   useEffect(() => {
     setResolvedOrderId(orderId);
+    resolvedOrderIdRef.current = orderId;
+    orderIdRef.current = orderId;
   }, [orderId]);
+
+  useEffect(() => {
+    payerNameRef.current = payerNameInput;
+  }, [payerNameInput]);
+
+  useEffect(() => {
+    payerCpfRef.current = payerCpfInput;
+  }, [payerCpfInput]);
+
+  useEffect(() => {
+    payerEmailRef.current = payerEmail;
+  }, [payerEmail]);
+
+  useEffect(() => {
+    ensureOrderRef.current = ensureOrder;
+  }, [ensureOrder]);
+
+  useEffect(() => {
+    amountRef.current = amount;
+  }, [amount]);
+
+  useEffect(() => {
+    resolvedOrderIdRef.current = resolvedOrderId;
+  }, [resolvedOrderId]);
 
   useEffect(() => {
     if (!MERCADO_PAGO_PUBLIC_KEY) {
       return;
     }
 
-    initMercadoPago(MERCADO_PAGO_PUBLIC_KEY, { locale: "pt-BR" });
-    setMpReady(true);
+    // Only initialize SDK once per page load
+    if (!mercadoPagoInitialized) {
+      initMercadoPago(MERCADO_PAGO_PUBLIC_KEY, { locale: "pt-BR" });
+      mercadoPagoInitialized = true;
+    }
+    
+    // Give the SDK more time to initialize internally before rendering bricks
+    const timer = setTimeout(() => {
+      setMpReady(true);
+    }, 1500);
+    
+    return () => clearTimeout(timer);
   }, []);
+
+  // Check container is ready with proper dimensions before showing brick
+  useEffect(() => {
+    if (!mpReady || selectedMethod !== "credit_card") {
+      setContainerReady(false);
+      return;
+    }
+    
+    let retryCount = 0;
+    const maxRetries = 20;
+    
+    const checkContainer = () => {
+      const container = cardContainerRef.current;
+      if (container && container.offsetWidth > 100 && container.offsetHeight >= 0) {
+        // Container has proper dimensions, wait a bit more for layout stability
+        setTimeout(() => {
+          setContainerReady(true);
+        }, 300);
+      } else if (retryCount < maxRetries) {
+        retryCount++;
+        setTimeout(checkContainer, 150);
+      }
+    };
+    
+    // Initial delay to ensure DOM is ready
+    const timer = setTimeout(checkContainer, 200);
+    return () => clearTimeout(timer);
+  }, [mpReady, selectedMethod]);
 
   useEffect(() => {
     return () => {
@@ -166,10 +251,13 @@ MercadoPagoPaymentProps
       .replace(/(-\d{2})\d+?$/, "$1");
   };
 
-  const showError = (message: string) => {
-    onPaymentErrorAction(message);
-    setPaymentProcessed(false);
-  };
+  const showError = useCallback(
+    (message: string) => {
+      onPaymentErrorAction(message);
+      setPaymentProcessed(false);
+    },
+    [onPaymentErrorAction],
+  );
 
   const stopPixPolling = () => {
     if (pixInterval) {
@@ -332,104 +420,118 @@ MercadoPagoPaymentProps
     }
   };
 
-  const handleCardSubmit = async (formData: CardFormData) => {
-    const cpfDigits = payerCpfInput.replace(/\D/g, "");
-    if (cpfDigits.length !== 11) {
-      showError("Informe um CPF valido para pagar.");
-      throw new Error("CPF invalido");
-    }
-
-    const finalOrderId =
-      resolvedOrderId ??
-      (await (ensureOrder
-        ? ensureOrder().catch((err) => {
-            showError(
-              err instanceof Error
-                ? err.message
-                : "Crie o pedido antes de pagar.",
-            );
-            return undefined;
-          })
-        : Promise.resolve(undefined)));
-
-    if (!finalOrderId) {
-      showError("Crie o pedido antes de pagar.");
-      throw new Error("Pedido inexistente");
-    }
-
-    setResolvedOrderId(finalOrderId);
-
-    const installments =
-      typeof formData.installments === "string"
-        ? parseInt(formData.installments, 10)
-        : formData.installments;
-
-    setCardLoading(true);
-    setInfoMessage(null);
-
-    try {
-      const { firstName, lastName } = splitName(payerNameInput);
-      const response = await fetch("/api/mercado-pago/create-payment", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          orderId: finalOrderId,
-          transactionAmount: Number(amount.toFixed(2)),
-          paymentMethodId: formData.payment_method_id,
-          token: formData.token,
-          issuerId: formData.issuer_id,
-          installments: installments && Number.isFinite(installments)
-            ? installments
-            : undefined,
-          payer: {
-            email: payerEmail,
-            firstName,
-            lastName,
-            identification: {
-              type: "CPF",
-              number: cpfDigits,
-            },
-          },
-        }),
-      });
-
-      const data = await parseJsonResponse(response);
-
-      if (!response.ok) {
-        throw new Error(
-          typeof data?.error === "string"
-            ? data.error
-            : "Erro ao processar pagamento",
-        );
+  const handleCardSubmit = useCallback(
+    async (formData: CardFormData) => {
+      const cpfDigits = payerCpfRef.current.replace(/\D/g, "");
+      if (cpfDigits.length !== 11) {
+        showError("Informe um CPF valido para pagar.");
+        throw new Error("CPF invalido");
       }
 
-      setPaymentProcessed(true);
-      setInfoMessage(
-        data.status === "approved"
-          ? "Pagamento aprovado. Redirecionando..."
-          : "Pagamento em analise. Vamos atualizar o pedido quando o banco confirmar.",
-      );
+      let finalOrderId =
+        resolvedOrderIdRef.current ?? orderIdRef.current ?? undefined;
 
-      onPaymentSuccessAction({
-        amount,
-        paymentMethod: "credit_card",
-        paymentId: data.id ? String(data.id) : undefined,
-        status: data.status,
-        orderId: data.orderId || finalOrderId,
-      });
+      if (!finalOrderId) {
+        const ensureOrderFn = ensureOrderRef.current;
+        if (ensureOrderFn) {
+          try {
+            finalOrderId = await ensureOrderFn();
+          } catch (err) {
+            const message =
+              err instanceof Error
+                ? err.message
+                : "Crie o pedido antes de pagar.";
+            showError(message);
+            throw err instanceof Error ? err : new Error(message);
+          }
+        }
+      }
 
-      return data;
-    } catch (error) {
-      console.error("Erro ao processar cartao:", error);
-      const message =
-        error instanceof Error ? error.message : "Erro ao processar pagamento";
-      showError(message);
-      throw error;
-    } finally {
-      setCardLoading(false);
-    }
-  };
+      if (!finalOrderId) {
+        showError("Crie o pedido antes de pagar.");
+        throw new Error("Pedido inexistente");
+      }
+
+      resolvedOrderIdRef.current = finalOrderId;
+      setResolvedOrderId(finalOrderId);
+
+      const installments =
+        typeof formData.installments === "string"
+          ? parseInt(formData.installments, 10)
+          : formData.installments;
+
+      setCardLoading(true);
+      setInfoMessage(null);
+
+      try {
+        const amountValue = amountRef.current;
+        const { firstName, lastName } = splitName(payerNameRef.current);
+        const response = await fetch("/api/mercado-pago/create-payment", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            orderId: finalOrderId,
+            transactionAmount: Number(amountValue.toFixed(2)),
+            paymentMethodId: formData.payment_method_id,
+            token: formData.token,
+            issuerId: formData.issuer_id,
+            installments:
+              installments && Number.isFinite(installments)
+                ? installments
+                : undefined,
+            payer: {
+              email: payerEmailRef.current,
+              firstName,
+              lastName,
+              identification: {
+                type: "CPF",
+                number: cpfDigits,
+              },
+            },
+          }),
+        });
+
+        const data = await parseJsonResponse(response);
+
+        if (!response.ok) {
+          throw new Error(
+            typeof data?.error === "string"
+              ? data.error
+              : "Erro ao processar pagamento",
+          );
+        }
+
+        setPaymentProcessed(true);
+        setInfoMessage(
+          data.status === "approved"
+            ? "Pagamento aprovado. Redirecionando..."
+            : "Pagamento em analise. Vamos atualizar o pedido quando o banco confirmar.",
+        );
+
+        onPaymentSuccessAction({
+          amount: amountValue,
+          paymentMethod: "credit_card",
+          paymentId: data.id ? String(data.id) : undefined,
+          status: data.status,
+          orderId: data.orderId || finalOrderId,
+        });
+
+        return data;
+      } catch (error) {
+        console.error("Erro ao processar cartao:", error);
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Erro ao processar pagamento";
+        showError(message);
+        throw error;
+      } finally {
+        setCardLoading(false);
+      }
+    },
+    [onPaymentSuccessAction, showError],
+  );
 
   const handleMethodChange = (methodId: "credit_card" | "pix") => {
     setSelectedMethod(methodId);
@@ -457,6 +559,92 @@ MercadoPagoPaymentProps
         }
       },
   }));
+
+  const cardInitialization = useMemo(
+    () => ({
+      amount: Number(amount.toFixed(2)),
+    }),
+    [amount],
+  );
+
+  const cardCustomization = useMemo<CardBrickCustomization>(
+    () => ({
+      paymentMethods: {
+        types: {
+          included: ["credit_card", "debit_card"],
+        },
+      },
+    }),
+    [],
+  );
+
+  const handleCardReady = useCallback(() => {
+    setCardFormReady(true);
+  }, []);
+
+  const handleCardError = useCallback(
+    async (error: unknown) => {
+      console.error("Erro ao inicializar CardPayment:", JSON.stringify(error, null, 2));
+      let message = "Erro ao inicializar o pagamento";
+      let isCritical = false;
+      
+      if (typeof error === "string") {
+        message = error;
+      } else if (error instanceof Error) {
+        message = error.message;
+      } else if (error && typeof error === "object") {
+        const errObj = error as Record<string, unknown>;
+        if (errObj.type === "critical") {
+          isCritical = true;
+        }
+        if (typeof errObj.message === "string") {
+          message = errObj.message;
+        } else if (typeof errObj.cause === "string") {
+          message = errObj.cause;
+        } else if (typeof errObj.error === "string") {
+          message = errObj.error;
+        }
+      }
+      
+      // If it's the "fields_setup_failed" error and we haven't retried too many times, retry
+      if (isCritical && initAttempts < 3) {
+        console.log(`Tentativa ${initAttempts + 1} de reinicializar CardPayment...`);
+        setInitAttempts(prev => prev + 1);
+        setContainerReady(false);
+        setCardFormReady(false);
+        
+        // Wait and retry with a new key to force re-render
+        setTimeout(() => {
+          setCardBrickKey(prev => prev + 1);
+          setContainerReady(true);
+        }, 1500);
+        return;
+      }
+      
+      // On critical errors after retries, update order status to cancelled
+      if (isCritical && resolvedOrderIdRef.current) {
+        try {
+          await fetch("/api/order/update-payment", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              orderId: resolvedOrderIdRef.current,
+              paymentStatus: "failed",
+              paymentMethod: "credit_card",
+            }),
+          });
+        } catch (updateError) {
+          console.error("Erro ao atualizar status do pedido:", updateError);
+        }
+      }
+      
+      // Don't show error for empty objects (SDK quirk during normal init)
+      if (message !== "Erro ao inicializar o pagamento" || JSON.stringify(error) !== "{}") {
+        showError(message);
+      }
+    },
+    [showError, initAttempts],
+  );
 
   if (!MERCADO_PAGO_PUBLIC_KEY) {
     return (
@@ -548,11 +736,6 @@ MercadoPagoPaymentProps
                       {method.description}
                     </p>
                   </div>
-                  {isSelected && (
-                    <div className="absolute top-3 right-4 flex items-center gap-1 text-xs font-semibold text-white">
-                      <CheckCircle2 className="h-4 w-4" /> Selecionado
-                    </div>
-                  )}
                 </button>
               );
             })}
@@ -605,56 +788,30 @@ MercadoPagoPaymentProps
               </div>
             </div>
             <div className="space-y-4 p-4 sm:p-6">
-              {(!mpReady || !cardFormReady) && (
+              {(!mpReady || !containerReady || !cardFormReady) && (
                 <div className="flex items-center justify-center rounded-xl border border-dashed border-gray-300 bg-gray-50 py-6 text-sm text-gray-500">
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Preparando o formulario seguro...
                 </div>
               )}
 
-              {mpReady && (
-                <div className="rounded-xl border border-gray-100 bg-gradient-to-br from-white to-gray-50 p-4 shadow-inner">
+              <div 
+                ref={cardContainerRef}
+                className="rounded-xl border border-gray-100 bg-gradient-to-br from-white to-gray-50 p-4 shadow-inner"
+                style={{ minHeight: containerReady ? 'auto' : '300px', display: mpReady ? 'block' : 'none' }}
+              >
+                {containerReady && (
                   <CardPaymentBrick
-                    id="checkout-card-brick"
+                    key={`card-brick-${cardBrickKey}-${amount.toFixed(2)}`}
                     locale="pt-BR"
-                    initialization={{
-                      amount: Number(amount.toFixed(2)),
-                      payer: {
-                        email: payerEmail,
-                        identification: {
-                          type: "CPF",
-                          number: payerCpfInput.replace(/\D/g, ""),
-                        },
-                      },
-                    }}
-                    customization={{
-                      paymentMethods: {
-                        types: {
-                          included: ["credit_card", "debit_card"],
-                        },
-                      },
-                    }}
-                    onReady={() => setCardFormReady(true)}
-                    onSubmit={async (formData: CardFormData) => {
-                      await handleCardSubmit({
-                        payment_method_id: formData.payment_method_id,
-                        token: formData.token,
-                        issuer_id: formData.issuer_id,
-                        installments: formData.installments,
-                      });
-                    }}
-                    onError={(error: unknown) => {
-                      const message =
-                        typeof error === "string"
-                          ? error
-                          : error instanceof Error
-                            ? error.message
-                            : "Erro ao inicializar o pagamento";
-                      showError(message);
-                    }}
+                    initialization={cardInitialization}
+                    customization={cardCustomization}
+                    onReady={handleCardReady}
+                    onSubmit={handleCardSubmit}
+                    onError={handleCardError}
                   />
-                </div>
-              )}
+                )}
+              </div>
 
               {cardLoading && (
                 <div className="flex items-center justify-center text-sm text-gray-500">

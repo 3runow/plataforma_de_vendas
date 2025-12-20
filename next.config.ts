@@ -2,6 +2,8 @@ import path from "path";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Disable strict mode to prevent double SDK initialization issues with Mercado Pago
+  reactStrictMode: false,
   // Define explicit root to silence lockfile root warnings
   outputFileTracingRoot: path.join(__dirname),
   env: {

@@ -77,7 +77,7 @@ async function resolveStatus({
     payment.status === "approved"
       ? "processing"
       : payment.status === "rejected"
-        ? "cancelled"
+        ? "payment_failed"
         : order.status;
 
   await prisma.order.update({

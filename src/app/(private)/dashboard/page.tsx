@@ -22,6 +22,7 @@ interface OrderWithRelations {
   id: number;
   total: number;
   status: string;
+  paymentStatus: string;
   createdAt: Date;
   updatedAt: Date;
   user: {
@@ -127,12 +128,17 @@ export default async function Dashboard() {
     const lowStockProducts = products.filter((p: Product) => p.stock < 10);
 
     // Calcula métricas
-    const totalRevenue = (orders as OrderWithRelations[])
-      .filter((order) => order.status !== "cancelled")
+    // Receita total: só pedidos com pagamento aprovado
+    const totalRevenue = (orders as OrderWithRelations[]).
+      filter((order) => order.paymentStatus === "approved")
       .reduce((sum, order) => sum + order.total, 0);
 
+    // Pedidos pendentes: todos que aguardam pagamento ou estão com pagamento falho
     const pendingOrdersCount = (orders as OrderWithRelations[]).filter(
-      (order) => order.status === "pending"
+      (order) => 
+        order.status === "payment_pending" || 
+        order.status === "payment_failed" ||
+        (order.paymentStatus !== "approved" && order.status !== "cancelled")
     ).length;
     const totalProducts = products.length;
     const totalUsers = users.length;
@@ -150,7 +156,8 @@ export default async function Dashboard() {
         const orderDate = new Date(order.createdAt);
         orderDate.setHours(0, 0, 0, 0);
         return (
-          orderDate.getTime() === date.getTime() && order.status !== "cancelled"
+          orderDate.getTime() === date.getTime() && 
+          order.paymentStatus === "approved" // Só conta vendas com pagamento aprovado
         );
       });
 
@@ -168,7 +175,7 @@ export default async function Dashboard() {
     >();
 
     (orders as OrderWithRelations[])
-      .filter((order) => order.status !== "cancelled")
+      .filter((order) => order.paymentStatus === "approved") // Só conta pedidos pagos
       .forEach((order) => {
         order.items.forEach((item) => {
           const existing = productSales.get(item.product.id);
@@ -221,7 +228,7 @@ export default async function Dashboard() {
       .filter(
         (order) =>
           new Date(order.createdAt) >= currentMonthStart &&
-          order.status !== "cancelled"
+          order.paymentStatus === "approved" // Só conta receita de pedidos pagos
       )
       .reduce((sum, order) => sum + order.total, 0);
 
@@ -230,7 +237,7 @@ export default async function Dashboard() {
         (order) =>
           new Date(order.createdAt) >= lastMonthStart &&
           new Date(order.createdAt) <= lastMonthEnd &&
-          order.status !== "cancelled"
+          order.paymentStatus === "approved" // Só conta receita de pedidos pagos
       )
       .reduce((sum, order) => sum + order.total, 0);
 
@@ -242,14 +249,16 @@ export default async function Dashboard() {
     const currentMonthPending = (orders as OrderWithRelations[]).filter(
       (order) =>
         new Date(order.createdAt) >= currentMonthStart &&
-        order.status === "pending"
+        (order.status === "payment_pending" || order.paymentStatus !== "approved") &&
+        order.status !== "cancelled"
     ).length;
 
     const lastMonthPending = (orders as OrderWithRelations[]).filter(
       (order) =>
         new Date(order.createdAt) >= lastMonthStart &&
         new Date(order.createdAt) <= lastMonthEnd &&
-        order.status === "pending"
+        (order.status === "payment_pending" || order.paymentStatus !== "approved") &&
+        order.status !== "cancelled"
     ).length;
 
     const ordersTrend =

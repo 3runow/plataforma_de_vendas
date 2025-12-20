@@ -15,6 +15,7 @@ import { Package, MapPin, Calendar, RotateCcw, Printer } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { RequestReturnModal } from "./request-return-modal";
 import { ReturnLabelModal } from "./return-label-modal";
+import { getOrderStatusMeta } from "@/constants/order-status";
 
 interface OrderItem {
   id: number;
@@ -49,18 +50,13 @@ interface OrdersTabProps {
   userId: number;
 }
 
-const statusMap: Record<string, { label: string; color: string }> = {
-  pending: { label: "Pendente", color: "bg-yellow-500" },
-  processing: { label: "Processando", color: "bg-blue-500" },
-  shipped: { label: "Enviado", color: "bg-purple-500" },
-  delivered: { label: "Entregue", color: "bg-green-500" },
-  cancelled: { label: "Cancelado", color: "bg-red-500" },
-  return_requested: { label: "Devolução Solicitada", color: "bg-orange-500" },
-  return_approved: { label: "Devolução Aprovada", color: "bg-blue-500" },
-  return_label_generated: { label: "Etiqueta de Devolução Gerada", color: "bg-purple-500" },
-  return_in_transit: { label: "Devolução em Trânsito", color: "bg-orange-500" },
-  return_received: { label: "Devolução Recebida", color: "bg-green-500" },
-  return_rejected: { label: "Devolução Rejeitada", color: "bg-red-500" },
+// Helper to get status info from centralized constants
+const getStatusInfo = (status: string) => {
+  const meta = getOrderStatusMeta(status);
+  return {
+    label: meta.label,
+    color: meta.dotClass,
+  };
 };
 
 export default function OrdersTab({ userId }: OrdersTabProps) {
@@ -214,10 +210,7 @@ export default function OrdersTab({ userId }: OrdersTabProps) {
         ) : (
           <div className="space-y-4">
             {orders.map((order) => {
-              const statusInfo = statusMap[order.status] || {
-                label: order.status,
-                color: "bg-gray-500",
-              };
+              const statusInfo = getStatusInfo(order.status);
               return (
                 <Card key={order.id} className="overflow-hidden">
                   {/* ...existing code... */}

@@ -56,12 +56,16 @@ type RegisterFormData = z.infer<typeof registerSchema>;
 
 interface AuthModalProps {
   open: boolean;
-  onOpenChangeAction: (open: boolean) => void;
+  onOpenChangeAction?: (open: boolean) => void;
+  onClose?: () => void;
+  onSuccess?: () => void;
 }
 
 export default function AuthModal({
   open,
   onOpenChangeAction,
+  onClose,
+  onSuccess,
 }: AuthModalProps) {
   const [isLogin, setIsLogin] = useState(true);
   const [error, setError] = useState("");
@@ -73,6 +77,13 @@ export default function AuthModal({
   const [isSendingResetEmail, setIsSendingResetEmail] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
+
+  const handleClose = (isOpen: boolean) => {
+    if (!isOpen) {
+      onClose?.();
+    }
+    onOpenChangeAction?.(isOpen);
+  };
 
   const loginForm = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -106,11 +117,16 @@ export default function AuthModal({
       // Mostrar toast de sucesso
       toast({
         title: "Login realizado!",
-        description: "Bem-vindo de volta! Você foi autenticado com sucesso.",
+        description: result.linkedOrders 
+          ? `Bem-vindo de volta! ${result.linkedOrders} pedido(s) foi(ram) vinculado(s) à sua conta.`
+          : "Bem-vindo de volta! Você foi autenticado com sucesso.",
         duration: 3000,
       });
 
-      onOpenChangeAction(false);
+      handleClose(false);
+
+      // Chamar callback de sucesso se existir
+      onSuccess?.();
 
       // Disparar evento para atualizar header
       window.dispatchEvent(new Event("auth-change"));
@@ -132,7 +148,7 @@ export default function AuthModal({
         body: JSON.stringify(data),
       });
 
-      let responseData: { message?: string; error?: string } | null = null;
+      let responseData: { message?: string; error?: string; linkedOrders?: number } | null = null;
       const contentType = res.headers.get("content-type") || "";
       if (contentType.includes("application/json")) {
         responseData = await res.json();
@@ -153,7 +169,41 @@ export default function AuthModal({
       if (responseData?.error) {
         setError(responseData.error);
       } else {
-        setMessage("Conta criada com sucesso! Faça login agora.");
+        // Conta criada com sucesso - fazer login automático
+        setMessage("Conta criada com sucesso! Fazendo login...");
+        
+        try {
+          const loginRes = await fetch("/api/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: data.email,
+              password: data.password,
+            }),
+          });
+
+          if (loginRes.ok) {
+            const linkedOrdersMessage = responseData?.linkedOrders 
+              ? ` ${responseData.linkedOrders} pedido(s) já estava(m) vinculado(s) à sua conta.`
+              : "";
+            
+            toast({
+              title: "Conta criada com sucesso!",
+              description: `Bem-vindo(a)! Você foi cadastrado e autenticado.${linkedOrdersMessage}`,
+              duration: 3000,
+            });
+
+            handleClose(false);
+            onSuccess?.();
+            window.dispatchEvent(new Event("auth-change"));
+            router.refresh();
+            return;
+          }
+        } catch (loginErr) {
+          console.error("Erro no login automático:", loginErr);
+        }
+
+        // Fallback: se o login automático falhar, pedir para fazer login manual
         registerForm.reset();
         setTimeout(() => {
           setIsLogin(true);
@@ -226,7 +276,7 @@ export default function AuthModal({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChangeAction}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl sm:text-2xl font-bold">

@@ -19,6 +19,7 @@ import { TopProductsChart } from "./top-products-chart";
 import { OrdersStatusChart } from "./orders-status-chart";
 import { UserGrowthChart } from "./user-growth-chart";
 import { QuickStats } from "./quick-stats";
+import { getOrderStatusMeta } from "@/constants/order-status";
 
 interface OrderUser {
   id: number;
@@ -114,25 +115,11 @@ export function DashboardOverview({
   };
 
   const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      pending: "bg-yellow-100 text-yellow-800",
-      processing: "bg-blue-100 text-blue-800",
-      shipped: "bg-purple-100 text-purple-800",
-      delivered: "bg-green-100 text-green-800",
-      cancelled: "bg-red-100 text-red-800",
-    };
-    return colors[status] || "bg-gray-100 text-gray-800";
+    return getOrderStatusMeta(status).badgeClass;
   };
 
   const getStatusLabel = (status: string) => {
-    const labels: Record<string, string> = {
-      pending: "Pendente",
-      processing: "Processando",
-      shipped: "Enviado",
-      delivered: "Entregue",
-      cancelled: "Cancelado",
-    };
-    return labels[status] || status;
+    return getOrderStatusMeta(status).label;
   };
 
   return (

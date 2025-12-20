@@ -79,7 +79,20 @@ const app = new Elysia()
           },
         });
 
-        return { id: updatedUser.id, name: updatedUser.name, email: updatedUser.email };
+        // Contar pedidos que o guest já tinha
+        const ordersCount = await prisma.order.count({
+          where: { userId: updatedUser.id },
+        });
+
+        console.log(`✅ Guest ${normalizedEmail} convertido para usuário real. ${ordersCount} pedido(s) já vinculado(s).`);
+
+        return { 
+          id: updatedUser.id, 
+          name: updatedUser.name, 
+          email: updatedUser.email,
+          linkedOrders: ordersCount,
+          message: ordersCount > 0 ? `${ordersCount} pedido(s) vinculado(s) à sua conta!` : undefined,
+        };
       }
 
       // Verificar se CPF já existe
@@ -164,9 +177,52 @@ const app = new Elysia()
         maxAge: 60 * 60 * 24 * 7,
       });
 
+      // Vincular pedidos de guests com mesmo email ao usuário logado
+      let linkedOrdersCount = 0;
+      try {
+        // Buscar guests com mesmo email (que não seja o próprio usuário)
+        const guestUsers = await prisma.user.findMany({
+          where: {
+            email: { equals: normalizedEmail, mode: "insensitive" },
+            isGuest: true,
+            id: { not: user.id },
+          },
+          select: { id: true },
+        });
+
+        if (guestUsers.length > 0) {
+          const guestIds = guestUsers.map((g) => g.id);
+          
+          // Vincular pedidos ao usuário logado
+          const result = await prisma.order.updateMany({
+            where: { userId: { in: guestIds } },
+            data: { userId: user.id },
+          });
+          linkedOrdersCount = result.count;
+
+          // Vincular endereços
+          await prisma.address.updateMany({
+            where: { userId: { in: guestIds } },
+            data: { userId: user.id },
+          });
+
+          // Vincular itens do carrinho
+          await prisma.cartItem.updateMany({
+            where: { userId: { in: guestIds } },
+            data: { userId: user.id },
+          });
+
+          console.log(`✅ Login: ${linkedOrdersCount} pedido(s) de guest vinculado(s) ao usuário ${normalizedEmail}`);
+        }
+      } catch (linkError) {
+        console.error("Erro ao vincular pedidos de guest:", linkError);
+        // Não falha o login por causa disso
+      }
+
       return {
         message: "Login bem-sucedido.",
         user: { id: user.id, email: user.email },
+        linkedOrders: linkedOrdersCount > 0 ? linkedOrdersCount : undefined,
       };
     } catch (e: unknown) {
       set.status = 500;

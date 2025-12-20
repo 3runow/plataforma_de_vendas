@@ -92,6 +92,19 @@ export async function POST(request: NextRequest) {
       payer.identification?.number?.replace(/\D/g, "") ||
       order.user?.cpf?.replace(/\D/g, "");
 
+    // Validar CPF antes de enviar ao Mercado Pago
+    if (!identificationNumber || identificationNumber.length !== 11) {
+      console.error("CPF inválido:", {
+        payerCpf: payer.identification?.number,
+        userCpf: order.user?.cpf,
+        cleanedCpf: identificationNumber,
+      });
+      return NextResponse.json(
+        { error: "CPF inválido. Por favor, informe um CPF válido com 11 dígitos." },
+        { status: 400 },
+      );
+    }
+
     const metadata: Record<string, string> = {
       orderId: String(orderId),
     };
@@ -158,7 +171,11 @@ export async function POST(request: NextRequest) {
         paymentId: payment.id ? String(payment.id) : order.paymentId,
         paymentMethod,
         paymentStatus,
-        status: paymentStatus === "approved" ? "processing" : order.status,
+        status: paymentStatus === "approved" 
+          ? "processing" 
+          : paymentStatus === "rejected" 
+            ? "payment_failed" 
+            : order.status,
       },
     });
 

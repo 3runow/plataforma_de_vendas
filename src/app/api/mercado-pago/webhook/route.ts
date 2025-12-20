@@ -199,7 +199,7 @@ export async function POST(request: NextRequest) {
       paymentStatus === "approved"
         ? "processing"
         : paymentStatus === "rejected"
-          ? "cancelled"
+          ? "payment_failed"
           : order.status;
 
     await prisma.order.update({

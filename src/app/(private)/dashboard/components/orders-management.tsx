@@ -28,6 +28,7 @@ import { ShoppingCart, Eye } from "lucide-react";
 import { OrderDetailsModal } from "./order-details-modal";
 import { OrdersFilter } from "./orders-filter";
 import { SyncOrdersButton } from "@/components/sync-orders-button";
+import { getOrderStatusMeta } from "@/constants/order-status";
 
 interface Order {
   id: number;
@@ -91,37 +92,11 @@ export function OrdersManagement({
   };
 
   const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      pending: "bg-yellow-100 text-yellow-800",
-      processing: "bg-blue-100 text-blue-800",
-      shipped: "bg-purple-100 text-purple-800",
-      delivered: "bg-green-100 text-green-800",
-      cancelled: "bg-red-100 text-red-800",
-      return_requested: "bg-orange-100 text-orange-800",
-      return_approved: "bg-blue-100 text-blue-800",
-      return_label_generated: "bg-purple-100 text-purple-800",
-      return_in_transit: "bg-orange-100 text-orange-800",
-      return_received: "bg-green-100 text-green-800",
-      return_rejected: "bg-red-100 text-red-800",
-    };
-    return colors[status] || "bg-gray-100 text-gray-800";
+    return getOrderStatusMeta(status).badgeClass;
   };
 
   const getStatusLabel = (status: string) => {
-    const labels: Record<string, string> = {
-      pending: "Pendente",
-      processing: "Processando",
-      shipped: "Enviado",
-      delivered: "Entregue",
-      cancelled: "Cancelado",
-      return_requested: "Devolução Solicitada",
-      return_approved: "Devolução Aprovada",
-      return_label_generated: "Etiqueta de Devolução Gerada",
-      return_in_transit: "Devolução em Trânsito",
-      return_received: "Devolução Recebida",
-      return_rejected: "Devolução Rejeitada",
-    };
-    return labels[status] || status;
+    return getOrderStatusMeta(status).label;
   };
 
   const handleStatusChange = async (orderId: number, newStatus: string) => {
@@ -283,11 +258,14 @@ export function OrdersManagement({
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="pending">
-                                  Pendente
+                                <SelectItem value="payment_pending">
+                                  Aguardando Pagamento
+                                </SelectItem>
+                                <SelectItem value="payment_failed">
+                                  Pagamento Falhou
                                 </SelectItem>
                                 <SelectItem value="processing">
-                                  Processando
+                                  Em Preparação
                                 </SelectItem>
                                 <SelectItem value="shipped">Enviado</SelectItem>
                                 <SelectItem value="delivered">
@@ -407,10 +385,11 @@ export function OrdersManagement({
                               <SelectValue placeholder="Alterar status" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="pending">Pendente</SelectItem>
-                              <SelectItem value="processing">
-                                Processando
+                              <SelectItem value="payment_pending">Aguardando Pagamento</SelectItem>
+                              <SelectItem value="payment_failed">
+                                Pagamento Falhou
                               </SelectItem>
+                              <SelectItem value="processing">Em Preparação</SelectItem>
                               <SelectItem value="shipped">Enviado</SelectItem>
                               <SelectItem value="delivered">
                                 Entregue

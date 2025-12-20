@@ -38,8 +38,8 @@ export async function POST(request: NextRequest) {
 
     if (paymentStatus === "approved") {
       nextStatus = "processing";
-    } else if (paymentStatus === "failed") {
-      nextStatus = "payment_incomplete";
+    } else if (paymentStatus === "failed" || paymentStatus === "rejected") {
+      nextStatus = "payment_failed";
     } else if (
       paymentStatus === "pending" &&
       PAYMENT_RELATED_STATUSES.includes(order.status as OrderStatus)
