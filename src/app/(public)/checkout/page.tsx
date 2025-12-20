@@ -129,7 +129,7 @@ export default function CheckoutPage() {
     cvv: "",
     cpf: "",
   });
-  const ensureOrderCreated = useCallback(async (): Promise<number | null> => {
+  const ensureOrderCreated = useCallback(async (): Promise<number> => {
     if (currentOrderId) return currentOrderId;
 
     const digits = (value: string) => value.replace(/\D/g, "");
@@ -143,12 +143,14 @@ export default function CheckoutPage() {
       phoneDigits.length >= 10;
 
     if (!isPersonalComplete) {
+      const message =
+        "Preencha nome, email, CPF e telefone antes de pagar.";
       toast({
         title: "Dados pessoais incompletos",
-        description: "Preencha nome, email, CPF e telefone antes de pagar.",
+        description: message,
         variant: "destructive",
       });
-      return null;
+      throw new Error(message);
     }
 
     const cepValid = addressData.cep.replace(/\D/g, "").length === 8;
@@ -162,12 +164,13 @@ export default function CheckoutPage() {
       selectedShipping !== null;
 
     if (!isComplete) {
+      const message = "Preencha endereço e selecione o frete antes de pagar.";
       toast({
         title: "Dados incompletos",
-        description: "Preencha endereço e selecione o frete antes de pagar.",
+        description: message,
         variant: "destructive",
       });
-      return null;
+      throw new Error(message);
     }
 
     const recipientName =
@@ -224,18 +227,19 @@ export default function CheckoutPage() {
         description: message,
         variant: "destructive",
       });
-      return null;
+      throw new Error(message);
     } catch (error) {
       console.error("Erro ao criar pedido:", error);
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Tente novamente em instantes.";
       toast({
         title: "Erro ao criar pedido",
-        description:
-          error instanceof Error
-            ? error.message
-            : "Tente novamente em instantes.",
+        description: message,
         variant: "destructive",
       });
-      return null;
+      throw new Error(message);
     }
   }, [
     addressData,

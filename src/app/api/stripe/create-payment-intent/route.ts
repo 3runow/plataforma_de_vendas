@@ -9,9 +9,7 @@ if (!STRIPE_SECRET_KEY) {
   throw new Error("STRIPE_SECRET_KEY não configurado nas variáveis de ambiente. Configure a variável STRIPE_SECRET_KEY no arquivo .env");
 }
 
-const stripe = new Stripe(STRIPE_SECRET_KEY, {
-  apiVersion: "2025-02-24.acacia",
-});
+const stripe = new Stripe(STRIPE_SECRET_KEY);
 
 const paymentIntentSchema = z.object({
   amount: z.number().positive().max(999999.99),
