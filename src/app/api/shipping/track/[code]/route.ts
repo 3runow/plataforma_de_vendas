@@ -24,6 +24,14 @@ export async function GET(
     // Buscar rastreamento no Melhor Envio
     const tracking = await melhorEnvio.trackShipment(code);
 
+    // Verificar se o tracking foi encontrado
+    if (!tracking) {
+      return NextResponse.json(
+        { error: "Rastreamento não encontrado para o código informado" },
+        { status: 404 }
+      );
+    }
+
     // Atualizar eventos de rastreamento no banco (se tiver o modelo Shipment)
     // Comentado até rodar a migração
     /*

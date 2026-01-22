@@ -343,6 +343,11 @@ export class MelhorEnvioService {
 
       // A API retorna um objeto com o código de rastreio como chave
       const trackingData = response.data[trackingCode];
+      
+      if (!trackingData) {
+        throw new Error(`Código de rastreio "${trackingCode}" não encontrado`);
+      }
+      
       return trackingData;
     } catch (error) {
       const err = error as { response?: { data?: unknown }; message?: string };
@@ -350,7 +355,7 @@ export class MelhorEnvioService {
         "Erro ao rastrear envio:",
         err.response?.data || err.message
       );
-      throw new Error("Falha ao rastrear envio");
+      throw new Error(err.message || "Falha ao rastrear envio");
     }
   }
 
