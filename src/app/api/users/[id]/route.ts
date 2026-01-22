@@ -13,7 +13,7 @@ const updateUserSchema = z.object({
 // PUT: Atualizar usuário (nome, email, role)
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Verificar autenticação
@@ -30,7 +30,8 @@ export async function PUT(
       );
     }
 
-    const userId = parseInt(params.id);
+    const resolvedParams = await params;
+    const userId = parseInt(resolvedParams.id);
     if (isNaN(userId)) {
       return NextResponse.json({ error: "ID de usuário inválido" }, { status: 400 });
     }
@@ -99,7 +100,7 @@ export async function PUT(
 // DELETE: Deletar usuário
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Verificar autenticação
@@ -116,7 +117,8 @@ export async function DELETE(
       );
     }
 
-    const userId = parseInt(params.id);
+    const resolvedParams = await params;
+    const userId = parseInt(resolvedParams.id);
     if (isNaN(userId)) {
       return NextResponse.json({ error: "ID de usuário inválido" }, { status: 400 });
     }
@@ -149,7 +151,7 @@ export async function DELETE(
 // GET: Obter dados de um usuário específico
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Verificar autenticação
@@ -158,7 +160,8 @@ export async function GET(
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
 
-    const userId = parseInt(params.id);
+    const resolvedParams = await params;
+    const userId = parseInt(resolvedParams.id);
     if (isNaN(userId)) {
       return NextResponse.json({ error: "ID de usuário inválido" }, { status: 400 });
     }

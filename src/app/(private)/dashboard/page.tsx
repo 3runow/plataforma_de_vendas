@@ -431,7 +431,6 @@ export default async function Dashboard() {
                 userGrowthData={userGrowthData}
                 revenueTrend={revenueTrend}
                 ordersTrend={ordersTrend}
-                userRole={user.role}
               />
             </TabsContent>
 
