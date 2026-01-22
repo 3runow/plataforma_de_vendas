@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyAuth } from "@/lib/auth";
 
+function onlyDigits(value?: string | null) {
+  return (value || "").replace(/\D/g, "");
+}
+
 // Busca pedido por ID - permite acesso ao próprio pedido do guest usando email ou acesso autenticado
 export async function GET(
   request: NextRequest,
@@ -21,6 +25,11 @@ export async function GET(
     // Tenta autenticar o usuário
     const user = await verifyAuth(request).catch(() => null);
 
+    const emailParam = request.nextUrl.searchParams.get("email")
+      ?.trim()
+      .toLowerCase();
+    const cpfParam = onlyDigits(request.nextUrl.searchParams.get("cpf"));
+
     // Buscar o pedido
     const order = await prisma.order.findUnique({
       where: { id: orderId },
@@ -36,6 +45,7 @@ export async function GET(
             id: true,
             name: true,
             email: true,
+            cpf: true,
             isGuest: true,
           },
         },
@@ -57,7 +67,16 @@ export async function GET(
     const isAdmin = user && user.role === "admin";
     const isGuestOrder = order.user?.isGuest === true;
 
-    if (!isOwner && !isAdmin && !isGuestOrder) {
+    const isPublicMatch =
+      !user &&
+      !isGuestOrder &&
+      typeof emailParam === "string" &&
+      emailParam.length > 0 &&
+      emailParam === (order.user?.email || "").trim().toLowerCase() &&
+      cpfParam.length === 11 &&
+      cpfParam === (order.user?.cpf || "").replace(/\D/g, "");
+
+    if (!isOwner && !isAdmin && !isGuestOrder && !isPublicMatch) {
       return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
     }
 
@@ -65,8 +84,8 @@ export async function GET(
     return NextResponse.json({ 
       success: true, 
       order,
-      isGuestOrder: isGuestOrder && !isOwner,
-      showLoginPrompt: isGuestOrder && !user,
+      isGuestOrder: (isGuestOrder || isPublicMatch) && !isOwner,
+      showLoginPrompt: (isGuestOrder || isPublicMatch) && !user,
     });
   } catch (error) {
     console.error("Erro ao buscar pedido:", error);

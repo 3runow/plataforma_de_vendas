@@ -42,7 +42,7 @@ interface ShippingManagementProps {
   userRole?: string;
 }
 
-export function ShippingManagement({ orders, userRole = "customer" }: ShippingManagementProps) {
+export function ShippingManagement({ orders }: ShippingManagementProps) {
   const [activeTab, setActiveTab] = useState('pending');
 
   // Filtrar pedidos por status de envio

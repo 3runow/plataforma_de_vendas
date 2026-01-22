@@ -29,7 +29,6 @@ import { OrderDetailsModal } from "./order-details-modal";
 import { OrdersFilter } from "./orders-filter";
 import { SyncOrdersButton } from "@/components/sync-orders-button";
 import { UserRole } from "@/lib/permissions";
-import { DisableIfNoPermission } from "@/components/protected-action";
 import { getOrderStatusMeta } from "@/constants/order-status";
 
 interface Order {
@@ -58,7 +57,7 @@ interface Order {
 
 interface OrdersManagementProps {
   orders: Order[];
-  userRole?: string;
+  userRole?: UserRole;
 }
 
 export function OrdersManagement({

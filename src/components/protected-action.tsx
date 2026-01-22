@@ -22,7 +22,6 @@ export function ProtectedAction({
   resource,
   children,
   fallback,
-  showTooltip = true,
 }: ProtectedActionProps) {
   let hasPermission = false;
 

@@ -10,7 +10,6 @@ import { UserRole } from "@/lib/permissions";
  */
 export function useUserRole(): UserRole | null {
   const [role, setRole] = useState<UserRole | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     try {
@@ -22,7 +21,6 @@ export function useUserRole(): UserRole | null {
 
       if (!token) {
         setRole(null);
-        setIsLoading(false);
         return;
       }
 
@@ -38,8 +36,6 @@ export function useUserRole(): UserRole | null {
     } catch (error) {
       console.error("Erro ao decodificar token:", error);
       setRole(null);
-    } finally {
-      setIsLoading(false);
     }
   }, []);
 

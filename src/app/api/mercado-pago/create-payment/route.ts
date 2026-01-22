@@ -66,15 +66,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Regra de acesso:
+    // - Se autenticado, precisa ser dono do pedido.
+    // - Se não autenticado:
+    //   - permite para pedidos de guest
+    //   - ou permite se o email+CPF informados batem com o usuário do pedido (cliente já cadastrado mas não logado)
     if (authUser && order.userId !== authUser.id) {
       return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
-    }
-
-    if (!authUser && order.user?.isGuest !== true) {
-      return NextResponse.json(
-        { error: "Nao autorizado" },
-        { status: 401 },
-      );
     }
 
     const payerNameParts = (payer.firstName || payer.lastName)
@@ -103,6 +101,26 @@ export async function POST(request: NextRequest) {
         { error: "CPF inválido. Por favor, informe um CPF válido com 11 dígitos." },
         { status: 400 },
       );
+    }
+
+    if (!authUser) {
+      if (order.user?.isGuest === true) {
+        // ok
+      } else {
+        const orderEmail = order.user?.email?.trim().toLowerCase() || "";
+        const payerEmail = payer.email.trim().toLowerCase();
+        const orderCpf = order.user?.cpf?.replace(/\D/g, "") || "";
+
+        const hasMatch =
+          orderEmail.length > 0 &&
+          payerEmail === orderEmail &&
+          orderCpf.length === 11 &&
+          identificationNumber === orderCpf;
+
+        if (!hasMatch) {
+          return NextResponse.json({ error: "Nao autorizado" }, { status: 401 });
+        }
+      }
     }
 
     const metadata: Record<string, string> = {
@@ -192,23 +210,52 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Erro ao criar pagamento Mercado Pago:", error);
+    const errorAny = error as {
+      message?: unknown;
+      code?: unknown;
+      status?: unknown;
+      cause?: unknown;
+    };
+
     const message =
-      error instanceof Error ? error.message : "Erro interno ao criar pagamento";
+      error instanceof Error
+        ? error.message
+        : typeof errorAny?.message === "string"
+          ? errorAny.message
+          : "Erro interno ao criar pagamento";
 
     const mpStatus =
-      typeof (error as { status?: number }).status === "number"
-        ? (error as { status?: number }).status
-        : undefined;
+      typeof errorAny?.status === "number" ? (errorAny.status as number) : undefined;
 
     const details =
-      Array.isArray((error as { cause?: Array<{ description?: string }> }).cause)
-        ? (error as { cause: Array<{ description?: string }> }).cause
-            .map((cause) => cause.description)
+      Array.isArray(
+        (error as { cause?: Array<{ description?: string; code?: string }> })
+          .cause,
+      )
+        ? (error as { cause: Array<{ description?: string; code?: string }> })
+            .cause
+            .map((cause) =>
+              [cause.code, cause.description].filter(Boolean).join(": "),
+            )
             .filter(Boolean)
             .join(" | ")
         : null;
 
     const clientMessage = details?.length ? details : message;
+
+    const code = typeof errorAny?.code === "string" ? errorAny.code : "";
+    const normalized = `${code} ${String(message || "")} ${String(details || "")}`
+      .toLowerCase();
+
+    if (normalized.includes("invalid access token") || normalized.includes("unauthorized")) {
+      return NextResponse.json(
+        {
+          error:
+            "Pagamento indisponível: token do Mercado Pago inválido. Atualize MERCADO_PAGO_ACCESS_TOKEN e reinicie o servidor.",
+        },
+        { status: 500 },
+      );
+    }
 
     return NextResponse.json(
       { error: clientMessage },

@@ -3,6 +3,10 @@ import { getUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { mercadoPagoPayment } from "@/lib/mercado-pago";
 
+function onlyDigits(value?: string | null) {
+  return (value || "").replace(/\D/g, "");
+}
+
 type PaymentResponse = {
   id?: string | number;
   status?: string;
@@ -157,18 +161,25 @@ export async function POST(request: NextRequest) {
   try {
     const user = await getUser();
 
-    if (!user) {
-      return NextResponse.json({ error: "Nao autorizado" }, { status: 401 });
-    }
-
-    const body = await request.json();
-    const paymentId = body.paymentId || body.id;
+    const body = await request.json().catch(() => ({} as Record<string, unknown>));
+    const paymentId = (body as { paymentId?: unknown; id?: unknown }).paymentId ||
+      (body as { paymentId?: unknown; id?: unknown }).id;
+    const rawOrderId = (body as { orderId?: unknown }).orderId;
     const orderId =
-      typeof body.orderId === "number"
-        ? body.orderId
-        : typeof body.orderId === "string" && /^\d+$/.test(body.orderId)
-          ? parseInt(body.orderId, 10)
+      typeof rawOrderId === "number"
+        ? rawOrderId
+        : typeof rawOrderId === "string" && /^\d+$/.test(rawOrderId)
+          ? parseInt(rawOrderId, 10)
           : undefined;
+
+    const email =
+      typeof (body as { email?: unknown }).email === "string"
+        ? ((body as { email?: unknown }).email as string).trim().toLowerCase()
+        : undefined;
+    const cpf =
+      typeof (body as { cpf?: unknown }).cpf === "string"
+        ? onlyDigits((body as { cpf?: unknown }).cpf as string)
+        : undefined;
 
     if (!paymentId) {
       return NextResponse.json(
@@ -177,8 +188,54 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Sem login: permitir apenas se o pedido for de guest ou se email+CPF baterem com o dono do pedido.
+    if (!user) {
+      if (!orderId) {
+        return NextResponse.json(
+          { error: "orderId e obrigatorio" },
+          { status: 400 },
+        );
+      }
+
+      const order = await prisma.order.findUnique({
+        where: { id: orderId },
+        include: { user: true },
+      });
+
+      if (!order) {
+        return NextResponse.json(
+          { error: "Pedido nao encontrado" },
+          { status: 404 },
+        );
+      }
+
+      const isGuestOrder = order.user?.isGuest === true;
+      const isPublicMatch =
+        !isGuestOrder &&
+        typeof email === "string" &&
+        email.length > 0 &&
+        email === (order.user?.email || "").trim().toLowerCase() &&
+        typeof cpf === "string" &&
+        cpf.length === 11 &&
+        cpf === (order.user?.cpf || "").replace(/\D/g, "");
+
+      if (!isGuestOrder && !isPublicMatch) {
+        return NextResponse.json({ error: "Nao autorizado" }, { status: 401 });
+      }
+
+      const { payment, order: resolvedOrder } = await resolveStatus({
+        paymentId: String(paymentId),
+        orderId: order.id,
+        userId: order.userId,
+      });
+
+      return NextResponse.json(
+        buildResponse(payment, resolvedOrder?.id ?? order.id),
+      );
+    }
+
     const { payment, order } = await resolveStatus({
-      paymentId,
+      paymentId: String(paymentId),
       orderId,
       userId: user.id,
     });

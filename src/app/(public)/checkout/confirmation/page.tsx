@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { useCart } from "@/contexts/cart-context";
-import { getOrderStatusMeta, getPaymentStatusMeta } from "@/constants/order-status";
+import { getOrderStatusMeta } from "@/constants/order-status";
 import AuthModal from "@/components/auth-modal";
 
 interface OrderData {
@@ -48,7 +48,6 @@ function OrderConfirmationContent() {
   const [cartCleared, setCartCleared] = useState(false);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [linkedMessage, setLinkedMessage] = useState<string | null>(null);
 
   // Declara as funções ANTES dos useEffects que as utilizam
@@ -61,6 +60,20 @@ function OrderConfirmationContent() {
         // Se não autorizado, tenta endpoint de guest
         if (response.status === 401 || response.status === 403) {
           response = await fetch(`/api/order/guest/${orderId}`);
+
+          // Se ainda negado, tenta novamente com email+CPF do último checkout (sessionStorage)
+          if (response.status === 401 || response.status === 403) {
+            try {
+              const email = sessionStorage.getItem("checkout:lastEmail") || "";
+              const cpf = sessionStorage.getItem("checkout:lastCpf") || "";
+              if (email && cpf) {
+                const qs = new URLSearchParams({ email, cpf });
+                response = await fetch(`/api/order/guest/${orderId}?${qs.toString()}`);
+              }
+            } catch {
+              // ignore
+            }
+          }
         }
         
         if (response.ok) {
@@ -76,10 +89,8 @@ function OrderConfirmationContent() {
             // Se é pedido de guest e não está logado, mostrar prompt
             if (data.showLoginPrompt) {
               setShowLoginPrompt(true);
-              setIsAuthenticated(false);
             } else {
               setShowLoginPrompt(false);
-              setIsAuthenticated(true);
             }
 
             // Se o pagamento foi aprovado, limpa o carrinho uma vez
@@ -116,7 +127,6 @@ function OrderConfirmationContent() {
   // Handler para quando o usuário faz login/cadastro
   const handleAuthSuccess = useCallback(async () => {
     setShowAuthModal(false);
-    setIsAuthenticated(true);
     setShowLoginPrompt(false);
     
     const orderId = searchParams.get("orderId");
@@ -189,10 +199,6 @@ function OrderConfirmationContent() {
 
   const getStatusLabel = (status: string) => {
     return getOrderStatusMeta(status).label;
-  };
-
-  const getPaymentLabel = (status: string) => {
-    return getPaymentStatusMeta(status).label;
   };
 
   if (loading) {

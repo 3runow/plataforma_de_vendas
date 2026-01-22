@@ -5,7 +5,6 @@ import {
   Twitter,
   Youtube,
   Mail,
-  Phone,
   MapPin,
   Lock,
 } from "lucide-react";

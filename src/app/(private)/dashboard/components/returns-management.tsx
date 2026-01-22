@@ -91,7 +91,7 @@ const returnStatusMap: Record<
   return_rejected: { label: "Rejeitado", color: "bg-red-500", icon: XCircle },
 };
 
-export function ReturnsManagement({ orders, userRole = "customer" }: ReturnsManagementProps) {
+export function ReturnsManagement({ orders }: ReturnsManagementProps) {
   const [activeTab, setActiveTab] = useState("requested");
   const [isLoading, setIsLoading] = useState(false);
   const [ordersState, setOrdersState] = useState(orders);

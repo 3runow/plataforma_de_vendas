@@ -26,8 +26,6 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Users, Trash2 } from "lucide-react";
-import { DisableIfNoPermission, ProtectedSection } from "@/components/protected-action";
-import { UserRole } from "@/lib/permissions";
 
 interface User {
   id: number;
@@ -48,6 +46,8 @@ interface UsersManagementProps {
 export function UsersManagement({ users: initialUsers, userRole = "customer" }: UsersManagementProps) {
   const [users, setUsers] = useState(initialUsers);
   const [filterRole, setFilterRole] = useState<string>("all");
+
+  const isAdmin = userRole === "admin";
 
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat("pt-BR", {
@@ -190,6 +190,7 @@ export function UsersManagement({ users: initialUsers, userRole = "customer" }: 
                             <Select
                               value={user.role}
                               onValueChange={(value) => handleRoleChange(user.id, value)}
+                              disabled={!isAdmin}
                             >
                               <SelectTrigger className="w-[140px] text-xs">
                                 <SelectValue />
@@ -204,6 +205,7 @@ export function UsersManagement({ users: initialUsers, userRole = "customer" }: 
                               variant="destructive"
                               size="sm"
                               onClick={() => handleDeleteUser(user.id)}
+                              disabled={!isAdmin}
                             >
                               Deletar
                             </Button>
@@ -268,6 +270,7 @@ export function UsersManagement({ users: initialUsers, userRole = "customer" }: 
                         <Select
                           value={user.role}
                           onValueChange={(value) => handleRoleChange(user.id, value)}
+                          disabled={!isAdmin}
                         >
                           <SelectTrigger className="flex-1 text-xs sm:text-sm h-8 sm:h-9">
                             <SelectValue />
@@ -283,6 +286,7 @@ export function UsersManagement({ users: initialUsers, userRole = "customer" }: 
                           size="sm"
                           onClick={() => handleDeleteUser(user.id)}
                           className="h-8 sm:h-9 px-2 sm:px-3"
+                          disabled={!isAdmin}
                         >
                           <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
                           <span className="ml-1 text-xs sm:text-sm hidden sm:inline">

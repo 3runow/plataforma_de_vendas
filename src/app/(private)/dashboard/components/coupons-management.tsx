@@ -67,7 +67,7 @@ interface Coupon {
 
 interface CouponsManagementProps {
   coupons: Coupon[];
-  userRole?: string;
+  userRole?: UserRole;
 }
 
 export function CouponsManagement({
@@ -416,17 +416,24 @@ export function CouponsManagement({
                 Gerencie os cupons de desconto da sua loja
               </CardDescription>
             </div>
-            <Button
-              onClick={() => {
-                resetForm();
-                setIsAddDialogOpen(true);
-              }}
-              className="w-full sm:w-auto"
-              size="sm"
+            <DisableIfNoPermission
+              role={userRole}
+              permission="create"
+              resource="coupons"
+              tooltipText="Você não tem permissão para criar cupons"
             >
-              <Plus className="h-4 w-4 mr-2" />
-              Novo Cupom
-            </Button>
+              <Button
+                onClick={() => {
+                  resetForm();
+                  setIsAddDialogOpen(true);
+                }}
+                className="w-full sm:w-auto"
+                size="sm"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Novo Cupom
+              </Button>
+            </DisableIfNoPermission>
           </div>
         </CardHeader>
         <CardContent>

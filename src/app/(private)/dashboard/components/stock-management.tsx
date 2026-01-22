@@ -24,7 +24,6 @@ import {
 import { Plus, Minus, Package } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
-import { DisableIfNoPermission, ProtectedSection } from "@/components/protected-action";
 import { UserRole } from "@/lib/permissions";
 
 interface Product {
@@ -37,7 +36,7 @@ interface Product {
 
 interface StockManagementProps {
   products: Product[];
-  userRole?: string;
+  userRole?: UserRole;
 }
 
 export default function StockManagement({ products, userRole = "customer" }: StockManagementProps) {

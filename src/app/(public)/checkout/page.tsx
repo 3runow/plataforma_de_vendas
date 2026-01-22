@@ -948,6 +948,21 @@ export default function CheckoutPage() {
                           finalOrderId
                         );
 
+                        // Permite mostrar a confirmação mesmo sem login (ex.: cliente já cadastrado que comprou sem autenticar)
+                        try {
+                          const digits = (value: string) => value.replace(/\D/g, "");
+                          sessionStorage.setItem(
+                            "checkout:lastEmail",
+                            formData.email.trim().toLowerCase()
+                          );
+                          sessionStorage.setItem(
+                            "checkout:lastCpf",
+                            digits(formData.cpf)
+                          );
+                        } catch {
+                          // ignore
+                        }
+
                         if (finalOrderId) {
                           window.location.href = `/checkout/confirmation?orderId=${finalOrderId}`;
                         } else {

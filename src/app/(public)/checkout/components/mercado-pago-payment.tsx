@@ -76,6 +76,37 @@ const CardPaymentBrick = dynamic(
   { ssr: false }
 );
 
+function formatPaymentRejection(statusDetail?: string | null) {
+  const detail = (statusDetail || "").toLowerCase();
+  if (!detail) {
+    return "Pagamento não autorizado. Verifique os dados do cartão e tente novamente.";
+  }
+
+  const map: Record<string, string> = {
+    cc_rejected_bad_filled_card_number:
+      "Número do cartão inválido. Verifique e tente novamente.",
+    cc_rejected_bad_filled_date:
+      "Data de validade inválida. Verifique e tente novamente.",
+    cc_rejected_bad_filled_security_code:
+      "CVV inválido. Verifique e tente novamente.",
+    cc_rejected_insufficient_amount:
+      "Saldo/limite insuficiente. Tente outro cartão ou outra forma de pagamento.",
+    cc_rejected_card_disabled:
+      "Cartão desabilitado. Entre em contato com o banco ou use outro cartão.",
+    cc_rejected_call_for_authorize:
+      "Pagamento recusado pelo banco. Entre em contato com o banco e tente novamente.",
+    cc_rejected_high_risk:
+      "Pagamento recusado por segurança. Tente outro cartão ou forma de pagamento.",
+    cc_rejected_other_reason:
+      "Pagamento recusado. Tente novamente ou use outro cartão.",
+  };
+
+  return (
+    map[detail] ||
+    `Pagamento não autorizado (${statusDetail}). Verifique os dados e tente novamente.`
+  );
+}
+
 function splitName(fullName: string) {
   if (!fullName) {
     return { firstName: "Cliente", lastName: "" };
@@ -274,6 +305,8 @@ MercadoPagoPaymentProps
         body: JSON.stringify({
           paymentId,
           orderId,
+          email: payerEmailRef.current,
+          cpf: payerCpfRef.current,
         }),
       });
 
@@ -502,9 +535,19 @@ MercadoPagoPaymentProps
           );
         }
 
+        const status = typeof data?.status === "string" ? data.status : "";
+        const statusDetail =
+          typeof data?.statusDetail === "string" ? data.statusDetail : null;
+
+        if (["rejected", "cancelled", "failed"].includes(status)) {
+          const msg = formatPaymentRejection(statusDetail);
+          showError(msg);
+          throw new Error(msg);
+        }
+
         setPaymentProcessed(true);
         setInfoMessage(
-          data.status === "approved"
+          status === "approved"
             ? "Pagamento aprovado. Redirecionando..."
             : "Pagamento em analise. Vamos atualizar o pedido quando o banco confirmar.",
         );
@@ -513,7 +556,7 @@ MercadoPagoPaymentProps
           amount: amountValue,
           paymentMethod: "credit_card",
           paymentId: data.id ? String(data.id) : undefined,
-          status: data.status,
+          status: status || data.status,
           orderId: data.orderId || finalOrderId,
         });
 
