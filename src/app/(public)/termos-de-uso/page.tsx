@@ -171,7 +171,7 @@ export default function TermosDeUsoPage() {
             </p>
             <div className="space-y-2 text-gray-700">
               <p>
-                <strong>E-mail:</strong> contato@bricks.com.br
+                <strong>E-mail:</strong> contato@oficialbricks.com.br
               </p>
               <p>
                 <strong>Telefone:</strong> (11) 4002-8922

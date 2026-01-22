@@ -30,7 +30,7 @@ export default function UserDropdown() {
   const router = useRouter();
   const { toast } = useToast();
   const [userName, setUserName] = useState<string>("");
-  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const [userRole, setUserRole] = useState<string>("");
   const greeting = getGreeting();
 
   useEffect(() => {
@@ -42,8 +42,8 @@ export default function UserDropdown() {
           // pega apenas o primeiro nome
           const firstName = data.user.name?.split(" ")[0] || "Usuário";
           setUserName(firstName);
-          // verifica se é admin
-          setIsAdmin(data.user.role === "admin");
+          // armazena o role do usuário
+          setUserRole(data.user.role || "customer");
         }
       })
       .catch((error) => {
@@ -108,11 +108,11 @@ export default function UserDropdown() {
           {userName ? `${greeting}, ${userName}!` : "Minha Conta"}
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        {isAdmin && (
+        {(userRole === "admin" || userRole === "visitor") && (
           <>
             <DropdownMenuItem onClick={() => router.push("/dashboard")}>
               <LayoutDashboard className="mr-2 h-4 w-4" />
-              <span>Dashboard Administrativo</span>
+              <span>Dashboard</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
           </>

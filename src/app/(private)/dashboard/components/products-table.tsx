@@ -13,17 +13,20 @@ import { Button } from "@/components/ui/button";
 import { ProductTableRow } from "./product-table-row";
 import { Product } from "../../../../../types/types";
 import { Edit, Trash2 } from "lucide-react";
+import { UserRole } from "@/lib/permissions";
 
 interface ProductsTableProps {
   products: Product[];
   onEdit: (product: Product) => void;
   onDelete: (id: number) => void;
+  userRole?: UserRole;
 }
 
 export function ProductsTable({
   products,
   onEdit,
   onDelete,
+  userRole = "customer",
 }: ProductsTableProps) {
   return (
     <>
@@ -59,6 +62,7 @@ export function ProductsTable({
                   product={product}
                   onEdit={onEdit}
                   onDelete={onDelete}
+                  userRole={userRole}
                 />
               ))
             )}

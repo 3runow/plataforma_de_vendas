@@ -39,9 +39,10 @@ interface Order {
 
 interface ShippingManagementProps {
   orders: Order[];
+  userRole?: string;
 }
 
-export function ShippingManagement({ orders }: ShippingManagementProps) {
+export function ShippingManagement({ orders, userRole = "customer" }: ShippingManagementProps) {
   const [activeTab, setActiveTab] = useState('pending');
 
   // Filtrar pedidos por status de envio

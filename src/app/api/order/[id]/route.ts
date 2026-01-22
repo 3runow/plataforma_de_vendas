@@ -47,8 +47,8 @@ export async function GET(
       );
     }
 
-    // Verifica se o pedido pertence ao usuário
-    if (order.userId !== user.id && user.role !== "admin") {
+    // Verifica se o pedido pertence ao usuário ou se é admin/visitor
+    if (order.userId !== user.id && user.role !== "admin" && user.role !== "visitor") {
       return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
     }
 

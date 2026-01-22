@@ -24,6 +24,8 @@ import {
 import { Plus, Minus, Package } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
+import { DisableIfNoPermission, ProtectedSection } from "@/components/protected-action";
+import { UserRole } from "@/lib/permissions";
 
 interface Product {
   id: number;
@@ -35,9 +37,10 @@ interface Product {
 
 interface StockManagementProps {
   products: Product[];
+  userRole?: string;
 }
 
-export default function StockManagement({ products }: StockManagementProps) {
+export default function StockManagement({ products, userRole = "customer" }: StockManagementProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -244,19 +247,21 @@ export default function StockManagement({ products }: StockManagementProps) {
                         <TableCell>{getStockBadge(product.stock)}</TableCell>
                         <TableCell className="text-right">
                           <Dialog>
-                            <DialogTrigger asChild>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                  setSelectedProduct(product);
-                                  setQuantity(0);
-                                  setOperation("add");
-                                }}
-                              >
-                                Ajustar Estoque
-                              </Button>
-                            </DialogTrigger>
+                            {userRole === "admin" && (
+                              <DialogTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setSelectedProduct(product);
+                                    setQuantity(0);
+                                    setOperation("add");
+                                  }}
+                                >
+                                  Ajustar Estoque
+                                </Button>
+                              </DialogTrigger>
+                            )}
                             <DialogContent className="sm:max-w-md">
                               {renderDialogContent(product)}
                             </DialogContent>
@@ -286,20 +291,22 @@ export default function StockManagement({ products }: StockManagementProps) {
                       {getStockBadge(product.stock)}
                     </div>
                     <Dialog>
-                      <DialogTrigger asChild>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedProduct(product);
-                            setQuantity(0);
-                            setOperation("add");
-                          }}
-                          className="w-full text-xs h-8"
-                        >
-                          Ajustar Estoque
-                        </Button>
-                      </DialogTrigger>
+                      {userRole === "admin" && (
+                        <DialogTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedProduct(product);
+                              setQuantity(0);
+                              setOperation("add");
+                            }}
+                            className="w-full text-xs h-8"
+                          >
+                            Ajustar Estoque
+                          </Button>
+                        </DialogTrigger>
+                      )}
                       <DialogContent className="w-[calc(100%-2rem)] max-w-md">
                         {renderDialogContent(product)}
                       </DialogContent>

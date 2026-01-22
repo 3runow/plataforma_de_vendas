@@ -103,7 +103,7 @@ export default function AjudaPage() {
                   <div className="border border-zinc-200 rounded-lg p-4">
                     <Mail className="h-5 w-5 text-[#022044] mb-2" />
                     <h3 className="font-semibold text-zinc-900 mb-1">E-mail</h3>
-                    <p className="text-sm">contato@bricks.com.br</p>
+                    <p className="text-sm">contato@oficialbricks.com.br</p>
                     <p className="text-xs text-zinc-500">Resposta em até 24h</p>
                   </div>
                 </div>

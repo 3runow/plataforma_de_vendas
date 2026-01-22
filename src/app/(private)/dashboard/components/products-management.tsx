@@ -17,13 +17,17 @@ import { useProductForm } from "./use-product-form";
 import { Product } from "../../../../../types/types";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
+import { DisableIfNoPermission } from "@/components/protected-action";
+import { UserRole } from "@/lib/permissions";
 
 interface ProductsManagementProps {
   products: Product[];
+  userRole?: string;
 }
 
 export function ProductsManagement({
   products: initialProducts,
+  userRole = "customer",
 }: ProductsManagementProps) {
   const router = useRouter();
   const { toast } = useToast();
@@ -300,23 +304,44 @@ export function ProductsManagement({
             <CardDescription className="text-sm">
               Adicione, edite ou remova produtos do catálogo
             </CardDescription>
+            {userRole === "visitor" && (
+              <p className="text-xs text-amber-600 mt-2 font-medium">
+                📖 Modo de visualização - Você não pode criar, editar ou excluir produtos
+              </p>
+            )}
           </div>
           <div className="flex gap-2 flex-col sm:flex-row">
-            <Button
-              variant="outline"
-              onClick={() => setIsBulkEditDialogOpen(true)}
-              className="w-full sm:w-auto"
+            <DisableIfNoPermission
+              role={userRole as UserRole}
+              permission="edit"
+              resource="products"
+              tooltipText="Apenas administradores podem editar produtos em massa"
             >
-              <ListChecks className="mr-2 h-4 w-4" />
-              Editar em Massa
-            </Button>
-            <Button
-              onClick={() => setIsAddDialogOpen(true)}
-              className="w-full sm:w-auto"
+              <Button
+                variant="outline"
+                onClick={() => setIsBulkEditDialogOpen(true)}
+                className="w-full sm:w-auto"
+                disabled={userRole !== "admin"}
+              >
+                <ListChecks className="mr-2 h-4 w-4" />
+                Editar em Massa
+              </Button>
+            </DisableIfNoPermission>
+            <DisableIfNoPermission
+              role={userRole as UserRole}
+              permission="create"
+              resource="products"
+              tooltipText="Apenas administradores podem adicionar produtos"
             >
-              <Plus className="mr-2 h-4 w-4" />
-              Adicionar Produto
-            </Button>
+              <Button
+                onClick={() => setIsAddDialogOpen(true)}
+                className="w-full sm:w-auto"
+                disabled={userRole !== "admin"}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Adicionar Produto
+              </Button>
+            </DisableIfNoPermission>
           </div>
         </div>
       </CardHeader>
@@ -326,51 +351,56 @@ export function ProductsManagement({
             products={products}
             onEdit={openEditDialog}
             onDelete={handleDeleteProduct}
+            userRole={userRole as UserRole}
           />
         </div>
 
-        <ProductFormDialog
-          isOpen={isAddDialogOpen}
-          onOpenChange={setIsAddDialogOpen}
-          title="Adicionar Novo Produto"
-          description="Preencha os dados do novo produto"
-          formData={formData}
-          imagePreviews={imagePreviews}
-          isUploading={isUploading}
-          onSubmit={handleAddProduct}
-          onFormChange={handleFormChange}
-          onPriceChange={handlePriceChange}
-          onImageChange={handleImageChange}
-          onClearImage={clearImageSelection}
-          onUrlsChange={handleUrlsChange}
-          onReorder={handleReorder}
-          submitButtonText="Adicionar"
-        />
+        {userRole === "admin" && (
+          <>
+            <ProductFormDialog
+              isOpen={isAddDialogOpen}
+              onOpenChange={setIsAddDialogOpen}
+              title="Adicionar Novo Produto"
+              description="Preencha os dados do novo produto"
+              formData={formData}
+              imagePreviews={imagePreviews}
+              isUploading={isUploading}
+              onSubmit={handleAddProduct}
+              onFormChange={handleFormChange}
+              onPriceChange={handlePriceChange}
+              onImageChange={handleImageChange}
+              onClearImage={clearImageSelection}
+              onUrlsChange={handleUrlsChange}
+              onReorder={handleReorder}
+              submitButtonText="Adicionar"
+            />
 
-        <ProductFormDialog
-          isOpen={isEditDialogOpen}
-          onOpenChange={setIsEditDialogOpen}
-          title="Editar Produto"
-          description="Atualize os dados do produto"
-          formData={formData}
-          imagePreviews={imagePreviews}
-          isUploading={isUploading}
-          onSubmit={handleEditProduct}
-          onFormChange={handleFormChange}
-          onPriceChange={handlePriceChange}
-          onImageChange={handleImageChange}
-          onClearImage={clearImageSelection}
-          onUrlsChange={handleUrlsChange}
-          onReorder={handleReorder}
-          submitButtonText="Salvar Alterações"
-        />
+            <ProductFormDialog
+              isOpen={isEditDialogOpen}
+              onOpenChange={setIsEditDialogOpen}
+              title="Editar Produto"
+              description="Atualize os dados do produto"
+              formData={formData}
+              imagePreviews={imagePreviews}
+              isUploading={isUploading}
+              onSubmit={handleEditProduct}
+              onFormChange={handleFormChange}
+              onPriceChange={handlePriceChange}
+              onImageChange={handleImageChange}
+              onClearImage={clearImageSelection}
+              onUrlsChange={handleUrlsChange}
+              onReorder={handleReorder}
+              submitButtonText="Salvar Alterações"
+            />
 
-        <BulkEditDialog
-          isOpen={isBulkEditDialogOpen}
-          onOpenChange={setIsBulkEditDialogOpen}
-          products={products}
-          onUpdate={handleBulkUpdate}
-        />
+            <BulkEditDialog
+              isOpen={isBulkEditDialogOpen}
+              onOpenChange={setIsBulkEditDialogOpen}
+              products={products}
+              onUpdate={handleBulkUpdate}
+            />
+          </>
+        )}
       </CardContent>
     </Card>
   );

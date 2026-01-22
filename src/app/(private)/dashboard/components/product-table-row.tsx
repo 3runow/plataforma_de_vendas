@@ -4,17 +4,21 @@ import { Badge } from "@/components/ui/badge";
 import { Pencil, Trash2, Image as ImageIcon } from "lucide-react";
 import Image from "next/image";
 import { Product } from "../../../../../types/types";
+import { UserRole } from "@/lib/permissions";
+import { DisableIfNoPermission } from "@/components/protected-action";
 
 interface ProductTableRowProps {
   product: Product;
   onEdit: (product: Product) => void;
   onDelete: (id: number) => void;
+  userRole?: UserRole;
 }
 
 export function ProductTableRow({
   product,
   onEdit,
   onDelete,
+  userRole = "customer",
 }: ProductTableRowProps) {
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
@@ -87,16 +91,36 @@ export function ProductTableRow({
       </TableCell>
       <TableCell className="text-right">
         <div className="flex justify-end gap-2">
-          <Button variant="outline" size="sm" onClick={() => onEdit(product)}>
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={() => onDelete(product.id)}
+          <DisableIfNoPermission
+            role={userRole}
+            permission="edit"
+            resource="products"
+            tooltipText="Apenas administradores podem editar produtos"
           >
-            <Trash2 className="h-4 w-4" />
-          </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onEdit(product)}
+              disabled={userRole !== "admin"}
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+          </DisableIfNoPermission>
+          <DisableIfNoPermission
+            role={userRole}
+            permission="delete"
+            resource="products"
+            tooltipText="Apenas administradores podem deletar produtos"
+          >
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => onDelete(product.id)}
+              disabled={userRole !== "admin"}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </DisableIfNoPermission>
         </div>
       </TableCell>
     </TableRow>

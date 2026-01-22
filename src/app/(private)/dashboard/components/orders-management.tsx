@@ -28,6 +28,8 @@ import { ShoppingCart, Eye } from "lucide-react";
 import { OrderDetailsModal } from "./order-details-modal";
 import { OrdersFilter } from "./orders-filter";
 import { SyncOrdersButton } from "@/components/sync-orders-button";
+import { UserRole } from "@/lib/permissions";
+import { DisableIfNoPermission } from "@/components/protected-action";
 import { getOrderStatusMeta } from "@/constants/order-status";
 
 interface Order {
@@ -56,10 +58,12 @@ interface Order {
 
 interface OrdersManagementProps {
   orders: Order[];
+  userRole?: string;
 }
 
 export function OrdersManagement({
   orders: initialOrders,
+  userRole = "customer",
 }: OrdersManagementProps) {
   const [orders, setOrders] = useState(initialOrders);
   const [filterStatus, setFilterStatus] = useState<string>("all");
@@ -156,7 +160,7 @@ export function OrdersManagement({
                   {filteredOrders.length} pedido{filteredOrders.length !== 1 ? "s" : ""} encontrado{filteredOrders.length !== 1 ? "s" : ""}
                 </div>
               )}
-              <SyncOrdersButton />
+              {userRole === "admin" && <SyncOrdersButton />}
             </div>
           </div>
         </div>
@@ -245,37 +249,45 @@ export function OrdersManagement({
                             >
                               <Eye className="h-4 w-4 text-gray-600" />
                             </button>
-                            <Select
-                              value={order.status}
-                              onValueChange={(value) =>
-                                handleStatusChange(order.id, value)
-                              }
-                            >
-                              <SelectTrigger
-                                className="w-[140px] text-xs"
-                                onClick={(e) => e.stopPropagation()}
+                            {userRole === "admin" ? (
+                              <Select
+                                value={order.status}
+                                onValueChange={(value) =>
+                                  handleStatusChange(order.id, value)
+                                }
                               >
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="payment_pending">
-                                  Aguardando Pagamento
-                                </SelectItem>
-                                <SelectItem value="payment_failed">
-                                  Pagamento Falhou
-                                </SelectItem>
-                                <SelectItem value="processing">
-                                  Em Preparação
-                                </SelectItem>
-                                <SelectItem value="shipped">Enviado</SelectItem>
-                                <SelectItem value="delivered">
-                                  Entregue
-                                </SelectItem>
-                                <SelectItem value="cancelled">
-                                  Cancelado
-                                </SelectItem>
-                              </SelectContent>
-                            </Select>
+                                <SelectTrigger
+                                  className="w-[140px] text-xs"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="payment_pending">
+                                    Aguardando Pagamento
+                                  </SelectItem>
+                                  <SelectItem value="payment_failed">
+                                    Pagamento Falhou
+                                  </SelectItem>
+                                  <SelectItem value="processing">
+                                    Em Preparação
+                                  </SelectItem>
+                                  <SelectItem value="shipped">Enviado</SelectItem>
+                                  <SelectItem value="delivered">
+                                    Entregue
+                                  </SelectItem>
+                                  <SelectItem value="cancelled">
+                                    Cancelado
+                                  </SelectItem>
+                                </SelectContent>
+                              </Select>
+                            ) : (
+                              <Badge
+                                className={`${getStatusColor(order.status)} text-xs`}
+                              >
+                                {getStatusLabel(order.status)}
+                              </Badge>
+                            )}
                           </div>
                         </TableCell>
                       </TableRow>
@@ -372,33 +384,41 @@ export function OrdersManagement({
                             <Eye className="h-3 w-3" />
                             Ver detalhes
                           </button>
-                          <Select
-                            value={order.status}
-                            onValueChange={(value) =>
-                              handleStatusChange(order.id, value)
-                            }
-                          >
-                            <SelectTrigger
-                              className="flex-1 text-xs sm:text-sm h-8 sm:h-9"
-                              onClick={(e) => e.stopPropagation()}
+                          {userRole === "admin" ? (
+                            <Select
+                              value={order.status}
+                              onValueChange={(value) =>
+                                handleStatusChange(order.id, value)
+                              }
                             >
-                              <SelectValue placeholder="Alterar status" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="payment_pending">Aguardando Pagamento</SelectItem>
-                              <SelectItem value="payment_failed">
-                                Pagamento Falhou
-                              </SelectItem>
-                              <SelectItem value="processing">Em Preparação</SelectItem>
-                              <SelectItem value="shipped">Enviado</SelectItem>
-                              <SelectItem value="delivered">
-                                Entregue
-                              </SelectItem>
-                              <SelectItem value="cancelled">
-                                Cancelado
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
+                              <SelectTrigger
+                                className="flex-1 text-xs sm:text-sm h-8 sm:h-9"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <SelectValue placeholder="Alterar status" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="payment_pending">Aguardando Pagamento</SelectItem>
+                                <SelectItem value="payment_failed">
+                                  Pagamento Falhou
+                                </SelectItem>
+                                <SelectItem value="processing">Em Preparação</SelectItem>
+                                <SelectItem value="shipped">Enviado</SelectItem>
+                                <SelectItem value="delivered">
+                                  Entregue
+                                </SelectItem>
+                                <SelectItem value="cancelled">
+                                  Cancelado
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <Badge
+                              className={`${getStatusColor(order.status)} text-xs`}
+                            >
+                              {getStatusLabel(order.status)}
+                            </Badge>
+                          )}
                         </div>
                       </div>
                     </div>

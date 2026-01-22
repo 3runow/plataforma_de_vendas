@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
       from: {
         name: "BRICKS",
         phone: "11999999999",
-        email: "contato@bricks.com.br",
+        email: "contato@oficialbricks.com.br",
         document: "31604350830",
         company_document: "51597963000155",
         state_register: "123456789",

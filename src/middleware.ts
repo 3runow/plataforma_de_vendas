@@ -71,7 +71,7 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // Protege a rota de dashboard - requer autenticação e role admin
+  // Protege a rota de dashboard - requer autenticação e role admin ou visitor
   if (pathname.startsWith("/dashboard")) {
     const token = req.cookies.get("token")?.value;
     if (!token) {
@@ -87,7 +87,10 @@ export async function middleware(req: NextRequest) {
         role?: string;
       }
 
-      if ((payload as JWTPayload).role !== "admin") {
+      const userRole = (payload as JWTPayload).role;
+      
+      // Permitir acesso apenas para admin e visitor
+      if (userRole !== "admin" && userRole !== "visitor") {
         const url = req.nextUrl.clone();
         url.pathname = "/";
         return NextResponse.redirect(url);

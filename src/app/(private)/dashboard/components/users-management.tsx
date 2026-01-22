@@ -26,6 +26,8 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Users, Trash2 } from "lucide-react";
+import { DisableIfNoPermission, ProtectedSection } from "@/components/protected-action";
+import { UserRole } from "@/lib/permissions";
 
 interface User {
   id: number;
@@ -40,9 +42,10 @@ interface User {
 
 interface UsersManagementProps {
   users: User[];
+  userRole?: string;
 }
 
-export function UsersManagement({ users: initialUsers }: UsersManagementProps) {
+export function UsersManagement({ users: initialUsers, userRole = "customer" }: UsersManagementProps) {
   const [users, setUsers] = useState(initialUsers);
   const [filterRole, setFilterRole] = useState<string>("all");
 
@@ -63,13 +66,15 @@ export function UsersManagement({ users: initialUsers }: UsersManagementProps) {
   };
 
   const getRoleColor = (role: string) => {
-    return role === "admin"
-      ? "bg-purple-100 text-purple-800"
-      : "bg-blue-100 text-blue-800";
+    if (role === "admin") return "bg-purple-100 text-purple-800";
+    if (role === "visitor") return "bg-amber-100 text-amber-800";
+    return "bg-blue-100 text-blue-800";
   };
 
   const getRoleLabel = (role: string) => {
-    return role === "admin" ? "Administrador" : "Cliente";
+    if (role === "admin") return "Administrador";
+    if (role === "visitor") return "Visitante";
+    return "Cliente";
   };
 
   const handleRoleChange = async (userId: number, newRole: string) => {
@@ -135,6 +140,7 @@ export function UsersManagement({ users: initialUsers }: UsersManagementProps) {
             <SelectContent>
               <SelectItem value="all">Todos</SelectItem>
               <SelectItem value="customer">Clientes</SelectItem>
+              <SelectItem value="visitor">Visitantes</SelectItem>
               <SelectItem value="admin">Administradores</SelectItem>
             </SelectContent>
           </Select>
@@ -185,11 +191,12 @@ export function UsersManagement({ users: initialUsers }: UsersManagementProps) {
                               value={user.role}
                               onValueChange={(value) => handleRoleChange(user.id, value)}
                             >
-                              <SelectTrigger className="w-[120px] text-xs">
+                              <SelectTrigger className="w-[140px] text-xs">
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="customer">Cliente</SelectItem>
+                                <SelectItem value="visitor">Visitante</SelectItem>
                                 <SelectItem value="admin">Admin</SelectItem>
                               </SelectContent>
                             </Select>
@@ -267,6 +274,7 @@ export function UsersManagement({ users: initialUsers }: UsersManagementProps) {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="customer">Cliente</SelectItem>
+                            <SelectItem value="visitor">Visitante</SelectItem>
                             <SelectItem value="admin">Admin</SelectItem>
                           </SelectContent>
                         </Select>

@@ -64,9 +64,9 @@ export default async function Dashboard() {
 
     if (!user) return redirect("/");
 
-    // Verifica se o usuário é admin
-    if (user.role !== "admin") {
-      redirect("/"); // Redireciona para home se não for admin
+    // Verifica se o usuário é admin ou visitor
+    if (user.role !== "admin" && user.role !== "visitor") {
+      redirect("/"); // Redireciona para home se não for admin ou visitor
     }
 
     // Busca dados para o dashboard
@@ -332,6 +332,20 @@ export default async function Dashboard() {
             )}
           </div>
 
+          {user.role === "visitor" && (
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-3 shadow-sm">
+              <div className="text-blue-600 text-lg">👁️</div>
+              <div>
+                <p className="text-sm text-blue-900 font-medium">
+                  <strong>MODO DE VISUALIZAÇÃO</strong>
+                </p>
+                <p className="text-xs text-blue-700 mt-1">
+                  Você tem acesso apenas para visualizar dados. Alterações não são permitidas.
+                </p>
+              </div>
+            </div>
+          )}
+
           <Tabs defaultValue="overview" className="space-y-4 sm:space-y-6">
             <TabsList className="grid w-full grid-cols-4 sm:grid-cols-4 lg:grid-cols-8 bg-white shadow-sm p-1 rounded-lg h-auto gap-1">
               <TabsTrigger
@@ -384,20 +398,24 @@ export default async function Dashboard() {
                 <span className="hidden sm:inline">Devoluções</span>
                 <span className="sm:hidden">Dev</span>
               </TabsTrigger>
-              <TabsTrigger
-                value="users"
-                className="data-[state=active]:bg-purple-600 data-[state=active]:text-white transition-all text-[10px] sm:text-xs lg:text-sm py-1.5 sm:py-2 px-1 sm:px-2"
-              >
-                <span className="hidden sm:inline">Usuários</span>
-                <span className="sm:hidden">User</span>
-              </TabsTrigger>
-              <TabsTrigger
-                value="coupons"
-                className="data-[state=active]:bg-purple-600 data-[state=active]:text-white transition-all text-[10px] sm:text-xs lg:text-sm py-1.5 sm:py-2 px-1 sm:px-2"
-              >
-                <span className="hidden sm:inline">Cupons</span>
-                <span className="sm:hidden">Cup</span>
-              </TabsTrigger>
+              {user.role === "admin" && (
+                <>
+                  <TabsTrigger
+                    value="users"
+                    className="data-[state=active]:bg-purple-600 data-[state=active]:text-white transition-all text-[10px] sm:text-xs lg:text-sm py-1.5 sm:py-2 px-1 sm:px-2"
+                  >
+                    <span className="hidden sm:inline">Usuários</span>
+                    <span className="sm:hidden">User</span>
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="coupons"
+                    className="data-[state=active]:bg-purple-600 data-[state=active]:text-white transition-all text-[10px] sm:text-xs lg:text-sm py-1.5 sm:py-2 px-1 sm:px-2"
+                  >
+                    <span className="hidden sm:inline">Cupons</span>
+                    <span className="sm:hidden">Cup</span>
+                  </TabsTrigger>
+                </>
+              )}
             </TabsList>
 
             <TabsContent value="overview" className="space-y-4 sm:space-y-6">
@@ -413,39 +431,44 @@ export default async function Dashboard() {
                 userGrowthData={userGrowthData}
                 revenueTrend={revenueTrend}
                 ordersTrend={ordersTrend}
+                userRole={user.role}
               />
             </TabsContent>
 
             <TabsContent value="products" className="space-y-4 sm:space-y-6">
-              <ProductsManagement products={products} />
+              <ProductsManagement products={products} userRole={user.role} />
             </TabsContent>
 
             <TabsContent value="stock" className="space-y-4 sm:space-y-6">
               {lowStockProducts.length > 0 && (
                 <StockAlerts products={lowStockProducts} />
               )}
-              <StockManagement products={products} />
+              <StockManagement products={products} userRole={user.role} />
             </TabsContent>
 
             <TabsContent value="orders" className="space-y-4 sm:space-y-6">
-              <OrdersManagement orders={orders} />
+              <OrdersManagement orders={orders} userRole={user.role} />
             </TabsContent>
 
             <TabsContent value="shipping" className="space-y-4 sm:space-y-6">
-              <ShippingManagement orders={orders} />
+              <ShippingManagement orders={orders} userRole={user.role} />
             </TabsContent>
 
             <TabsContent value="returns" className="space-y-4 sm:space-y-6">
-              <ReturnsManagement orders={orders} />
+              <ReturnsManagement orders={orders} userRole={user.role} />
             </TabsContent>
 
-            <TabsContent value="users" className="space-y-4 sm:space-y-6">
-              <UsersManagement users={users} />
-            </TabsContent>
+            {user.role === "admin" && (
+              <>
+                <TabsContent value="users" className="space-y-4 sm:space-y-6">
+                  <UsersManagement users={users} userRole={user.role} />
+                </TabsContent>
 
-            <TabsContent value="coupons" className="space-y-4 sm:space-y-6">
-              <CouponsManagement coupons={formattedCoupons} />
-            </TabsContent>
+                <TabsContent value="coupons" className="space-y-4 sm:space-y-6">
+                  <CouponsManagement coupons={formattedCoupons} userRole={user.role} />
+                </TabsContent>
+              </>
+            )}
           </Tabs>
         </div>
       </div>

@@ -38,10 +38,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   Plus,
-  Ticket,
-  MoreHorizontal,
   Trash2,
   Edit,
+  MoreHorizontal,
+  Ticket,
   Copy,
   TrendingUp,
   Calendar,
@@ -49,6 +49,8 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
+import { DisableIfNoPermission } from "@/components/protected-action";
+import { UserRole } from "@/lib/permissions";
 import { Switch } from "@/components/ui/switch";
 
 interface Coupon {
@@ -65,10 +67,12 @@ interface Coupon {
 
 interface CouponsManagementProps {
   coupons: Coupon[];
+  userRole?: string;
 }
 
 export function CouponsManagement({
   coupons: initialCoupons,
+  userRole = "customer",
 }: CouponsManagementProps) {
   const router = useRouter();
   const { toast } = useToast();
