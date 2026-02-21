@@ -45,6 +45,7 @@ export function AddressModal({
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingCep, setIsLoadingCep] = useState(false);
+  const [cepError, setCepError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     recipientName: "",
@@ -101,15 +102,26 @@ export function AddressModal({
     if (cep.length !== 8) return;
 
     setIsLoadingCep(true);
+    setCepError(null);
 
     try {
-      const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+      const response = await fetch(`/api/cep/${cep}`);
       const data = await response.json();
 
-      if (data.erro) {
+      if (!response.ok || data?.error) {
+        const rawMessage =
+          (typeof data?.error === "string" && data.error) ||
+          (response.status === 404 ? "CEP NÃO ENCONTRADO" : null) ||
+          "Erro ao buscar CEP";
+
+        const message = /cep\s*n[aã]o\s*encontrado/i.test(rawMessage)
+          ? "CEP NÃO ENCONTRADO"
+          : rawMessage;
+
+        setCepError(message);
         toast({
           title: "Erro",
-          description: "CEP não encontrado",
+          description: message,
           variant: "destructive",
         });
         return;
@@ -123,6 +135,7 @@ export function AddressModal({
         state: data.uf || "",
       }));
     } catch {
+      setCepError("Erro ao buscar CEP");
       toast({
         title: "Erro",
         description: "Erro ao buscar CEP",
@@ -228,9 +241,15 @@ export function AddressModal({
                 placeholder="00000-000"
                 maxLength={9}
                 required
+                aria-invalid={Boolean(cepError)}
               />
               {isLoadingCep && (
                 <p className="text-sm text-gray-500">Buscando CEP...</p>
+              )}
+              {cepError && (
+                <p className="text-base font-semibold text-red-600">
+                  {cepError}
+                </p>
               )}
             </div>
 

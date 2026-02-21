@@ -177,7 +177,7 @@ export default function ProductCard({
         {/* Área de informações estilo polaroid (parte inferior da foto) */}
         <CardContent className="p-4 pt-2 bg-[#f5f1e8]">
           <h3
-            className="font-semibold text-lg line-clamp-2 mb-2 text-gray-800 cursor-pointer hover:underline"
+            className="font-semibold text-sm md:text-base line-clamp-2 mb-2 text-gray-800 cursor-pointer hover:underline"
             onClick={() => router.push(productHref)}
             role="button"
             aria-label={`Ver detalhes de ${product.name}`}
@@ -191,7 +191,7 @@ export default function ProductCard({
           <div className="flex items-center gap-2">
             {(product.discount ?? 0) > 0 ? (
               <>
-                <span className="text-2xl font-bold text-primary">
+                <span className="text-lg md:text-2xl font-bold text-primary">
                   R$ {finalPrice.toFixed(2)}
                 </span>
                 <span className="text-sm text-gray-500 line-through">
@@ -199,7 +199,7 @@ export default function ProductCard({
                 </span>
               </>
             ) : (
-              <span className="text-2xl font-bold text-primary">
+              <span className="text-lg md:text-2xl font-bold text-primary">
                 R$ {product.price.toFixed(2)}
               </span>
             )}

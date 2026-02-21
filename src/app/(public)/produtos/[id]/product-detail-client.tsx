@@ -53,14 +53,30 @@ export default function ProductDetailClient({ product }: Props) {
   );
   const [cep, setCep] = useState("");
   const [address, setAddress] = useState<Address | undefined>(undefined);
+  const [cepError, setCepError] = useState<string | null>(null);
 
   const onCheckDelivery = useCallback(async (rawCep: string) => {
     const digits = rawCep.replace(/\D/g, "");
     if (digits.length < 8) return;
 
+    setCepError(null);
+    setAddress(undefined);
+
     const res = await fetch(`/api/cep/${digits}`);
-    if (!res.ok) return;
     const data = await res.json();
+
+    if (!res.ok || data?.error) {
+      const raw: string =
+        typeof data?.error === "string" ? data.error : "";
+      const msg = /cep\s*n[aã]o\s*encontrado/i.test(raw)
+        ? "CEP NÃO ENCONTRADO"
+        : /inv[aá]lido/i.test(raw)
+          ? "CEP INVÁLIDO"
+          : "CEP INVÁLIDO";
+      setCepError(msg);
+      return;
+    }
+
     setAddress(data);
   }, []);
 
@@ -89,8 +105,12 @@ export default function ProductDetailClient({ product }: Props) {
       onImageSelectAction={setSelectedImageIndex}
       onSizeSelectAction={setSelectedSize}
       onColorSelectAction={setSelectedColor}
-      onCepChangeAction={setCep}
+      onCepChangeAction={(v) => {
+          setCep(v);
+          setCepError(null); // limpa erro ao digitar novo CEP
+        }}
       onCheckDeliveryAction={onCheckDelivery}
+      cepError={cepError}
     />
   );
 }

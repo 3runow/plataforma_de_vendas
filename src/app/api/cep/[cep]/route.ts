@@ -39,6 +39,8 @@ export async function GET(
       return NextResponse.json({ error: "CEP inválido" }, { status: 400 });
     }
 
+    let notFound = false;
+
     for (const provider of CEP_PROVIDERS) {
       try {
         const response = await fetch(provider.buildUrl(cep), {
@@ -49,6 +51,11 @@ export async function GET(
           },
         });
 
+        if (response.status === 404) {
+          notFound = true;
+          throw new Error(`${provider.name} retornou 404 (CEP não encontrado)`);
+        }
+
         if (!response.ok) {
           throw new Error(
             `${provider.name} retornou status ${response.status}`
@@ -58,6 +65,7 @@ export async function GET(
         const rawData = (await response.json()) as Record<string, unknown>;
 
         if (provider.invalidResponse?.(rawData)) {
+          notFound = true;
           throw new Error(`${provider.name} respondeu erro de CEP`);
         }
 
@@ -75,6 +83,10 @@ export async function GET(
         );
         continue;
       }
+    }
+
+    if (notFound) {
+      return NextResponse.json({ error: "CEP NÃO ENCONTRADO" }, { status: 404 });
     }
 
     return NextResponse.json(

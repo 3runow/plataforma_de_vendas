@@ -35,7 +35,7 @@ export default function MobileMenu({ navItems }: MobileMenuProps) {
 
       <SheetContent
         side="left"
-        className="bg-[#022044] border-[#033866] w-50 [&>button]:text-white"
+        className="bg-[#022044] border-[#033866] w-72 [&>button]:text-white"
       >
         <SheetHeader>
           <SheetTitle className="text-[#f7f7f7] text-left">Menu</SheetTitle>

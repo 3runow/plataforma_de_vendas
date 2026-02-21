@@ -19,6 +19,39 @@ import { Loader2, AlertCircle, CheckCircle2, Eye, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 
+// ─── Validação matemática de CPF ────────────────────────────────────────────
+function validateCPF(cpf: string): boolean {
+  const d = cpf.replace(/\D/g, "");
+  if (d.length !== 11 || /^(\d)\1{10}$/.test(d)) return false;
+  let s = 0;
+  for (let i = 0; i < 9; i++) s += +d[i] * (10 - i);
+  let r = (s * 10) % 11;
+  if (r >= 10) r = 0;
+  if (r !== +d[9]) return false;
+  s = 0;
+  for (let i = 0; i < 10; i++) s += +d[i] * (11 - i);
+  r = (s * 10) % 11;
+  if (r >= 10) r = 0;
+  return r === +d[10];
+}
+
+function formatCPF(value: string): string {
+  return value
+    .replace(/\D/g, "")
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d{1,2})/, "$1-$2")
+    .replace(/(-\d{2})\d+?$/, "$1");
+}
+
+function formatPhone(value: string): string {
+  return value
+    .replace(/\D/g, "")
+    .replace(/(\d{2})(\d)/, "($1) $2")
+    .replace(/(\d{5})(\d)/, "$1-$2")
+    .replace(/(-\d{4})\d+?$/, "$1");
+}
+
 // Schemas de validação
 const loginSchema = z.object({
   email: z.string().email("E-mail inválido"),
@@ -35,7 +68,8 @@ const registerSchema = z
       .regex(
         /^\d{3}\.?\d{3}\.?\d{3}-?\d{2}$/,
         "CPF inválido (use formato: 000.000.000-00)"
-      ),
+      )
+      .refine(validateCPF, "CPF inválido. Os dígitos verificadores não batem."),
     phone: z
       .string()
       .min(10, "Telefone deve ter no mínimo 10 dígitos")
@@ -277,7 +311,7 @@ export default function AuthModal({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl sm:text-2xl font-bold">
             {isForgotPassword
@@ -385,9 +419,12 @@ export default function AuthModal({
                   disabled={registerForm.formState.isSubmitting}
                 />
                 {registerForm.formState.errors.name && (
-                  <p className="text-sm text-red-500">
-                    {registerForm.formState.errors.name.message}
-                  </p>
+                  <Alert variant="destructive" className="py-2">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription className="font-semibold">
+                      {registerForm.formState.errors.name.message}
+                    </AlertDescription>
+                  </Alert>
                 )}
               </div>
             )}
@@ -399,12 +436,25 @@ export default function AuthModal({
                   id="cpf"
                   placeholder="000.000.000-00"
                   {...registerForm.register("cpf")}
+                  onChange={(e) => {
+                    const formatted = formatCPF(e.target.value);
+                    registerForm.setValue("cpf", formatted, {
+                      shouldValidate:
+                        registerForm.formState.isSubmitted ||
+                        Boolean(registerForm.formState.errors.cpf),
+                    });
+                  }}
+                  maxLength={14}
                   disabled={registerForm.formState.isSubmitting}
+                  aria-invalid={Boolean(registerForm.formState.errors.cpf)}
                 />
                 {registerForm.formState.errors.cpf && (
-                  <p className="text-sm text-red-500">
-                    {registerForm.formState.errors.cpf.message}
-                  </p>
+                  <Alert variant="destructive" className="py-2">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription className="font-semibold">
+                      {registerForm.formState.errors.cpf.message}
+                    </AlertDescription>
+                  </Alert>
                 )}
               </div>
             )}
@@ -416,12 +466,25 @@ export default function AuthModal({
                   id="phone"
                   placeholder="(00) 00000-0000"
                   {...registerForm.register("phone")}
+                  onChange={(e) => {
+                    const formatted = formatPhone(e.target.value);
+                    registerForm.setValue("phone", formatted, {
+                      shouldValidate:
+                        registerForm.formState.isSubmitted ||
+                        Boolean(registerForm.formState.errors.phone),
+                    });
+                  }}
+                  maxLength={15}
                   disabled={registerForm.formState.isSubmitting}
+                  aria-invalid={Boolean(registerForm.formState.errors.phone)}
                 />
                 {registerForm.formState.errors.phone && (
-                  <p className="text-sm text-red-500">
-                    {registerForm.formState.errors.phone.message}
-                  </p>
+                  <Alert variant="destructive" className="py-2">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription className="font-semibold">
+                      {registerForm.formState.errors.phone.message}
+                    </AlertDescription>
+                  </Alert>
                 )}
               </div>
             )}

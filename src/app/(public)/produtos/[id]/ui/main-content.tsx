@@ -39,6 +39,7 @@ interface MainContentProps {
   onColorSelectAction: (color: Color | undefined) => void;
   onCepChangeAction: (cep: string) => void;
   onCheckDeliveryAction: (cep: string) => Promise<void>;
+  cepError?: string | null;
   isNew?: boolean;
   isFeatured?: boolean;
   discount?: number | null;
@@ -61,6 +62,7 @@ export default function MainContent({
   onColorSelectAction,
   onCepChangeAction,
   onCheckDeliveryAction,
+  cepError,
   isNew,
   isFeatured,
   discount,
@@ -160,17 +162,17 @@ export default function MainContent({
           )}
 
           {/* Bloco de carrinho */}
-          <div className="flex items-center gap-2 md:gap-8">
-            <div className="flex flex-col gap-2">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 md:gap-8">
+            <div className="flex flex-col gap-2 w-full sm:w-auto">
             <Button
-              className="flex-1 bg-[#0f3d91] hover:bg-[#0c3276] text-white py-6"
+              className="w-full sm:flex-1 bg-[#0f3d91] hover:bg-[#0c3276] text-white py-6"
               onClick={handleBuyNow}
               disabled={isOutOfStock || isBuying}
             >
               {isBuying ? "Indo para compra..." : "Comprar agora"}
             </Button>
                           <Button
-              className="flex"
+              className="w-full sm:flex"
               onClick={handleAddToCart}
               disabled={isOutOfStock || isAdding}
             >
@@ -244,6 +246,7 @@ export default function MainContent({
             address={userSelections.address}
             onCepChangeAction={onCepChangeAction}
             onCheckDeliveryAction={onCheckDeliveryAction}
+            cepError={cepError}
           />
 
           {/* Accordion de características */}

@@ -9,6 +9,7 @@ interface DeliveryCheckProps {
   address?: Address;
   onCepChangeAction: (cep: string) => void;
   onCheckDeliveryAction: (cep: string) => Promise<void>;
+  cepError?: string | null;
 }
 
 export default function DeliveryCheck({
@@ -16,6 +17,7 @@ export default function DeliveryCheck({
   address,
   onCepChangeAction,
   onCheckDeliveryAction,
+  cepError,
 }: DeliveryCheckProps) {
   const [isChecking, setIsChecking] = useState(false);
 
@@ -67,7 +69,14 @@ export default function DeliveryCheck({
         </button>
       </form>
 
-      {address && (
+      {cepError && (
+        <div className="flex items-center gap-2 rounded-md border border-red-300 bg-red-50 px-3 py-2">
+          <span className="text-lg font-bold text-red-600">✕</span>
+          <p className="font-semibold text-red-600">{cepError}</p>
+        </div>
+      )}
+
+      {!cepError && address && (
         <div className="space-y-1 bg-white p-3 rounded-md border border-gray-200 text-sm">
           <p className="font-medium text-gray-900">Entrega disponível para:</p>
           <p className="text-gray-700">{address.logradouro}</p>

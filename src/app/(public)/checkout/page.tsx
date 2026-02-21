@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/contexts/cart-context";
-import { ChevronLeft, Lock } from "lucide-react";
+import { ChevronLeft, Lock, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import {
@@ -34,6 +34,15 @@ interface ShippingOption {
   company: string;
   price: number;
   deliveryTime: number;
+}
+
+// Rola a tela suavemente até a seção de endereço (aguarda a animação do accordion)
+function scrollToAddressSection() {
+  setTimeout(() => {
+    document
+      .getElementById("checkout-address-section")
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, 350);
 }
 
 export default function CheckoutPage() {
@@ -68,6 +77,19 @@ export default function CheckoutPage() {
   );
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
+
+  const [forceShowPersonalErrors, setForceShowPersonalErrors] = useState(false);
+  const [forceShowAddressErrors, setForceShowAddressErrors] = useState(false);
+
+  // Pop-up de erro persistente
+  const [errorDialog, setErrorDialog] = useState<{
+    open: boolean;
+    title: string;
+    description: string;
+  }>({ open: false, title: "", description: "" });
+
+  const showErrorDialog = (title: string, description: string) =>
+    setErrorDialog({ open: true, title, description });
 
   // Controla se o usuário já avançou automaticamente (para evitar avanço forçado ao editar)
   const [hasAutoAdvanced, setHasAutoAdvanced] = useState({
@@ -136,26 +158,41 @@ export default function CheckoutPage() {
     const cpfDigits = digits(formData.cpf);
     const phoneDigits = digits(formData.phone);
 
+    const cpfMathValid = (() => {
+      const d = cpfDigits;
+      if (d.length !== 11 || /^(\d)\1{10}$/.test(d)) return false;
+      let s = 0;
+      for (let i = 0; i < 9; i++) s += +d[i] * (10 - i);
+      let r = (s * 10) % 11;
+      if (r >= 10) r = 0;
+      if (r !== +d[9]) return false;
+      s = 0;
+      for (let i = 0; i < 10; i++) s += +d[i] * (11 - i);
+      r = (s * 10) % 11;
+      if (r >= 10) r = 0;
+      return r === +d[10];
+    })();
+
     const isPersonalComplete =
       formData.name.trim().length >= 2 &&
       formData.email.includes("@") &&
       cpfDigits.length === 11 &&
+      cpfMathValid &&
       phoneDigits.length >= 10;
 
     if (!isPersonalComplete) {
+      setForceShowPersonalErrors(true);
+      setOpenSection("personal-data");
       const message =
-        "Preencha nome, email, CPF e telefone antes de pagar.";
-      toast({
-        title: "Dados pessoais incompletos",
-        description: message,
-        variant: "destructive",
-      });
+        "Preencha nome, e-mail, CPF e telefone antes de pagar.";
+      showErrorDialog("Dados pessoais incompletos", message);
       throw new Error(message);
     }
 
     const cepValid = addressData.cep.replace(/\D/g, "").length === 8;
     const isComplete =
       cepValid &&
+      addressData.recipientName.trim() !== "" &&
       addressData.street.trim() !== "" &&
       addressData.number.trim() !== "" &&
       addressData.neighborhood.trim() !== "" &&
@@ -164,12 +201,24 @@ export default function CheckoutPage() {
       selectedShipping !== null;
 
     if (!isComplete) {
-      const message = "Preencha endereço e selecione o frete antes de pagar.";
-      toast({
-        title: "Dados incompletos",
-        description: message,
-        variant: "destructive",
-      });
+      setForceShowAddressErrors(true);
+      setOpenSection("address");
+      scrollToAddressSection();
+      const missingFields = [
+        ...(cepValid ? [] : ["CEP"]),
+        ...(addressData.recipientName.trim() ? [] : ["Destinatário"]),
+        ...(addressData.street.trim() ? [] : ["Rua"]),
+        ...(addressData.number.trim() ? [] : ["Número"]),
+        ...(addressData.neighborhood.trim() ? [] : ["Bairro"]),
+        ...(addressData.city.trim() ? [] : ["Cidade"]),
+        ...(addressData.state.length === 2 ? [] : ["Estado (UF)"]),
+        ...(selectedShipping ? [] : ["Opção de frete"]),
+      ];
+      const message =
+        missingFields.length > 0
+          ? `Campos obrigatórios não preenchidos:\n${missingFields.map((f) => `• ${f}`).join("\n")}`
+          : "Preencha endereço e selecione o frete antes de pagar.";
+      showErrorDialog("Endereço incompleto", message);
       throw new Error(message);
     }
 
@@ -389,10 +438,26 @@ export default function CheckoutPage() {
 
   // Verifica se uma seção está completa
   const isPersonalDataComplete = useCallback(() => {
+    const d = formData.cpf.replace(/\D/g, "");
+    const cpfMathValid = (() => {
+      if (d.length !== 11 || /^(\d)\1{10}$/.test(d)) return false;
+      let s = 0;
+      for (let i = 0; i < 9; i++) s += +d[i] * (10 - i);
+      let r = (s * 10) % 11;
+      if (r >= 10) r = 0;
+      if (r !== +d[9]) return false;
+      s = 0;
+      for (let i = 0; i < 10; i++) s += +d[i] * (11 - i);
+      r = (s * 10) % 11;
+      if (r >= 10) r = 0;
+      return r === +d[10];
+    })();
+
     return (
       formData.name.trim() !== "" &&
       formData.email.trim() !== "" &&
       formData.cpf.length === 14 &&
+      cpfMathValid &&
       formData.phone.length === 15
     );
   }, [formData]);
@@ -403,6 +468,7 @@ export default function CheckoutPage() {
 
     return (
       cepValid &&
+      addressData.recipientName.trim() !== "" &&
       addressData.street.trim() !== "" &&
       addressData.number.trim() !== "" &&
       addressData.neighborhood.trim() !== "" &&
@@ -435,8 +501,56 @@ export default function CheckoutPage() {
 
   // Removido auto-avanço da etapa de endereço para pagamento
 
+  // Retorna a lista de campos de endereço obrigatórios que ainda não foram preenchidos
+  const getMissingAddressFields = () => {
+    const missing: string[] = [];
+    if (addressData.cep.replace(/\D/g, "").length !== 8) missing.push("CEP");
+    if (!addressData.recipientName.trim()) missing.push("Destinatário");
+    if (!addressData.street.trim()) missing.push("Rua");
+    if (!addressData.number.trim()) missing.push("Número");
+    if (!addressData.neighborhood.trim()) missing.push("Bairro");
+    if (!addressData.city.trim()) missing.push("Cidade");
+    if (addressData.state.length !== 2) missing.push("Estado (UF)");
+    if (!selectedShipping) missing.push("Opção de frete");
+    return missing;
+  };
+
   // Handler para quando o usuário clica manualmente para abrir/fechar seções
   const handleSectionChange = (value: string) => {
+    if (value === "address" && !isPersonalDataComplete()) {
+      setForceShowPersonalErrors(true);
+      setOpenSection("personal-data");
+      showErrorDialog(
+        "Dados pessoais incompletos",
+        "Preencha corretamente nome, e-mail, CPF e telefone antes de continuar."
+      );
+      return;
+    }
+
+    if (value === "payment") {
+      if (!isPersonalDataComplete()) {
+        setForceShowPersonalErrors(true);
+        setOpenSection("personal-data");
+        showErrorDialog(
+          "Dados pessoais incompletos",
+          "Preencha corretamente nome, e-mail, CPF e telefone antes de continuar."
+        );
+        return;
+      }
+
+      if (!isAddressComplete()) {
+        setForceShowAddressErrors(true);
+        setOpenSection("address");
+        scrollToAddressSection();
+        const missing = getMissingAddressFields();
+        showErrorDialog(
+          "Endereço incompleto",
+          `Preencha os campos obrigatórios antes de continuar:\n${missing.map((f) => `• ${f}`).join("\n")}`
+        );
+        return;
+      }
+    }
+
     setOpenSection(value);
     // Reseta as flags de auto-avanço quando o usuário volta para editar
     if (value === "personal-data") {
@@ -446,8 +560,30 @@ export default function CheckoutPage() {
     }
   };
 
-  // Handler para quando o frete é selecionado
+  // Handler para quando o frete é selecionado / botão "Prosseguir para Pagamento"
   const handleShippingSelected = () => {
+    if (!isPersonalDataComplete()) {
+      setForceShowPersonalErrors(true);
+      setOpenSection("personal-data");
+      showErrorDialog(
+        "Dados pessoais incompletos",
+        "Preencha corretamente nome, e-mail, CPF e telefone antes de continuar."
+      );
+      return;
+    }
+
+    if (!isAddressComplete()) {
+      setForceShowAddressErrors(true);
+      setOpenSection("address");
+      scrollToAddressSection();
+      const missing = getMissingAddressFields();
+      showErrorDialog(
+        "Endereço incompleto",
+        `Preencha os campos obrigatórios antes de continuar:\n${missing.map((f) => `• ${f}`).join("\n")}`
+      );
+      return;
+    }
+
     // Avança para a próxima seção (pagamento)
     setOpenSection("payment");
     setHasAutoAdvanced((prev) => ({ ...prev, address: true }));
@@ -517,27 +653,38 @@ export default function CheckoutPage() {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    // Validação do destinatário
-    if (!addressData.recipientName || addressData.recipientName.trim() === "") {
-      toast({
-        title: "Erro no formulário",
-        description: "Por favor, preencha o campo Destinatário.",
-        variant: "destructive",
-      });
+    e.preventDefault();
+
+    if (!isPersonalDataComplete()) {
+      setForceShowPersonalErrors(true);
+      setOpenSection("personal-data");
+      showErrorDialog(
+        "Dados pessoais incompletos",
+        "Preencha corretamente nome, e-mail, CPF e telefone antes de pagar."
+      );
+      return;
+    }
+
+    if (!isAddressComplete()) {
+      setForceShowAddressErrors(true);
+      setOpenSection("address");
+      scrollToAddressSection();
+      const missing = getMissingAddressFields();
+      showErrorDialog(
+        "Endereço incompleto",
+        `Preencha os campos obrigatórios antes de continuar:\n${missing.map((f) => `• ${f}`).join("\n")}`
+      );
       return;
     }
 
     // Verifica se o pagamento foi processado
     if (!paymentProcessed) {
-      toast({
-        title: "Pagamento necessário",
-        description: "Por favor, processe o pagamento primeiro.",
-        variant: "destructive",
-      });
+      showErrorDialog(
+        "Pagamento necessário",
+        "Por favor, processe o pagamento antes de finalizar o pedido."
+      );
       return;
     }
-
-    e.preventDefault();
 
     setIsLoading(true);
 
@@ -730,12 +877,14 @@ export default function CheckoutPage() {
                   <AccordionContent className="px-6 pb-6">
                     <PersonalDataForm
                       formData={formData}
+                      forceShowErrors={forceShowPersonalErrors}
                       onFormDataChangeAction={setFormData}
                     />
                   </AccordionContent>
                 </AccordionItem>
 
                 {/* Endereço de Entrega */}
+                <div id="checkout-address-section">
                 <AccordionItem value="address" className="border rounded-lg">
                   <AccordionTrigger className="px-6 hover:no-underline">
                     <div className="flex items-center gap-3">
@@ -844,6 +993,7 @@ export default function CheckoutPage() {
 
                     <AddressForm
                       addressData={addressData}
+                      forceShowErrors={forceShowAddressErrors}
                       onAddressDataChangeAction={(data) => {
                         setAddressData({
                           addressName: data.addressName || "",
@@ -879,8 +1029,20 @@ export default function CheckoutPage() {
                         neighborhood={addressData.neighborhood}
                       />
                     </div>
+
+                    {/* Botão para avançar para pagamento */}
+                    <div className="mt-6">
+                      <Button
+                        type="button"
+                        className="w-full bg-[#0f3d91] hover:bg-[#0c3276] text-white py-3 text-base font-semibold"
+                        onClick={handleShippingSelected}
+                      >
+                        Prosseguir para Pagamento →
+                      </Button>
+                    </div>
                   </AccordionContent>
                 </AccordionItem>
+                </div>
 
                 {/* Pagamento */}
                 <AccordionItem value="payment" className="border rounded-lg">
@@ -1071,6 +1233,40 @@ export default function CheckoutPage() {
         open={showAuthModal}
         onOpenChangeAction={setShowAuthModal}
       />
+
+      {/* Pop-up de erro persistente (não some automaticamente) */}
+      <Dialog
+        open={errorDialog.open}
+        onOpenChange={(o) =>
+          !o && setErrorDialog((prev) => ({ ...prev, open: false }))
+        }
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-3 mb-1">
+              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-red-100 shrink-0">
+                <AlertCircle className="h-6 w-6 text-red-600" />
+              </div>
+              <DialogTitle className="text-xl text-red-700">
+                {errorDialog.title}
+              </DialogTitle>
+            </div>
+            <DialogDescription className="text-base text-gray-700 pt-1 pl-13 whitespace-pre-line">
+              {errorDialog.description}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="pt-2">
+            <Button
+              className="w-full sm:w-auto"
+              onClick={() =>
+                setErrorDialog((prev) => ({ ...prev, open: false }))
+              }
+            >
+              Entendido
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
